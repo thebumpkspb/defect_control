@@ -1,0 +1,9 @@
+/* Set consistent row height */
+.custom-row {
+  height: 56px; /* Adjust this value to your preferred row height */
+}
+
+/* Optional: Add additional styles for blank rows */
+.blank-row {
+  background-color: #f9f9f9; /* Light background for blank rows */
+}

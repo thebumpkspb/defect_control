@@ -1,0 +1,741 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from collections import defaultdict
+from typing import Dict, NamedTuple, Optional, List
+from datetime import datetime
+from PIL import Image
+from openpyxl.drawing.image import Image as OpenPyxlImage
+import openpyxl
+import textwrap
+import os
+from app.crud.export_p_chart import Export_P_Chart_CRUD
+from app.utils.export_p_chart import Export_P_Chart_Utils
+from collections import namedtuple
+import math
+
+
+class Export_P_Chart_Manager:
+    def __init__(self):
+        self.crud = Export_P_Chart_CRUD()
+        self.utils = Export_P_Chart_Utils()
+
+    def combine_json_list_defect_graph(self, data, skip_keys={}):
+        Defect_Graph = namedtuple("Defect_Graph", ["id", "defect_name", "value"])
+        safe_dict = {"Defect_Graph": Defect_Graph}
+        data = eval(data, {}, safe_dict)
+        result = {}
+        # ---- 1. Combine defects by defect_name dynamically ----
+        defect_dict = {}
+        for entry in data:
+            for defect in entry["defect"]:
+                # Support both dict and object access
+                if isinstance(defect, dict):
+                    name = defect["defect_name"]
+                    val = defect["value"]
+                else:
+                    name = getattr(defect, "defect_name")
+                    val = getattr(defect, "value")
+                if name not in defect_dict:
+                    defect_dict[name] = list(val)
+                else:
+                    # sum elementwise
+                    defect_dict[name] = [a + b for a, b in zip(defect_dict[name], val)]
+        # convert back to list of dicts
+        result["defect"] = [
+            {"defect_name": name, "value": values}
+            for name, values in defect_dict.items()
+        ]
+        # ---- 2. Combine other numeric lists dynamically ----
+        # skip_keys = {"ucl1", "ucl2"}
+        for key in data[0]:
+            if key in ("defect", "p_bar"):  # skip 'defect' and 'p_bar' separately
+                result[key] = data[0][key] if key != "defect" else result["defect"]
+                continue
+            if key in skip_keys:
+                result[key] = data[0][key]
+                continue
+            # Only combine lists of numbers
+            if isinstance(data[0][key], list) and all(
+                isinstance(x, (int, float)) for x in data[0][key]
+            ):
+                # sum across all dicts for each position
+                combined = [0] * len(data[0][key])
+                for entry in data:
+                    for i, val in enumerate(entry.get(key, [0] * len(combined))):
+                        combined[i] += val
+                result[key] = combined
+            else:
+                # Keep the first value (or implement special logic if needed)
+                result[key] = data[0][key]
+        return str(result).replace("'", '"')
+
+    def combine_json_list_defect_table(self, data, skip_keys={}):
+        # Defect_table = namedtuple(
+        #     "Defect_table",
+        #     ["id", "defect_type", "defect_item", "category", "value"],
+        #     defaults=(None,),
+        # )
+        class Defect_table(NamedTuple):
+            id: int
+            defect_type: str
+            defect_item: str
+            value: int
+            category: Optional[List[str]] = None
+
+        safe_dict = {"Defect_table": Defect_table}
+        data = eval(data, {}, safe_dict)
+
+        result = {}
+
+        # Combine defect_table by defect_item
+        sum_defect_tables = defaultdict(lambda: None)
+        id_type_map = {}
+
+        for entry in data:
+            for d in entry["defect_table"]:
+                name = d.defect_item
+                values = d.value
+                if sum_defect_tables[name] is None:
+                    sum_defect_tables[name] = list(values)
+                    id_type_map[name] = (d.id, d.defect_type)
+                else:
+                    sum_defect_tables[name] = [
+                        a + b for a, b in zip(sum_defect_tables[name], values)
+                    ]
+
+        # Assemble the combined defect_table (as dicts; you can return as Defect_table if desired)
+        result["defect_table"] = [
+            {
+                "defect_item": name,
+                "defect_type": id_type_map[name][1],
+                "id": id_type_map[name][0],
+                "value": vals,
+            }
+            for name, vals in sum_defect_tables.items()
+        ]
+
+        # Combine all numerical lists by key (skip defect_table, keep day/index as per the first)
+        for key in data[0]:
+            if key == "defect_table":
+                continue
+            val0 = data[0][key]
+            # Combine if numeric lists
+            if isinstance(val0, list) and all(
+                isinstance(x, (int, float)) for x in val0
+            ):
+                summed = [0] * len(val0)
+                for entry in data:
+                    for i, v in enumerate(entry.get(key, [0] * len(val0))):
+                        summed[i] += v
+                result[key] = summed
+            else:
+                result[key] = val0  # For "day", "index", etc. (string lists)
+        for idx in range(len(result["defect_ratio"])):
+            if result["prod_qty"][idx] != 0:
+                result["defect_ratio"][idx] = round(
+                    (result["defect_qty"][idx] / result["prod_qty"][idx] * 100), 2
+                )
+            else:
+                result["defect_ratio"][idx] = 0
+        return str(result).replace("'", '"')
+
+    async def fetch_pchart_defect_records_service(
+        self, filters: Dict, db: AsyncSession = None
+    ):
+        """
+        Service function to fetch records from `pchart_defect_record` table and generate an Excel report, then convert it to a PDF.
+
+        Args:
+            filters (Dict): Dictionary containing filter conditions.
+
+        Returns:
+            str: Path to the generated PDF file.
+        """
+        now = datetime.now()
+
+        # Format as mm-yyyy
+        month_year = now.strftime("%m-%Y")
+
+        # Get the Unix timestamp
+        unix_time = int(now.timestamp())
+        current_directory = os.getcwd()
+        base_excel_path = (
+            current_directory + "/app/utils/export_p_chart/Form.xlsx"
+        )  # Base Excel file
+        output_excel_path1 = (
+            current_directory + "/app/utils/export_p_chart/p_chart_output1.xlsx"
+        )  # Output file
+        output_excel_path2 = (
+            current_directory + "/app/utils/export_p_chart/p_chart_output2.xlsx"
+        )  # Output file
+        graph_image_path = (
+            current_directory + "/app/utils/export_p_chart/temp_graph.png"
+        )  # Path to the graph image
+        output_pdf_path = (
+            current_directory
+            + f'/app/utils/export_p_chart/P-Chart-{filters [ "process" ]}-{filters [ "part_no" ]}-{month_year}-{unix_time}.pdf'
+        )  # Final PDF file
+        equation_image = current_directory + "/app/utils/export_p_chart/equation.png"
+        equation_image2 = current_directory + "/app/utils/export_p_chart/equation2.png"
+
+        records = await self.crud.fetch_filtered_records(db=db, filters=filters)
+        for r in records:
+            key_index = r._key_to_index
+            part_name = r[key_index["part_name"]]
+            n_bar = r[key_index["n_bar"]]
+            p_bar = r[key_index["p_bar"]]
+            k = r[key_index["k"]]
+            uclp = r[key_index["uclp"]]
+            lclp = r[key_index["lclp"]]
+            p_bar_last = r[key_index["p_bar_last"]]
+
+        pchart_graph = None
+        #!
+        graph_records = await self.crud.fetch_filtered_graph_records(
+            db=db, filters=filters
+        )
+        # for r in graph_records:
+        #     key_index = r._key_to_index
+        #     pchart_graph = r[key_index["pchart_graph"]]
+        result_graph = []
+        for r in graph_records:
+            key_index = r._key_to_index
+            result_graph.append(r[key_index["pchart_graph"]])
+        result_graph = "[" + ", ".join(str(item) for item in result_graph) + "]"
+        # print("result_graph:", result_graph)
+        pchart_graph = self.combine_json_list_defect_graph(
+            result_graph,
+            {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
+        )
+        # print("pchart_graph:", pchart_graph)
+        target = await self.crud.fetch_filtered_master_target_line(
+            db=db, filters=filters
+        )
+        for r in target:
+            key_index = r._key_to_index
+            target_control = r[key_index["target_control"]]
+
+        #!
+        table = await self.crud.fetch_filtered_table(db=db, filters=filters)
+        # for r in table:
+        #     key_index = r._key_to_index
+        #     table_pchart_table = r[key_index["pchart_table"]]
+        result_table = []
+        for r in table:
+            key_index = r._key_to_index
+            result_table.append(r[key_index["pchart_table"]])
+        result_table = "[" + ", ".join(str(item) for item in result_table) + "]"
+        # print("result_table:", result_table)
+        table_pchart_table = self.combine_json_list_defect_table(result_table)
+        # print("table_pchart_table:", table_pchart_table)
+        table_pchart_table = self.utils.extract_pchart_table(table_pchart_table)
+        # print("-------------------------",table )
+        data_table = table_pchart_table
+
+        date = []
+        trouble = []
+        action = []
+        in_change = []
+        manager = []
+
+        len_abnormal = 0
+
+        abnormal = await self.crud.fetch_filtered_abnormal(db=db, filters=filters)
+        for r in abnormal:
+            key_index = r._key_to_index
+
+            len_abnormal += 1
+            date.append(r[key_index["date"]])
+            trouble.append(r[key_index["trouble"]])
+            action.append(r[key_index["action"]])
+            in_change.append(r[key_index["in_change"]])
+            manager.append(r[key_index["manager"]])
+
+        # print(abnormal)
+        # Load base Excel
+        wb = openpyxl.load_workbook(base_excel_path)
+        if "Page1" in wb.sheetnames:
+            ws = wb["Page1"]
+            ws2 = wb["Page2"]
+        else:
+            raise ValueError("Sheet 'Page1' not found in the Excel file.")
+
+        # Process filters
+        process_inline, process_outline, process_inspection = None, None, None
+        if filters.get("process"):
+            if filters["process"] == "Inline":
+                process_inline = "✓"
+            elif filters["process"] == "Outline":
+                process_outline = "✓"
+            elif filters["process"] == "Inspection":
+                process_inspection = "✓"
+
+        shift_a, shift_b = None, None
+        if filters.get("shift"):
+            if filters["shift"] == "A":
+                shift_a = "✓"
+            elif filters["shift"] == "B":
+                shift_b = "✓"
+            elif filters["shift"] == "All":
+                shift_a, shift_b = "✓", "✓"
+
+        # Define the data to insert into specific Excel cells
+        data_to_write = {
+            "AL3": filters.get("month", ""),
+            "R3": filters.get("line_name", ""),
+            "R4": part_name,
+            "R5": (
+                filters.get("part_no", "")
+                + (
+                    f' [{filters.get("sub_line_label", "")}]'
+                    if filters.get("sub_line_label", "")
+                    else ""
+                )
+            ),
+            "AC3": process_inline,
+            "AC4": process_outline,
+            "AF3": process_inspection,
+            "AC5": shift_a,
+            "AF5": shift_b,
+            "AZ9": f"{n_bar:.2f}",
+            "AZ12": f"{p_bar:.2f}",
+            "AZ18": f"{k:.2f}",
+            "AZ22": f"{uclp:.2f}",
+            "AZ24": f"{lclp:.2f}",
+            "AY27": target_control,
+            "AY29": f"{p_bar_last:.5f}",
+        }
+
+        start_col = 14
+
+        for i, day in enumerate(data_table["day"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}31"
+            data_to_write[cell_address] = day
+
+        for i, day in enumerate(data_table["day"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}32"
+            data_to_write[cell_address] = i + 1
+
+        for i, value in enumerate(data_table["prod_qty"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}33"
+            if i == len(data_table["prod_qty"]) - 1:
+                cell_address = f"AS33"
+            data_to_write[cell_address] = str(value)
+            # addition
+            if i == len(data_table["prod_qty"]) - 1:
+                cell_address = f"AV33"
+                data_to_write[cell_address] = str(value)
+
+        for i, value in enumerate(data_table["defect_qty"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}34"
+            if i == len(data_table["defect_qty"]) - 1:
+                cell_address = f"AS34"
+            data_to_write[cell_address] = str(value)
+            # addition
+            if i == len(data_table["defect_qty"]) - 1:
+                cell_address = f"AV34"
+                data_to_write[cell_address] = str(value)
+
+        # *******
+        for i, value in enumerate(data_table["record_by"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}82"
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AS34"
+            # print("value:", value)
+            # print("type value:", type(value))
+            data_to_write[cell_address] = str(value)
+            # data_to_write[cell_address] = str(value[f'shift{filters [ "shift" ].lower()}'])
+            # addition
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AV34"
+            # data_to_write[cell_address] = str(value)
+        for i, value in enumerate(data_table["review_by_tl"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}83"
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AS34"
+            # print("value:", value)
+            # print("type value:", type(value))
+            if type(value) is dict:
+                data_to_write[cell_address] = str(
+                    value[f'shift_{filters [ "shift" ].lower()}']
+                )
+            else:
+                data_to_write[cell_address] = str(value)
+            # addition
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AV34"
+            #     data_to_write[cell_address] = str(value)
+        for i, value in enumerate(data_table["review_by_mgr"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}84"
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AS34"
+            # data_to_write[cell_address] = str(value)
+            if type(value) is dict:
+                data_to_write[cell_address] = str(
+                    value[f'shift_{filters [ "shift" ].lower()}']
+                )
+            else:
+                data_to_write[cell_address] = str(value)
+            # addition
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AV34"
+            #     data_to_write[cell_address] = str(value)
+        for i, value in enumerate(data_table["review_by_gm"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}85"
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AS34"
+            # data_to_write[cell_address] = str(value)
+            if type(value) is dict:
+                data_to_write[cell_address] = str(
+                    value[f'shift_{filters [ "shift" ].lower()}']
+                )
+            else:
+                data_to_write[cell_address] = str(value)
+            # addition
+            # if i == len(data_table["defect_qty"]) - 1:
+            #     cell_address = f"AV34"
+            #     data_to_write[cell_address] = str(value)
+        # *****
+
+        for i, value in enumerate(data_table["defect_ratio"]):
+            col_letter = self.utils.number_to_column_lower(start_col + i)
+            cell_address = f"{col_letter}35"
+            if i == len(data_table["defect_ratio"]) - 1:
+                cell_address = f"AS35"
+            data_to_write[cell_address] = str(value)
+        # #!
+        # sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
+        # sorted_defect_table = sorted_defect_table[:37]
+        # counts = defaultdict(int)
+        # # print("sorted_defect_table:", sorted_defect_table)
+        # for row in sorted_defect_table:
+        #     defect_type = row["defect_type"]
+        #     counts[defect_type] += 1
+
+        # # Convert defaultdict back to a regular dict (optional)
+        # counts = dict(counts)
+        # # print("counts:", counts)
+        # row_del = 0
+        # for i, value in enumerate(sorted_defect_table):
+        #     initial_row = 36
+        #     row = initial_row + i
+        #     row_del = row + 1
+
+        #     for j, value2 in enumerate(value["value"]):
+        #         col_letter = self.utils.number_to_column_lower(start_col + j)
+        #         if j == len(value["value"]) - 1:
+        #             cell_address = f"AS{row}"
+        #         else:
+        #             cell_address = f"{col_letter}{row}"
+        #         data_to_write[cell_address] = str(value2)
+
+        #     if value["defect_item"] == "":
+        #         value["defect_item"] = str(value["defect_type"])
+
+        #     if value["defect_type"] not in ["M/C Set up", "Quality Test"]:
+        #         cell_address = f"D{row}"
+        #         data_to_write[cell_address] = str(value["id"])
+
+        #     cell_address = f"F{row}"
+        #     data_to_write[cell_address] = str(value["defect_item"])
+
+        # # for header
+        # initial_row = 35
+        # merge_cell_list = []
+        # # count_item=1
+        # for key, value in counts.items():
+        #     # selected_row = initial_row + max(int ( value/ 2 ),1)
+        #     start = initial_row + 1
+        #     initial_row = initial_row + value
+        #     end = initial_row
+
+        #     if key not in ["M/C Set up", "Quality Test"]:
+        #         selected_row = start
+        #         cell_address = f"C{selected_row}"
+        #         data_to_write[cell_address] = str(key)
+        #         if start < end:
+        #             merge_cell_list.append(f"C{start}:C{end}")
+        #             ws.merge_cells(f"C{start}:C{end}")
+
+        # # Handle merged cells correctly
+        # # print("data_to_write:", data_to_write)
+        # for idx, (cell, value) in enumerate(data_to_write.items(), start=1):
+        #     # print(f"idx:{idx} cell:{cell} value:{value}")
+        #     # if idx <= 37:
+        #     try:
+        #         col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+        #             cell
+        #         )  # Correctly unpack column and row
+        #         col = openpyxl.utils.column_index_from_string(
+        #             col_letter
+        #         )  # Convert column letter to index
+        #         ws.cell(row=row, column=col, value=value)
+        #     except:
+        #         pass
+        # #!
+        data_to_write_2 = {}
+
+        MAX_ROW = 26
+        LEFT_COL_OFFSET = 0  # columns B-G
+        RIGHT_COL_OFFSET = 7  # columns I-N
+
+        row = 5
+        col_offset = LEFT_COL_OFFSET
+
+        for i in range(len_abnormal):
+
+            # ── wrap wide fields
+            trouble_lines = textwrap.wrap(trouble[i], width=45)
+            action_lines = textwrap.wrap(action[i], width=45)
+            max_lines = max(len(trouble_lines), len(action_lines))
+
+            # ── wrap narrow fields
+            in_change_lines = textwrap.wrap(in_change[i], width=15)
+            manager_lines = textwrap.wrap(manager[i], width=15)
+
+            base_idx = 0
+            remaining = max_lines
+
+            while remaining:
+                free_lines = MAX_ROW - row + 1
+                lines_now = min(remaining, free_lines)
+
+                if base_idx == 0:
+                    # write index and date only once (first line of record)
+                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = i + 1
+                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = date[i]
+
+                    # write in_change and manager, only on first slice
+                    for k in range(lines_now):
+                        idx = base_idx + k
+                        in_change_text = (
+                            in_change_lines[idx] if idx < len(in_change_lines) else ""
+                        )
+                        manager_text = (
+                            manager_lines[idx] if idx < len(manager_lines) else ""
+                        )
+
+                        data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
+                            in_change_text
+                        )
+                        data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
+                            manager_text
+                        )
+                else:
+                    # clear index/date in overflow rows
+                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+
+                    # clear in_change and manager in overflow rows
+                    for k in range(lines_now):
+                        data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = ""
+                        data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = ""
+
+                # write trouble and action
+                for k in range(lines_now):
+                    idx = base_idx + k
+                    trouble_text = (
+                        trouble_lines[idx] if idx < len(trouble_lines) else ""
+                    )
+                    action_text = action_lines[idx] if idx < len(action_lines) else ""
+
+                    data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
+                        trouble_text
+                    )
+                    data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = action_text
+
+                # advance
+                row += lines_now
+                base_idx += lines_now
+                remaining -= lines_now
+
+                # overflow → switch to right block
+                if remaining:
+                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                    col_offset = RIGHT_COL_OFFSET
+                    row = 5
+
+        for cell, value in data_to_write_2.items():
+            col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+                cell
+            )  # Correctly unpack column and row
+            col = openpyxl.utils.column_index_from_string(
+                col_letter
+            )  # Convert column letter to index
+            ws2.cell(row=row, column=col, value=value)
+
+        # for idx, value in enumerate ( merge_cell_list ):
+        #    ws.merge_cells ( value )
+        # Process and insert the graph image
+        # if "pchart_graph" in graph_records:.
+
+        # Save the modified Excel file
+
+        #!
+        sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
+        # if filters['is_not_zero']:
+        if filters["is_not_zero"]:
+            # Step 1: Filter
+            sorted_defect_table = [
+                item for item in sorted_defect_table if sum(item["value"]) != 0
+            ]
+
+            # Step 2: Re-id
+            re_ided = []
+            for idx, item in enumerate(sorted_defect_table, start=1):
+                new_item = item.copy()
+                new_item["id"] = idx
+                re_ided.append(new_item)
+            sorted_defect_table = re_ided
+
+        # print("sorted_defect_table:", sorted_defect_table)
+        # print("sorted_defect_table.length", len(sorted_defect_table))
+        defect_amount = len(sorted_defect_table)
+        # print("page :", math.ceil(defect_amount / 37))
+        page_amount = math.ceil(defect_amount / 37)
+        ws2.title = f"Page{page_amount+2}"
+        ws.title = f"Page{page_amount+3}"
+
+        for idx_page in range(1, page_amount + 1):
+            # print(f"Page{idx_page}")
+            new_ws = wb.copy_worksheet(ws)
+            new_ws.title = f"Page{idx_page}"
+            start_idx = (idx_page - 1) * 37
+            end_idx = (idx_page) * 37
+            if end_idx >= defect_amount:
+                end_idx = defect_amount
+
+            # print(f"data --> {start_idx}:{end_idx}")
+            chunk_sorted_defect_table = sorted_defect_table[start_idx:end_idx]
+
+            # sorted_defect_table = sorted_defect_table[:37]
+            ##!!
+
+            counts = defaultdict(int)
+            # print("sorted_defect_table:", sorted_defect_table)
+            for row in chunk_sorted_defect_table:
+                defect_type = row["defect_type"]
+                counts[defect_type] += 1
+
+            # Convert defaultdict back to a regular dict (optional)
+            counts = dict(counts)
+            # print("counts:", counts)
+            row_del = 0
+            for i, value in enumerate(chunk_sorted_defect_table):
+                initial_row = 36
+                row = initial_row + i
+                row_del = row + 1
+
+                for j, value2 in enumerate(value["value"]):
+                    col_letter = self.utils.number_to_column_lower(start_col + j)
+                    if j == len(value["value"]) - 1:
+                        cell_address = f"AS{row}"
+                    else:
+                        cell_address = f"{col_letter}{row}"
+                    data_to_write[cell_address] = str(value2)
+
+                if value["defect_item"] == "":
+                    value["defect_item"] = str(value["defect_type"])
+
+                if value["defect_type"] not in ["M/C Set up", "Quality Test"]:
+                    cell_address = f"D{row}"
+                    data_to_write[cell_address] = str(value["id"])
+
+                cell_address = f"F{row}"
+                data_to_write[cell_address] = str(value["defect_item"])
+
+            # for header
+            initial_row = 35
+            merge_cell_list = []
+            # count_item=1
+            for key, value in counts.items():
+                # selected_row = initial_row + max(int ( value/ 2 ),1)
+                start = initial_row + 1
+                initial_row = initial_row + value
+                end = initial_row
+
+                if key not in ["M/C Set up", "Quality Test"]:
+                    selected_row = start
+                    cell_address = f"C{selected_row}"
+                    data_to_write[cell_address] = str(key)
+                    if start < end:
+                        merge_cell_list.append(f"C{start}:C{end}")
+                        wb[f"Page{idx_page}"].merge_cells(f"C{start}:C{end}")
+                        # ws.merge_cells(f"C{start}:C{end}")
+
+            # Handle merged cells correctly
+            # print("data_to_write:", data_to_write)
+            for idx, (cell, value) in enumerate(data_to_write.items(), start=1):
+                # print(f"idx:{idx} cell:{cell} value:{value}")
+                # if idx <= 37:
+                try:
+                    col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+                        cell
+                    )  # Correctly unpack column and row
+                    col = openpyxl.utils.column_index_from_string(
+                        col_letter
+                    )  # Convert column letter to index
+                    wb[f"Page{idx_page}"].cell(row=row, column=col, value=value)
+                    # ws.cell(row=row, column=col, value=value)
+                except:
+                    pass
+            # wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
+            if pchart_graph != None:
+                pchart_graph = self.utils.extract_pchart_graph(pchart_graph)
+
+                if filters["is_not_zero"]:
+                    # Filter out items with sum(value) == 0
+                    filtered_list = [
+                        item
+                        for item in pchart_graph["defect_list"]
+                        if sum(item["value"]) != 0
+                    ]
+
+                    # Resequence ids starting from 1
+                    for idx, item in enumerate(filtered_list, start=1):
+                        item["id"] = idx
+
+                    # Update the original data
+                    pchart_graph["defect_list"] = filtered_list
+
+                print("pchart_graph:", pchart_graph)
+            self.utils.create_graph_as_image(graph_image_path, pchart_graph)
+
+            # Insert the graph image into a fixed position
+            img = OpenPyxlImage(graph_image_path)
+            img.anchor = "C8"
+            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+            # ws.add_image(img)  # Adjust position as needed
+
+            img = OpenPyxlImage(equation_image)
+            img.anchor = "AT9"
+            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+            # ws.add_image(img)  # Adjust position as needed
+
+            img = OpenPyxlImage(equation_image2)
+            img.anchor = "AT33"
+            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+            # ws.add_image(img)  # Adjust position as needed
+
+            wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
+            # ws.delete_rows(idx=row_del, amount=82 - row_del)
+        new_ws2 = wb.copy_worksheet(ws2)
+        new_ws2.title = f"Page{page_amount+1}"
+        wb.remove(wb[f"Page{page_amount+2}"])
+        wb.remove(wb[f"Page{page_amount+3}"])
+        #!
+        wb.save(output_excel_path2)
+        self.utils.convert_excel_to_pdf(output_excel_path2, output_pdf_path)
+        # print("PDF report generated successfully.")
+        if filters["file_type"] == "pdf":
+            return output_pdf_path
+        elif filters["file_type"] == "excel":
+            return output_excel_path2

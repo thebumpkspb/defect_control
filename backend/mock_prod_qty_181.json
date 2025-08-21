@@ -1,0 +1,1273 @@
+[
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-11-01 00:00:00",
+        "plan_val": 2325,
+        "actual_val": 1482
+      },
+      {
+        "production_date": "2024-11-02 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-03 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-04 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1498
+      },
+      {
+        "production_date": "2024-11-05 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1451
+      },
+      {
+        "production_date": "2024-11-06 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1471
+      },
+      {
+        "production_date": "2024-11-07 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1461
+      },
+      {
+        "production_date": "2024-11-08 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1276
+      },
+      {
+        "production_date": "2024-11-09 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-10 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-11 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1841
+      },
+      {
+        "production_date": "2024-11-12 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 2017
+      },
+      {
+        "production_date": "2024-11-13 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1404
+      },
+      {
+        "production_date": "2024-11-14 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1904
+      },
+      {
+        "production_date": "2024-11-15 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1321
+      },
+      {
+        "production_date": "2024-11-16 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-17 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-18 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1810
+      },
+      {
+        "production_date": "2024-11-19 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1492
+      },
+      {
+        "production_date": "2024-11-20 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1428
+      },
+      {
+        "production_date": "2024-11-21 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 2063
+      },
+      {
+        "production_date": "2024-11-22 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1551
+      },
+      {
+        "production_date": "2024-11-23 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-24 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-25 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 2041
+      },
+      {
+        "production_date": "2024-11-26 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1944
+      },
+      {
+        "production_date": "2024-11-27 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1526
+      },
+      {
+        "production_date": "2024-11-28 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 2063
+      },
+      {
+        "production_date": "2024-11-29 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1533
+      },
+      {
+        "production_date": "2024-11-30 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-11-01 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1589
+      },
+      {
+        "production_date": "2024-11-02 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-03 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-04 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1561
+      },
+      {
+        "production_date": "2024-11-05 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1461
+      },
+      {
+        "production_date": "2024-11-06 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1350
+      },
+      {
+        "production_date": "2024-11-07 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1501
+      },
+      {
+        "production_date": "2024-11-08 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1500
+      },
+      {
+        "production_date": "2024-11-09 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-10 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-11 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2020
+      },
+      {
+        "production_date": "2024-11-12 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1590
+      },
+      {
+        "production_date": "2024-11-13 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1552
+      },
+      {
+        "production_date": "2024-11-14 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1910
+      },
+      {
+        "production_date": "2024-11-15 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1590
+      },
+      {
+        "production_date": "2024-11-16 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-17 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1
+      },
+      {
+        "production_date": "2024-11-18 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2081
+      },
+      {
+        "production_date": "2024-11-19 00:00:00",
+        "plan_val": 2334,
+        "actual_val": 1681
+      },
+      {
+        "production_date": "2024-11-20 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1420
+      },
+      {
+        "production_date": "2024-11-21 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2003
+      },
+      {
+        "production_date": "2024-11-22 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1511
+      },
+      {
+        "production_date": "2024-11-23 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-24 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-25 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2001
+      },
+      {
+        "production_date": "2024-11-26 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1900
+      },
+      {
+        "production_date": "2024-11-27 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1601
+      },
+      {
+        "production_date": "2024-11-28 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2020
+      },
+      {
+        "production_date": "2024-11-29 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1510
+      },
+      {
+        "production_date": "2024-11-30 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 0
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-11-01 00:00:00",
+        "plan_val": 4665,
+        "actual_val": 3071
+      },
+      {
+        "production_date": "2024-11-02 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-03 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-04 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3059
+      },
+      {
+        "production_date": "2024-11-05 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2912
+      },
+      {
+        "production_date": "2024-11-06 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2821
+      },
+      {
+        "production_date": "2024-11-07 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2962
+      },
+      {
+        "production_date": "2024-11-08 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2776
+      },
+      {
+        "production_date": "2024-11-09 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-10 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-11 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3861
+      },
+      {
+        "production_date": "2024-11-12 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3607
+      },
+      {
+        "production_date": "2024-11-13 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2956
+      },
+      {
+        "production_date": "2024-11-14 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3814
+      },
+      {
+        "production_date": "2024-11-15 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2911
+      },
+      {
+        "production_date": "2024-11-16 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-17 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 1
+      },
+      {
+        "production_date": "2024-11-18 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3891
+      },
+      {
+        "production_date": "2024-11-19 00:00:00",
+        "plan_val": 4673,
+        "actual_val": 3173
+      },
+      {
+        "production_date": "2024-11-20 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2848
+      },
+      {
+        "production_date": "2024-11-21 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 4066
+      },
+      {
+        "production_date": "2024-11-22 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3062
+      },
+      {
+        "production_date": "2024-11-23 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-11-24 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-11-25 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 4042
+      },
+      {
+        "production_date": "2024-11-26 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3844
+      },
+      {
+        "production_date": "2024-11-27 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3127
+      },
+      {
+        "production_date": "2024-11-28 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 4083
+      },
+      {
+        "production_date": "2024-11-29 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3043
+      },
+      {
+        "production_date": "2024-11-30 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 0
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-12-01 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-02 00:00:00",
+        "plan_val": 2013,
+        "actual_val": 1759
+      },
+      {
+        "production_date": "2024-12-03 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1918
+      },
+      {
+        "production_date": "2024-12-04 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1880
+      },
+      {
+        "production_date": "2024-12-05 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-06 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1803
+      },
+      {
+        "production_date": "2024-12-07 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1403
+      },
+      {
+        "production_date": "2024-12-08 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-09 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1706
+      },
+      {
+        "production_date": "2024-12-10 00:00:00",
+        "plan_val": 1984,
+        "actual_val": 1864
+      },
+      {
+        "production_date": "2024-12-11 00:00:00",
+        "plan_val": 1973,
+        "actual_val": 1710
+      },
+      {
+        "production_date": "2024-12-12 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1815
+      },
+      {
+        "production_date": "2024-12-13 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1842
+      },
+      {
+        "production_date": "2024-12-14 00:00:00",
+        "plan_val": 1417,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-16 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1699
+      },
+      {
+        "production_date": "2024-12-17 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1522
+      },
+      {
+        "production_date": "2024-12-18 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1902
+      },
+      {
+        "production_date": "2024-12-19 00:00:00",
+        "plan_val": 2178,
+        "actual_val": 1932
+      },
+      {
+        "production_date": "2024-12-20 00:00:00",
+        "plan_val": 2091,
+        "actual_val": 1901
+      },
+      {
+        "production_date": "2024-12-21 00:00:00",
+        "plan_val": 2004,
+        "actual_val": 1312
+      },
+      {
+        "production_date": "2024-12-22 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-23 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1056
+      },
+      {
+        "production_date": "2024-12-24 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1844
+      },
+      {
+        "production_date": "2024-12-25 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1867
+      },
+      {
+        "production_date": "2024-12-26 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1824
+      },
+      {
+        "production_date": "2024-12-27 00:00:00",
+        "plan_val": 1960,
+        "actual_val": 1384
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-12-01 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-12-02 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1853
+      },
+      {
+        "production_date": "2024-12-03 00:00:00",
+        "plan_val": 1953,
+        "actual_val": 1855
+      },
+      {
+        "production_date": "2024-12-04 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1826
+      },
+      {
+        "production_date": "2024-12-05 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-06 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1842
+      },
+      {
+        "production_date": "2024-12-07 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 979
+      },
+      {
+        "production_date": "2024-12-08 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-09 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1840
+      },
+      {
+        "production_date": "2024-12-10 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1951
+      },
+      {
+        "production_date": "2024-12-11 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1872
+      },
+      {
+        "production_date": "2024-12-12 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1880
+      },
+      {
+        "production_date": "2024-12-13 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1820
+      },
+      {
+        "production_date": "2024-12-15 00:00:00",
+        "plan_val": 2253,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-12-16 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1351
+      },
+      {
+        "production_date": "2024-12-17 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1806
+      },
+      {
+        "production_date": "2024-12-18 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1875
+      },
+      {
+        "production_date": "2024-12-19 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1852
+      },
+      {
+        "production_date": "2024-12-20 00:00:00",
+        "plan_val": 2072,
+        "actual_val": 1752
+      },
+      {
+        "production_date": "2024-12-21 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1405
+      },
+      {
+        "production_date": "2024-12-22 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-23 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1921
+      },
+      {
+        "production_date": "2024-12-24 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1932
+      },
+      {
+        "production_date": "2024-12-25 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1320
+      },
+      {
+        "production_date": "2024-12-26 00:00:00",
+        "plan_val": 1959,
+        "actual_val": 1942
+      },
+      {
+        "production_date": "2024-12-27 00:00:00",
+        "plan_val": 1356,
+        "actual_val": 1320
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2024-12-01 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-12-02 00:00:00",
+        "plan_val": 3972,
+        "actual_val": 3612
+      },
+      {
+        "production_date": "2024-12-03 00:00:00",
+        "plan_val": 3913,
+        "actual_val": 3773
+      },
+      {
+        "production_date": "2024-12-04 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3706
+      },
+      {
+        "production_date": "2024-12-05 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-06 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3645
+      },
+      {
+        "production_date": "2024-12-07 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 2382
+      },
+      {
+        "production_date": "2024-12-08 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-09 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3546
+      },
+      {
+        "production_date": "2024-12-10 00:00:00",
+        "plan_val": 3943,
+        "actual_val": 3815
+      },
+      {
+        "production_date": "2024-12-11 00:00:00",
+        "plan_val": 3932,
+        "actual_val": 3582
+      },
+      {
+        "production_date": "2024-12-12 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3695
+      },
+      {
+        "production_date": "2024-12-13 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3662
+      },
+      {
+        "production_date": "2024-12-14 00:00:00",
+        "plan_val": 1417,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-15 00:00:00",
+        "plan_val": 2253,
+        "actual_val": 2
+      },
+      {
+        "production_date": "2024-12-16 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3050
+      },
+      {
+        "production_date": "2024-12-17 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3328
+      },
+      {
+        "production_date": "2024-12-18 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3777
+      },
+      {
+        "production_date": "2024-12-19 00:00:00",
+        "plan_val": 4137,
+        "actual_val": 3784
+      },
+      {
+        "production_date": "2024-12-20 00:00:00",
+        "plan_val": 4163,
+        "actual_val": 3653
+      },
+      {
+        "production_date": "2024-12-21 00:00:00",
+        "plan_val": 3963,
+        "actual_val": 2717
+      },
+      {
+        "production_date": "2024-12-22 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2024-12-23 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 2977
+      },
+      {
+        "production_date": "2024-12-24 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3776
+      },
+      {
+        "production_date": "2024-12-25 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3187
+      },
+      {
+        "production_date": "2024-12-26 00:00:00",
+        "plan_val": 3919,
+        "actual_val": 3766
+      },
+      {
+        "production_date": "2024-12-27 00:00:00",
+        "plan_val": 3316,
+        "actual_val": 2704
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2025-01-06 00:00:00",
+        "plan_val": 2329,
+        "actual_val": 1139
+      },
+      {
+        "production_date": "2025-01-07 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1453
+      },
+      {
+        "production_date": "2025-01-08 00:00:00",
+        "plan_val": 2339,
+        "actual_val": 1963
+      },
+      {
+        "production_date": "2025-01-09 00:00:00",
+        "plan_val": 2329,
+        "actual_val": 1858
+      },
+      {
+        "production_date": "2025-01-10 00:00:00",
+        "plan_val": 2458,
+        "actual_val": 1906
+      },
+      {
+        "production_date": "2025-01-11 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1480
+      },
+      {
+        "production_date": "2025-01-12 00:00:00",
+        "plan_val": 1439,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-13 00:00:00",
+        "plan_val": 2703,
+        "actual_val": 1789
+      },
+      {
+        "production_date": "2025-01-14 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1542
+      },
+      {
+        "production_date": "2025-01-15 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1741
+      },
+      {
+        "production_date": "2025-01-16 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1979
+      },
+      {
+        "production_date": "2025-01-17 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 2068
+      },
+      {
+        "production_date": "2025-01-18 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1428
+      },
+      {
+        "production_date": "2025-01-19 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-20 00:00:00",
+        "plan_val": 2477,
+        "actual_val": 1987
+      },
+      {
+        "production_date": "2025-01-21 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1744
+      },
+      {
+        "production_date": "2025-01-22 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1877
+      },
+      {
+        "production_date": "2025-01-23 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1603
+      },
+      {
+        "production_date": "2025-01-24 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1249
+      },
+      {
+        "production_date": "2025-01-25 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-26 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-27 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1525
+      },
+      {
+        "production_date": "2025-01-28 00:00:00",
+        "plan_val": 2447,
+        "actual_val": 1808
+      },
+      {
+        "production_date": "2025-01-29 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1586
+      },
+      {
+        "production_date": "2025-01-30 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 1923
+      },
+      {
+        "production_date": "2025-01-31 00:00:00",
+        "plan_val": 257,
+        "actual_val": 210
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2025-01-05 00:00:00",
+        "plan_val": 2253,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-06 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1987
+      },
+      {
+        "production_date": "2025-01-07 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1412
+      },
+      {
+        "production_date": "2025-01-08 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 2030
+      },
+      {
+        "production_date": "2025-01-09 00:00:00",
+        "plan_val": 2340,
+        "actual_val": 1523
+      },
+      {
+        "production_date": "2025-01-10 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 2122
+      },
+      {
+        "production_date": "2025-01-11 00:00:00",
+        "plan_val": 1837,
+        "actual_val": 1370
+      },
+      {
+        "production_date": "2025-01-13 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1722
+      },
+      {
+        "production_date": "2025-01-14 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1539
+      },
+      {
+        "production_date": "2025-01-15 00:00:00",
+        "plan_val": 2484,
+        "actual_val": 2034
+      },
+      {
+        "production_date": "2025-01-16 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1935
+      },
+      {
+        "production_date": "2025-01-17 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1961
+      },
+      {
+        "production_date": "2025-01-18 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1584
+      },
+      {
+        "production_date": "2025-01-19 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-20 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 2135
+      },
+      {
+        "production_date": "2025-01-21 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 2110
+      },
+      {
+        "production_date": "2025-01-22 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1623
+      },
+      {
+        "production_date": "2025-01-23 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1550
+      },
+      {
+        "production_date": "2025-01-24 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1596
+      },
+      {
+        "production_date": "2025-01-25 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-26 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-27 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1918
+      },
+      {
+        "production_date": "2025-01-28 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 1876
+      },
+      {
+        "production_date": "2025-01-29 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 2074
+      },
+      {
+        "production_date": "2025-01-30 00:00:00",
+        "plan_val": 2483,
+        "actual_val": 2047
+      }
+    ]
+  },
+  {
+    "prod_qty": [
+      {
+        "production_date": "2025-01-05 00:00:00",
+        "plan_val": 2253,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-06 00:00:00",
+        "plan_val": 4669,
+        "actual_val": 3126
+      },
+      {
+        "production_date": "2025-01-07 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 2865
+      },
+      {
+        "production_date": "2025-01-08 00:00:00",
+        "plan_val": 4679,
+        "actual_val": 3993
+      },
+      {
+        "production_date": "2025-01-09 00:00:00",
+        "plan_val": 4669,
+        "actual_val": 3381
+      },
+      {
+        "production_date": "2025-01-10 00:00:00",
+        "plan_val": 4941,
+        "actual_val": 4028
+      },
+      {
+        "production_date": "2025-01-11 00:00:00",
+        "plan_val": 4321,
+        "actual_val": 2850
+      },
+      {
+        "production_date": "2025-01-12 00:00:00",
+        "plan_val": 1439,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-13 00:00:00",
+        "plan_val": 5186,
+        "actual_val": 3511
+      },
+      {
+        "production_date": "2025-01-14 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3081
+      },
+      {
+        "production_date": "2025-01-15 00:00:00",
+        "plan_val": 4968,
+        "actual_val": 3775
+      },
+      {
+        "production_date": "2025-01-16 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3914
+      },
+      {
+        "production_date": "2025-01-17 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 4029
+      },
+      {
+        "production_date": "2025-01-18 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3012
+      },
+      {
+        "production_date": "2025-01-19 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-20 00:00:00",
+        "plan_val": 4960,
+        "actual_val": 4122
+      },
+      {
+        "production_date": "2025-01-21 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3854
+      },
+      {
+        "production_date": "2025-01-22 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3500
+      },
+      {
+        "production_date": "2025-01-23 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3153
+      },
+      {
+        "production_date": "2025-01-24 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 2845
+      },
+      {
+        "production_date": "2025-01-25 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-26 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 0
+      },
+      {
+        "production_date": "2025-01-27 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3443
+      },
+      {
+        "production_date": "2025-01-28 00:00:00",
+        "plan_val": 4930,
+        "actual_val": 3684
+      },
+      {
+        "production_date": "2025-01-29 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3660
+      },
+      {
+        "production_date": "2025-01-30 00:00:00",
+        "plan_val": 4967,
+        "actual_val": 3970
+      },
+      {
+        "production_date": "2025-01-31 00:00:00",
+        "plan_val": 257,
+        "actual_val": 210
+      }
+    ]
+  }
+]
