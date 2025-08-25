@@ -507,6 +507,7 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
     // console.log("addNewRecordViewResult:", addNewRecordViewResult);
     // Set the default date only when the modal is opened
     // console.log("DefectData:", defectData);
+    console.log("createForm:", createForm);
     useEffect(() => {
       const runAfterShiftSelected = async (
         shiftABData: PChartRecordTableResult[],
@@ -956,6 +957,13 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
               .map((item: any) => item.defect_mode)
           ),
         ];
+        const sub_line: any = [
+          ...new Set(
+            subLines
+              .filter((item) => item.rxno_part === createForm.sub_line)
+              .map((item: any) => item.rxno_part)
+          ),
+        ];
         setDefectTypeOptions(defect_type);
         // console.log("defect_type:", defect_type);
         // console.log("createForm.defect_type:", createForm.defect_type);
@@ -969,6 +977,12 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
           setCreateForm((prev) => ({
             ...prev,
             defective_items: "",
+          }));
+        }
+        if (!sub_line.includes(createForm.sub_line)) {
+          setCreateForm((prev) => ({
+            ...prev,
+            sub_line: "",
           }));
         }
       }

@@ -679,7 +679,6 @@ const PChart = forwardRef<PChartRef, PChartProps>(
                 ))}
               </div>
             </div> */}
-
           {/* Dynamic legend info */}
           {/* <div className="text-center pt-2 border-t mt-2">
               <span className="text-xs text-gray-500">
@@ -690,7 +689,6 @@ const PChart = forwardRef<PChartRef, PChartProps>(
             </div>
           </div> */}
           {/* Custom scrollbar styling */}
-
           <ReactECharts
             // option={option}
             ref={chartRef}
@@ -703,6 +701,11 @@ const PChart = forwardRef<PChartRef, PChartProps>(
               borderRadius: "0 0 7px 7px",
             }}
           />
+          <div
+            style={{ display: "flex", justifyContent: "center", color: "red" }}
+          >
+            ***Defect Repeat จะไม่ขึ้นกราฟ***
+          </div>
         </div>
 
         <PreviewPopup

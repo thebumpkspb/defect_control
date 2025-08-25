@@ -480,7 +480,49 @@ export default function PChartHeader() {
                 ))}
               </Select>
             </Input.Group>
-
+            {/* Process */}
+            <Input.Group
+              compact
+              style={{
+                display: "flex",
+                alignItems: "center",
+                border: "1px solid #d9d9d9",
+                borderRadius: "5px",
+                overflow: "hidden",
+                // width: "200px",
+                flex: 2,
+              }}
+            >
+              <div
+                style={{
+                  background: "#f5f5f5",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                }}
+              >
+                <Text style={{ color: "gray" }}>Process</Text>
+              </div>
+              <Select
+                placeholder="Select Process"
+                style={{
+                  border: "none",
+                  flex: 1,
+                  height: "32px",
+                  color: "black",
+                }}
+                value={process}
+                onChange={(value) => {
+                  // console.log("Process selected:", value);
+                  setProcess(value);
+                }}
+              >
+                <Select.Option value="Inline">Inline</Select.Option>
+                <Select.Option value="Outline">Outline</Select.Option>
+                <Select.Option value="Inspection">Inspection</Select.Option>
+              </Select>
+            </Input.Group>
             {/* Part No. */}
             <Input.Group
               compact
@@ -713,7 +755,7 @@ export default function PChartHeader() {
             </Input.Group>
 
             {/* Process */}
-            <Input.Group
+            {/* <Input.Group
               compact
               style={{
                 display: "flex",
@@ -754,7 +796,7 @@ export default function PChartHeader() {
                 <Select.Option value="Outline">Outline</Select.Option>
                 <Select.Option value="Inspection">Inspection</Select.Option>
               </Select>
-            </Input.Group>
+            </Input.Group> */}
 
             {/* Target Control */}
             <Input.Group

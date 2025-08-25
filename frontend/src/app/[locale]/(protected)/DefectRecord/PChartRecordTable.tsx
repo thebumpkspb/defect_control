@@ -1809,6 +1809,19 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         dataIndex: "defectType",
         key: "defectType",
         fixed: "left" as FixedType,
+        width: 230,
+        render: (text: string, record: DataType, index: number) => {
+          console.log("record:", record);
+          if (text == "Repeat") {
+            return <div>{text + " (ไม่นับ%Defect)"}</div>;
+          }
+          // else if (text == "Repeat NG") {
+          //   return <div>{text + " (นับ%Defect)"}</div>;
+          // }
+          else {
+            return text;
+          }
+        },
       },
       {
         title: "#",
