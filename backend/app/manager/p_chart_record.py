@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 class P_Chart_Record_Manager:
     def __init__(self):
         self.crud = P_Chart_Record_CRUD()
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     async def post_general_information(self, text_data: str, db: AsyncSession = None):
@@ -322,7 +322,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -1060,7 +1060,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -1658,7 +1658,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -2277,7 +2277,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -2452,7 +2452,7 @@ class P_Chart_Record_Manager:
                 endpoint = (
                     self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
                 )
-                headers = {"X-API-Key": self.API_KEY}
+                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
                 response_json = requests.get(endpoint, headers=headers).json()
 
                 for i in range(0, len(response_json["lines"])):
@@ -2521,7 +2521,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -3145,7 +3145,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from db
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -3265,7 +3265,7 @@ class P_Chart_Record_Manager:
         try:
             ## get line, line_id from db
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -3506,7 +3506,7 @@ class P_Chart_Record_Manager:
             )
         data = text_data.dict()
         sub_line = data["sub_line"]
-        headers = {"X-API-Key": self.API_KEY}
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         data = text_data.dict()
         date_prod_qty = data["date"]
         line = data["line_name"]

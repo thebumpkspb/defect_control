@@ -12,7 +12,7 @@ from app.functions import (
 
 class ApprovalCRUD:
     def __init__(self):
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     def get_line_id(self, linename):
@@ -23,7 +23,7 @@ class ApprovalCRUD:
         try:
             ## get list_line_id, list_line_name from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):

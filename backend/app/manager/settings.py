@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 class SettingsManager:
     def __init__(self):
         self.crud = SettingsCRUD()
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     async def get_calendars(
@@ -407,7 +407,7 @@ class SettingsManager:
             self.BACKEND_URL_SERVICE
             + f"/api/settings/sub_lines?line_code_rx={line_code_rx}&part_no={part_no}"
         )
-        headers = {"X-API-Key": self.API_KEY}
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         sub_lines = requests.get(endpoint, headers=headers).json()["sub_lines"]
 
         # except Exception as e:

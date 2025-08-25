@@ -3,6 +3,8 @@ import calendar
 import inspect
 import os
 import pytz
+import requests
+from dataclasses import is_dataclass, asdict
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
@@ -336,3 +338,42 @@ def get_last_day_from_month_year(month_year_str):
     dt = datetime.strptime(month_year_str, "%B-%Y")
     last_day = calendar.monthrange(dt.year, dt.month)[1]
     return last_day
+
+
+def call_request(
+    method: str,
+    url: str,
+    api_key: str,
+    data: dict = None,
+    accept: str = "application/json",
+    headers: dict = None,
+):
+    if data is not None:
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
+        elif is_dataclass(data):
+            data = asdict(data)
+        elif isinstance(data, list):
+            # Handle list of objects
+            processed_items = []
+            for item in data:
+                if isinstance(item, BaseModel):
+                    processed_items.append(item.model_dump())
+                elif is_dataclass(item):
+                    processed_items.append(asdict(item))
+                elif hasattr(item, "__dict__"):
+                    processed_items.append(item.__dict__)
+                else:
+                    processed_items.append(item)
+            data = processed_items
+
+    headers = {"X-API-KEY": api_key, "Accept": accept} if headers is None else headers
+    if method == "GET":
+        response = requests.get(url=url, headers=headers)
+    elif method == "POST":
+        response = requests.post(url=url, headers=headers, json=data)
+    elif method == "PUT":
+        response = requests.put(url=url, headers=headers, json=data)
+    elif method == "DELETE":
+        response = requests.delete(url=url, headers=headers)
+    return response

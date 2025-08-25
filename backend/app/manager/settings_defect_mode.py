@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class Settings_Defect_Mode_Manager:
     def __init__(self):
         self.crud = Settings_Defect_Mode_CRUD()
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     async def post_table_view(self, text_data: str, db: AsyncSession = None):
@@ -98,7 +98,7 @@ class Settings_Defect_Mode_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -242,7 +242,7 @@ class Settings_Defect_Mode_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -435,7 +435,7 @@ class Settings_Defect_Mode_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -555,7 +555,7 @@ class Settings_Defect_Mode_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):

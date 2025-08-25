@@ -18,7 +18,7 @@ load_dotenv()
 
 class Export_P_Chart_CRUD:
     def __init__(self):
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     def get_line_id(self, linename: str) -> str:
@@ -35,7 +35,7 @@ class Export_P_Chart_CRUD:
             HTTPException: If the API call fails or the line name is not found.
         """
         endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-        headers = {"X-API-Key": self.API_KEY}
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
 
         try:
             response = requests.get(endpoint, headers=headers)

@@ -14,7 +14,7 @@ load_dotenv()
 
 class Inline_Outline_CRUD:
     def __init__(self):
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     def get_line_id(self, linename):
@@ -25,7 +25,7 @@ class Inline_Outline_CRUD:
         try:
             ## get list_line_id, list_line_name from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
 
             response = requests.get(endpoint, headers=headers)
             # print("endpoint:", endpoint)
@@ -62,7 +62,7 @@ class Inline_Outline_CRUD:
         try:
             ## get list_line_id, list_line_name from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -225,7 +225,7 @@ class Inline_Outline_CRUD:
         list_line_id = []
         try:
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -727,7 +727,7 @@ class Inline_Outline_CRUD:
         try:
             ## get list_line_id, list_line_name from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):
@@ -1264,7 +1264,7 @@ class Inline_Outline_CRUD:
 
         try:
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()  #!
 
             for i in range(0, len(response_json["lines"])):

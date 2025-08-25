@@ -46,7 +46,7 @@ logger = get_logger(__name__)
 class Inline_Outline_Manager:
     def __init__(self):
         self.crud = Inline_Outline_CRUD()
-        self.API_KEY = os.environ.get("API_KEY")
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     async def get_default_defect_summary(self):
@@ -97,7 +97,7 @@ class Inline_Outline_Manager:
                 self.BACKEND_URL_SERVICE
                 + "/api/settings/organize_level?org_level=department"
             )
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["data"])):
@@ -121,7 +121,7 @@ class Inline_Outline_Manager:
                 self.BACKEND_URL_SERVICE
                 + "/api/settings/organize_level?org_level=section"
             )
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["data"])):
@@ -302,7 +302,7 @@ class Inline_Outline_Manager:
         )
         # print("endpoint:", endpoint)
         # endpoint = quote(endpoint)
-        headers = {"X-API-Key": self.API_KEY}
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         response_json = requests.get(endpoint, headers=headers).json()
 
         for i in range(0, len(response_json["sections"])):
@@ -329,7 +329,7 @@ class Inline_Outline_Manager:
             )
         # print("endpoint:", endpoint)
 
-        headers = {"X-API-Key": self.API_KEY}
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         # endpoint = quote(endpoint)
         response_json = requests.get(endpoint, headers=headers).json()
 
@@ -748,7 +748,7 @@ class Inline_Outline_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
             for i in range(0, len(response_json["lines"])):
                 list_line.append(response_json["lines"][i]["section_line"])
@@ -816,18 +816,11 @@ class Inline_Outline_Manager:
 
             try:
                 ## get prod_qty from api
-                # endpoint = (
-                #     self.BACKEND_URL_SERVICE
-                #     + "/api/prods/prod_qty?line_id="
-                #     + str(r[key_index["line_id"]])
-                #     + "&shift=All&date="
-                #     + str(r[key_index["date"]])
-                # )
                 endpoint = (
                     self.BACKEND_URL_SERVICE
                     + "/api/prods/prod_qty?line_id="
                     + str(r[key_index["line_id"]])
-                    + f"&shift={text_data.dict()['shift']}&date="
+                    + "&shift=All&date="
                     + str(r[key_index["date"]])
                 )
                 response_json = requests.get(endpoint, headers=headers).json()
@@ -861,7 +854,6 @@ class Inline_Outline_Manager:
                 part_no=part_no,
                 sub_line=sub_line,
                 process=process,
-                shift=text_data.dict()["shift"],
             )
             for r in res_defect:
                 key_index = r._key_to_index
@@ -1042,7 +1034,7 @@ class Inline_Outline_Manager:
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.API_KEY}
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["lines"])):

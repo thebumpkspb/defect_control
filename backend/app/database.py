@@ -52,7 +52,7 @@ common_pg_async_session = sessionmaker(
 
 PG_ASYNC_SQLALCHEMY_DATABASE_URL_EPDDEV = f"postgresql+asyncpg://{PG_USER_EPDDEV}:{PG_PASS_EPDDEV}@{PG_SERVER_EPDDEV}:{PG_PORT_EPDDEV}/{PG_DB_EPDDEV}"
 epddev_pg_async_engine = create_async_engine(
-    PG_ASYNC_SQLALCHEMY_DATABASE_URL_EPDDEV, echo=True, poolclass=NullPool
+    PG_ASYNC_SQLALCHEMY_DATABASE_URL_EPDDEV, echo=False, poolclass=NullPool
 )
 epddev_pg_async_session = sessionmaker(
     epddev_pg_async_engine, expire_on_commit=False, class_=AsyncSession
