@@ -955,6 +955,86 @@ const mapToDeflectTypeQualityTestTableData = (
   }
 };
 
+const mapToDeflectTypeToTableData = (
+  data: PChartRecordTableResult,
+  defectType: string,
+  initKey: string,
+  expanded: boolean
+): DataType | null => {
+  // const defectType = "Quality Test";
+
+  // Filter for items with the specified defectType
+  const filteredItems = data.defect_table.filter(
+    (item) => item.defect_type === defectType
+  );
+
+  if (expanded) {
+    // Map the filtered items to children objects
+    const children: DataType[] = filteredItems.map((item, index) => {
+      const baseObject = {
+        key: `${initKey}_${index + 1}`,
+        defectType: item.defect_type,
+        number: item.id.toString(),
+        mainDefectType: defectType,
+        defectiveItems: item.defect_item,
+        category: item.category,
+        isChild: true,
+      };
+
+      return putNumberToEachDayKey(item.value, baseObject);
+    });
+
+    // If no matching items, return null (not show on table if no data)
+    if (children.length === 0) {
+      return null;
+    }
+
+    // Return the parent object with children
+    return {
+      key: initKey,
+      defectType,
+      number: "",
+      defectiveItems: "",
+      category: [],
+      isChild: false,
+      children,
+    };
+  } else {
+    // case: expend
+
+    if (filteredItems.length === 0) {
+      return null;
+    }
+
+    // Map the filtered items to children objects
+    const children: DataType[] = filteredItems.slice(1).map((item, index) => {
+      const baseObject = {
+        key: `${initKey}_${index + 1}`,
+        defectType: item.defect_type,
+        number: item.id.toString(),
+        mainDefectType: defectType,
+        defectiveItems: item.defect_item,
+        category: item.category,
+        isChild: true,
+      };
+
+      return putNumberToEachDayKey(item.value, baseObject);
+    });
+
+    const firstItem = filteredItems[0];
+
+    const resObj = {
+      key: initKey,
+      defectType,
+      number: firstItem.id.toString(),
+      defectiveItems: firstItem.defect_item,
+      category: firstItem.category,
+      isChild: false,
+      children,
+    };
+    return putNumberToEachDayKey(firstItem.value, resObj);
+  }
+};
 //  'Repeat','Repeat NG','Scrap','Appearance','Dimension','Performance','Other',
 //  'M/C Set up','Quality Test'
 
@@ -964,7 +1044,7 @@ const mapToRecordByLLupTableData = (
   // const numbers: number[] = []; // data.defect_ratio;
   const numbers = data.record_by;
   const baseObject = {
-    key: "13",
+    key: "18",
     defectType: "Record by (LL up)",
     number: "",
     defectiveItems: "(1/D)",
@@ -982,7 +1062,7 @@ const mapToReviewByTlTableData = (
   // const numbers: number[] = []; // data.defect_ratio;
   const numbers = data.review_by_tl;
   const baseObject = {
-    key: "14",
+    key: "19",
     defectType: "Review by (TL)",
     number: "",
     // defectiveItems: "(1/D)",
@@ -1043,7 +1123,7 @@ const mapToReviewByMgrTableData = (
   // const numbers: number[] = []; // data.defect_ratio;
   const numbers = data.review_by_mgr;
   const baseObject = {
-    key: "15",
+    key: "20",
     defectType: "Review by (MGR)",
     number: "",
     // defectiveItems: "(1/D)",
@@ -1103,7 +1183,7 @@ const mapToReviewByGmTableData = (
   // return putNumberToEachDayKey(numbers, baseObject);
   const numbers = data.review_by_gm;
   const baseObject = {
-    key: "16",
+    key: "21",
     defectType: "Review by (GM)",
     number: "",
     // defectiveItems: "(1/D)",
@@ -1327,6 +1407,11 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
               "Other",
               "M/C Set up",
               "Quality Test",
+              "B-2",
+              "Local",
+              "CKD",
+              "Sub Assy Line",
+              "Store / Warehouse",
             ].includes(record.mainDefectType || "") &&
             (isOP_up() || isAdmin())
           ) {
@@ -1345,6 +1430,11 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
               "Other",
               "M/C Set up",
               "Quality Test",
+              "B-2",
+              "Local",
+              "CKD",
+              "Sub Assy Line",
+              "Store / Warehouse",
             ].includes(record.defectType || "") &&
             (isOP_up() || isAdmin())
           ) {
@@ -1632,6 +1722,37 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         data,
         expandDefectType.includes("Quality Test")
       );
+    const deflectTypeB2TableData = mapToDeflectTypeToTableData(
+      data,
+      "B-2",
+      "13",
+      expandDefectType.includes("B-2")
+    );
+    const deflectTypeLocalTableData = mapToDeflectTypeToTableData(
+      data,
+      "Local",
+      "14",
+      expandDefectType.includes("Local")
+    );
+    const deflectTypeCKDTableData = mapToDeflectTypeToTableData(
+      data,
+      "CKD",
+      "15",
+      expandDefectType.includes("CKD")
+    );
+    const deflectTypeSubAssyLineTableData = mapToDeflectTypeToTableData(
+      data,
+      "Sub Assy Line",
+      "16",
+      expandDefectType.includes("Sub Assy Line")
+    );
+    const deflectTypeStoreWarehouseTableData = mapToDeflectTypeToTableData(
+      data,
+      "Store / Warehouse",
+      "17",
+      expandDefectType.includes("Store / Warehouse")
+    );
+
     // const deflectTypeQualityTestTableData =
     // mapToDeflectTypeQualityTestTableData(
     //   data,
@@ -1711,6 +1832,20 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
 
       ...(deflectTypeQualityTestTableData
         ? [deflectTypeQualityTestTableData]
+        : []),
+
+      ...(deflectTypeB2TableData ? [deflectTypeB2TableData] : []),
+
+      ...(deflectTypeLocalTableData ? [deflectTypeLocalTableData] : []),
+
+      ...(deflectTypeCKDTableData ? [deflectTypeCKDTableData] : []),
+
+      ...(deflectTypeSubAssyLineTableData
+        ? [deflectTypeSubAssyLineTableData]
+        : []),
+
+      ...(deflectTypeStoreWarehouseTableData
+        ? [deflectTypeStoreWarehouseTableData]
         : []),
 
       // mapToRecordByLLupTableData(data),
@@ -1811,7 +1946,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         fixed: "left" as FixedType,
         width: 230,
         render: (text: string, record: DataType, index: number) => {
-          console.log("record:", record);
+          // console.log("record:", record);
           if (text == "Repeat") {
             return <div>{text + " (ไม่นับ%Defect)"}</div>;
           }
@@ -2156,6 +2291,11 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
                   "Other",
                   "M/C Set up",
                   "Quality Test",
+                  "B-2",
+                  "Local",
+                  "CKD",
+                  "Sub Assy Line",
+                  "Store / Warehouse",
                 ].includes(record.mainDefectType || "") &&
                 input.shift != "All" &&
                 (isOP_up() || isAdmin())
@@ -2189,6 +2329,11 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
                   "Other",
                   "M/C Set up",
                   "Quality Test",
+                  "B-2",
+                  "Local",
+                  "CKD",
+                  "Sub Assy Line",
+                  "Store / Warehouse",
                 ].includes(record.defectType || "") &&
                 input.shift != "All" &&
                 (isOP_up() || isAdmin())
@@ -2350,7 +2495,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
     tableSourceDataRef.current =
       tableSourceData || pChartRecordTableResultDefault;
   }, [tableSourceData]);
-
+  console.log("filteredData:", filteredData);
   return (
     <div
       style={{

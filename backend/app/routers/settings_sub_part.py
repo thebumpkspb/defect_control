@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
 
 from app.functions import api_key_auth
-from app.manager import Settings_Target_Manager
-from app.schemas.settings_target import (
-    Setting_Table,
+from app.manager import Settings_SubPart_Manager
+from app.schemas.settings_sub_part import (
+    Setting_SubPart_Table,
     Setting_Table_Result,
+    Setting_SubPart_Table_Result_Response,
     Setting_Table_Result_Response,
     Setting_Table_Edit,
     Setting_Table_Edit_Result,
@@ -21,23 +22,26 @@ from app.schemas.settings_target import (
 )
 
 
-def settings_target_routers(db: AsyncGenerator) -> APIRouter:
+def settings_subpart_routers(db: AsyncGenerator) -> APIRouter:
     router = APIRouter()
-    settings_target_manager = Settings_Target_Manager()
+    settings_sub_part_manager = Settings_SubPart_Manager()
 
     @router.post(
         "/table_view",
-        response_model=Setting_Table_Result_Response,
+        response_model=Setting_SubPart_Table_Result_Response,
+        # response_model=Setting_Table_Result_Response,
         dependencies=[Depends(api_key_auth)],
     )
-    async def setting_table(text_data: Setting_Table, db: AsyncSession = Depends(db)):
+    async def setting_table(
+        text_data: Setting_SubPart_Table, db: AsyncSession = Depends(db)
+    ):
         """
         Example
         \nexp1: { "line_name": "", "part_no": "", "part_name": "" }
         \nexp2: { "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY" }
         """
-        return Setting_Table_Result_Response(
-            setting_table_result=await settings_target_manager.post_table_view(
+        return Setting_SubPart_Table_Result_Response(
+            setting_subpart_table_result=await settings_sub_part_manager.post_table_view(
                 text_data=text_data, db=db
             )
         )
@@ -55,7 +59,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "id": 1, "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY", "process": "Inline", "target_type": "Monthly","month_year": "September-2024","target_control": 7.10 }
         """
         return Setting_Table_Edit_Result_Response(
-            setting_table_edit_result=await settings_target_manager.post_table_edit_view(
+            sub_part_table_edit_result=await settings_sub_part_manager.post_table_edit_view(
                 text_data=text_data, db=db
             )
         )
@@ -66,14 +70,14 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_edit_view_line_name_change(
-        text_data: Setting_Table, db: AsyncSession = Depends(db)
+        text_data: Setting_SubPart_Table, db: AsyncSession = Depends(db)
     ):
         """
         Example \n
         { "line_name": "414454 - Starter Assy PA70", "part_no": "", "part_name": "" }
         """
         return Setting_Table_Edit_Result_Response(
-            setting_table_edit_result=await settings_target_manager.post_table_edit_view_line_name_change(
+            sub_part_table_edit_result=await settings_sub_part_manager.post_table_edit_view_line_name_change(
                 text_data=text_data, db=db
             )
         )
@@ -91,7 +95,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "id": 13, "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY", "process": "Inline", "target_type": "Monthly","month_year": "September-2024","target_control": 7.10, "creator": "ANN" }
         """
         return Setting_Table_Edit_Save_Response(
-            setting_table_edit_save=await settings_target_manager.post_table_edit_save(
+            setting_table_edit_save=await settings_sub_part_manager.post_table_edit_save(
                 text_data=text_data, db=db
             )
         )
@@ -109,7 +113,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "id": 1, "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY", "process": "Inline", "target_type": "Monthly","month_year": "September-2024","target_control": 7.10 }
         """
         return Setting_Table_Result_Response(
-            setting_table_result=await settings_target_manager.post_table_delete(
+            setting_table_result=await settings_sub_part_manager.post_table_delete(
                 text_data=text_data, db=db
             )
         )
@@ -127,7 +131,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY" }
         """
         return Add_Row_View_Result_Response(
-            add_row_view_result=await settings_target_manager.post_add_row_view(
+            add_row_view_result=await settings_sub_part_manager.post_add_row_view(
                 text_data=text_data, db=db
             )
         )
@@ -145,7 +149,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "line_name": "414454 - Starter Assy PA70", "part_no": "", "part_name": "" }
         """
         return Add_Row_View_Result_Response(
-            add_row_view_result=await settings_target_manager.post_add_row_view_line_name_change(
+            add_row_view_result=await settings_sub_part_manager.post_add_row_view_line_name_change(
                 text_data=text_data, db=db
             )
         )
@@ -163,7 +167,7 @@ def settings_target_routers(db: AsyncGenerator) -> APIRouter:
         { "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY", "process": "Inline", "target_type": "Monthly","month_year": "September-2024","target_percent": 7.10, "creator": "ANN" }
         """
         return Add_Row_Ok_Result_Response(
-            add_row_ok_result=await settings_target_manager.post_add_row_ok(
+            add_row_ok_result=await settings_sub_part_manager.post_add_row_ok(
                 text_data=text_data, db=db
             )
         )

@@ -580,7 +580,7 @@ class P_Chart_Record_CRUD:
         process = data["process"]
         sub_line = data["sub_line"]
 
-        str_graph_json = str(graph_data).replace("'", '"')
+        str_graph_json = str(graph_data).replace("'", "''")
 
         status = True
 
@@ -944,6 +944,35 @@ class P_Chart_Record_CRUD:
                 sum_B = r[key_index["sum"]]
 
         return rs, data, sum_A, sum_B
+
+    async def get_sub_part(self, db: AsyncSession, where_stmt: str | None = None):
+        data = where_stmt.dict()
+
+        line_name = data["line_name"]
+        process = data["process"]
+
+        line_id = self.get_line_id(line_name)
+
+        ## query db
+        where_stmt = (
+            "line_id = '"
+            + str(line_id)
+            + "' AND process = '"
+            + process
+            + "' AND active = 'active' "
+        )
+        stmt = f"""SELECT DISTINCT ON (sub_part_no) id,
+                    line_id,
+                    sub_part_no,
+                    sub_part_name
+                FROM master_sub_part
+                
+                WHERE  {where_stmt if where_stmt is not None else ''}
+                ORDER BY sub_part_no"""
+        # stmt = f"SELECT * FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        rs = await db.execute(text(stmt))
+
+        return rs
 
     async def add_new_record_save(
         self, db: AsyncSession, where_stmt: str | None = None

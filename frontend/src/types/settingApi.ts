@@ -4,6 +4,10 @@ export interface SettingDefectModeRequest {
   part_name: string;
 }
 
+export interface SettingSubPartRequest {
+  line_name: string | null;
+  line_code_rx: string | null;
+}
 export interface SettingTableResult {
   line_name: string;
   part_name: string;
@@ -15,9 +19,24 @@ export interface SettingTableResult {
   category: string[];
   master_defect_index?: number | null;
 }
-
+export interface SubPartTableResult {
+  group_name: string;
+  line_name: string;
+  part_name: string;
+  part_no: string;
+  sub_line: string;
+  sub_line_label: string;
+  id: number;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
 export interface SettingDefectModeResponse {
   setting_table_result: SettingTableResult[];
+}
+export interface SettingSubPartResponse {
+  setting_subpart_table_result: SubPartTableResult[];
 }
 
 export interface Part {
@@ -89,6 +108,7 @@ export interface SettingDefectModeAddRowViewLineNameChangeRequest {
   line_name: string;
   part_no: string;
   part_name: string;
+  process?: string;
 }
 
 export interface DefectModeAddRowViewLineNameChangePart {
@@ -260,12 +280,44 @@ export interface SettingTableViewResult {
   month_year: string;
   target_control: number;
 }
+export interface SubPartTableViewResult {
+  group_name: string;
+  line_name: string;
+  part_name: string;
+  part_no: string;
+  sub_line: string;
+  sub_line_label: string;
+  id: number;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  supplier: string;
+  unit_consumption: number;
+}
+// export interface SubPartTableViewResult {
+//   group_name: string;
+//   line_name: string;
+//   part_name: string;
+//   part_no: string;
+//   sub_line: string;
+//   id: number;
+//   process: string;
+//   sub_part_no: string;
+//   unit_consumption: number;
+// }
 
 export interface SettingTargetTableViewResponse {
   setting_table_result: SettingTableViewResult[];
 }
 
 export interface SettingTargetAddRowViewRequest {
+  group_name: string;
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+}
+export interface SettingSubPartAddRowViewRequest {
   group_name: string;
   line_name: string;
   part_no: string;
@@ -303,13 +355,18 @@ export interface SettingTargetAddRowViewResponse {
   // lines(lines: any): unknown
   add_row_view_result: AddRowViewResult[];
 }
+export interface SettingSubPartAddRowViewResponse {
+  // lines(lines: any): unknown
+  add_row_view_result: AddRowViewResult[];
+}
 
 export interface SettingTargetAddRowViewLineNameChangeRequest {
   group_name: string;
   line_name: string;
   part_no: string;
   part_name: string;
-  sub_line: string;
+  sub_line: string | null;
+  process?: string;
 }
 
 export interface SettingTargetAddRowViewLineNameChangeResponse {
@@ -320,12 +377,25 @@ export interface SettingTargetAddRowOkRequest {
   line_name: string;
   part_no: string;
   part_name: string;
-  sub_line: string;
+  sub_line: string | null;
   process: string;
   group_name: string;
   target_type: string;
   month_year: string;
   target_percent: number;
+  creator: string;
+}
+export interface SettingSubPartAddRowOkRequest {
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  sub_line: string | null;
+  process: string;
+  group_name: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  supplier: string;
+  unit_consumption: number;
   creator: string;
 }
 
@@ -340,9 +410,22 @@ export interface TargetAddRowOkResult {
   target_percent: number;
   creator: string;
 }
-
+export interface SubPartAddRowOkResult {
+  group_name: string;
+  line_name: string;
+  part_name: string;
+  part_no: string;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+  creator: string;
+}
 export interface SettingTargetAddRowOkResponse {
   add_row_ok_result: TargetAddRowOkResult[];
+}
+export interface SettingSubPartAddRowOkResponse {
+  add_row_ok_result: SubPartAddRowOkResult[];
 }
 
 export interface SettingTargetTableDeleteRequest {
@@ -357,6 +440,18 @@ export interface SettingTargetTableDeleteRequest {
   month_year: string;
   target_control: number;
 }
+export interface SettingSubPartTableDeleteRequest {
+  id: number;
+  group_name: string;
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  process: string;
+  sub_line: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
 
 export interface SettingTargetTableDeleteResult {
   group_name: string;
@@ -369,9 +464,23 @@ export interface SettingTargetTableDeleteResult {
   month_year: string;
   target_control: number;
 }
+export interface SettingSubPartTableDeleteResult {
+  group_name: string;
+  line_name: string;
+  part_name: string;
+  part_no: string;
+  id: number;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
 
 export interface SettingTargetTableDeleteResponse {
   setting_table_result: SettingTargetTableDeleteResult[];
+}
+export interface SettingSubPartTableDeleteResponse {
+  sub_part_table_result: SettingSubPartTableDeleteResult[];
 }
 
 export interface SettingTargetTableEditViewRequest {
@@ -385,6 +494,18 @@ export interface SettingTargetTableEditViewRequest {
   target_type: string;
   month_year: string;
   target_control: number;
+}
+export interface SettingSubPartTableEditViewRequest {
+  id: number;
+  group_name: string;
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  process: string;
+  sub_line: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
 }
 
 // export interface SettingTableEditViewResult {
@@ -409,14 +530,48 @@ export interface SettingTableEditViewResult {
   month_year: string;
   target_control: number;
 }
+export interface SettingSubPartTableEditViewResult {
+  id: number;
+  group_name: string[];
+  line_name: string[];
+  process: string[];
+  parts: SettingSubPartTableEditViewPart[];
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
 
+export interface SubPartTableEditViewResult {
+  id: number;
+  group_name: string[];
+  line_name: string[];
+  process: string[];
+  parts: SubPartTableEditViewPart[];
+  sub_part_no: string[];
+  unit_consumption: number;
+}
+
+export interface SubPartTableEditViewPart {
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+}
 export interface SettingTableEditViewPart {
   part_no: string;
   part_name: string;
 }
+export interface SettingSubPartTableEditViewPart {
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+}
 
 export interface SettingTargetTableEditViewResponse {
   setting_table_edit_result: SettingTableEditViewResult[];
+}
+
+export interface SettingSubPartTableEditViewResponse {
+  sub_part_table_edit_result: SettingSubPartTableEditViewResult[];
 }
 
 export interface SettingTargetTableEditViewLineNameChangeRequest {
@@ -426,7 +581,14 @@ export interface SettingTargetTableEditViewLineNameChangeRequest {
   part_name: string;
   sub_line: string;
 }
-
+export interface SettingSubPartTableEditViewLineNameChangeRequest {
+  line_name: string;
+  group_name: string;
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+}
+// SettingSubPartTableEditViewLineNameChangeRequest
 // export interface SettingTableLineNameChangeEditResult {
 //     id: number
 //     group_name: string[]
@@ -453,7 +615,42 @@ export interface SettingTableLineNameChangeEditResult {
   month_year: string;
   target_control: number;
 }
+export interface SettingSubPartTableLineNameChangeEditResult {
+  id: number;
+  group_name: string[];
+  line_name: string[];
+  process: string[];
+  // target_type: string;
+  parts: SettingTableLineNameChangeEdit[];
+  // month_year: string;
+  // target_control: number;
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
 
+export interface SubPartTableLineNameChangeEditResult {
+  id: number;
+  group_name: string[];
+  line_name: string[];
+  process: string[];
+  parts: SubPartTableLineNameChangeEdit[];
+  sub_part_no: string;
+  sub_part_name: string;
+  unit_consumption: number;
+}
+// id: number;
+// group_name: string[];
+// line_name: string[];
+// process: string[];
+// parts: SubPartTableEditViewPart[];
+// sub_part_no: string;
+// unit_consumption: number;
+export interface SubPartTableLineNameChangeEdit {
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+}
 export interface SettingTableLineNameChangeEdit {
   part_no: string;
   part_name: string;
@@ -461,6 +658,9 @@ export interface SettingTableLineNameChangeEdit {
 
 export interface SettingTargetTableEditViewLineNameChangeResponse {
   setting_table_edit_result: SettingTableLineNameChangeEditResult[];
+}
+export interface SettingSubPartTableEditViewLineNameChangeResponse {
+  sub_part_table_edit_result: SettingSubPartTableLineNameChangeEditResult[];
 }
 
 export interface SettingTargetTableEditSaveRequest {
@@ -474,6 +674,35 @@ export interface SettingTargetTableEditSaveRequest {
   target_type: string;
   month_year: string;
   target_control: number;
+  creator: string;
+}
+export interface SettingSubPartTableEditSaveRequest {
+  id: number;
+  group_name: string;
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  supplier: string;
+  unit_consumption: number;
+  creator: string;
+}
+
+export interface SubPartTargetTableEditSaveRequest {
+  id: number;
+  group_name: string;
+  line_name: string;
+  part_no: string;
+  part_name: string;
+  sub_line: string;
+  process: string;
+  sub_part_no: string;
+  sub_part_name: string;
+  supplier: string;
+  unit_consumption: number;
   creator: string;
 }
 
@@ -492,6 +721,9 @@ export interface SettingTargetTableEditSave {
 
 export interface SettingTargetTableEditSaveResponse {
   setting_table_edit_save: SettingTargetTableEditSave[];
+}
+export interface SettingSubPartTableEditSaveResponse {
+  sub_part_table_edit_result: SettingTargetTableEditSave[];
 }
 
 export interface SettingTargetOrgTableViewRequest {

@@ -140,7 +140,7 @@ export default function PChartHeader() {
     }
     setIsLoading(true);
     try {
-      const response = await pChartCtlPartByLineNoErr(selectedLineId);
+      const response = await pChartCtlPartByLineNoErr(selectedLineId, process);
       // console.log("Parts:", response.parts);
       setParts(response.parts);
     } catch (error) {
@@ -268,14 +268,19 @@ export default function PChartHeader() {
         ?.line_code_rx || ""
     );
     fetchLineSettings();
-    fetchParts();
-  }, [selectedLineId]);
+    if (selectedLineId && process) {
+      fetchParts();
+    }
+  }, [selectedLineId, process]);
 
   useEffect(() => {
     setSelectedSubLine(null); // reset part no when line changes
 
     // fetchLineSettings();
     fetchSubLines();
+    if (selectedLineId && process && process == "Outline") {
+      setSelectedSubLine("Outline");
+    }
   }, [selectedPartNo]);
 
   useEffect(() => {

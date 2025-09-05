@@ -10,7 +10,7 @@ import os
 load_dotenv()
 
 
-class Settings_Target_CRUD:
+class Settings_SubPart_CRUD:
     def __init__(self):
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
@@ -35,19 +35,22 @@ class Settings_Target_CRUD:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"because {e}",
             )
-
+        print("get_line_id")
+        print("list_line:", list_line)
+        print("linename:", linename)
         index_select = list_line.index(linename)
         id_linename = list_line_id[index_select]
 
-        return id_linename
+        return str(id_linename)
 
     async def table_view(self, db: AsyncSession, where_stmt: str | None = None):
         data = where_stmt.dict()
 
         line_name = data["line_name"]
-        part_name = data["part_name"]
-        part_no = data["part_no"]
-        sub_line = data["sub_line"]
+        line_code_rx = data["line_code_rx"]
+        # part_name = data["part_name"]
+        # part_no = data["part_no"]
+        # sub_line = data["sub_line"]
 
         ## query db
         where_stmt = " active = 'active' "
@@ -58,39 +61,43 @@ class Settings_Target_CRUD:
         if line_name != "":
             where_stmt = where_stmt + " AND line_id = '" + str(line_id) + "' "
 
-        if part_name != "":
-            where_stmt = where_stmt + " AND part_name = '" + part_name + "' "
+        # if part_name != "":
+        #     where_stmt = where_stmt + " AND part_name = '" + part_name + "' "
 
-        if part_no != "":
-            where_stmt = where_stmt + " AND part_no = '" + part_no + "' "
+        # if part_no != "":
+        #     where_stmt = where_stmt + " AND part_no = '" + part_no + "' "
 
-        if sub_line != "":
-            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "' "
+        # if sub_line != "":
+        #     where_stmt = where_stmt + " AND sub_line = '" + sub_line + "' "
 
-        stmt = f"SELECT * FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        stmt = f"SELECT * FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         # print("stmt: ", stmt)
         return rs, data
 
     async def table_edit_view(self, db: AsyncSession, where_stmt: str | None = None):
         data = where_stmt.dict()
-
+        print("data:", data)
         line_name = data["line_name"]
         part_name = data["part_name"]
         part_no = data["part_no"]
         sub_line = data["sub_line"]
         process = data["process"]
-        target_type = data["target_type"]
-        month_year = data["month_year"]
-        target_control = data["target_control"]
+        sub_part_no = data["sub_part_no"]
+        sub_part_name = data["sub_part_name"]
+        unit_consumption = data["unit_consumption"]
 
         line_id = self.get_line_id(line_name)
-
+        line_id_str = str(line_id) if line_id else "0"
+        print("line_id:", line_id)
+        print("line_id_str:", line_id_str)
+        print("type(line_id_str):", type(line_id_str))
         ## query db
         where_stmt = (
-            "line_id = '"
-            + str(line_id)
-            + "' AND part_name = '"
+            f"line_id = '"
+            + line_id_str
+            + "'"
+            + " AND part_name = '"
             + part_name
             + "' AND part_no = '"
             + part_no
@@ -98,14 +105,14 @@ class Settings_Target_CRUD:
             + sub_line
             + "' AND process = '"
             + process
-            + "' AND target_type = '"
-            + target_type
-            + "' AND month_year = '"
-            + month_year
+            + "' AND sub_part_no = '"
+            + sub_part_no
+            + "' AND sub_part_name = '"
+            + sub_part_name
             + "' AND active = 'active' "
         )
 
-        stmt = f"SELECT * FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        stmt = f"SELECT * FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
 
         return rs, data
@@ -119,15 +126,16 @@ class Settings_Target_CRUD:
 
     async def table_edit_save(self, db: AsyncSession, where_stmt: str | None = None):
         data = where_stmt.dict()
-
+        print("data:", data)
         line_name = data["line_name"]
         part_name = data["part_name"]
         part_no = data["part_no"]
         sub_line = data["sub_line"]
         process = data["process"]
-        target_type = data["target_type"]
-        month_year = data["month_year"]
-        target_control = data["target_control"]
+        sub_part_no = data["sub_part_no"]
+        sub_part_name = data["sub_part_name"]
+        supplier = data["supplier"]
+        unit_consumption = data["unit_consumption"]
         creator = data["creator"]
         id = data["id"]
 
@@ -138,7 +146,7 @@ class Settings_Target_CRUD:
         ## check new record ??
         ## query db
         stmt = (
-            "UPDATE master_target_line SET active = 'edit', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  id = "
+            "UPDATE master_sub_part SET active = 'edit', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  id = "
             + str(id)
         )
         await db.execute(text(stmt))
@@ -155,20 +163,26 @@ class Settings_Target_CRUD:
             + part_name
             + "' AND sub_line = '"
             + sub_line
-            + "' AND target_type = '"
-            + target_type
-            + "' AND month_year = '"
-            + month_year
+            + "' AND sub_part_no = '"
+            + sub_part_no
+            + "' AND sub_part_name = '"
+            + sub_part_name
+            + "' AND unit_consumption = '"
+            + str(unit_consumption)
+            + "' AND supplier = '"
+            + supplier
             + "' AND active in ('delete','edit','active') "
         )
-
+        # ref = 0
         ## query db
-        stmt = f"SELECT id FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        stmt = f"SELECT id,ref FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         for r in rs:
             ## case old record
             ## query db
-            stmt = f"""UPDATE master_target_line SET target_control = {target_control}, active = 'active', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
+            key_index = r._key_to_index
+            # ref = r[key_index["ref"]]
+            stmt = f"""UPDATE master_sub_part SET unit_consumption = {unit_consumption}, active = 'active', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
             await db.execute(text(stmt))
             await db.commit()
 
@@ -177,7 +191,7 @@ class Settings_Target_CRUD:
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{target_type}','{month_year}',{target_control},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_sub_part ( line_id, process, part_no, part_name, sub_line, sub_part_no, sub_part_name, supplier, unit_consumption, creator, active,ref) SELECT '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{sub_part_no}','{sub_part_name}','{supplier}',{unit_consumption},'{creator}','active', ref FROM master_sub_part WHERE id={id} """
             await db.execute(text(stmt))
             await db.commit()
 
@@ -191,9 +205,9 @@ class Settings_Target_CRUD:
         part_no = data["part_no"]
         sub_line = data["sub_line"]
         process = data["process"]
-        target_type = data["target_type"]
-        month_year = data["month_year"]
-        target_control = data["target_control"]
+        sub_part_no = data["sub_part_no"]
+        sub_part_name = data["sub_part_name"]
+        unit_consumption = data["unit_consumption"]
 
         line_id = self.get_line_id(line_name)
 
@@ -209,16 +223,16 @@ class Settings_Target_CRUD:
             + sub_line
             + "' AND process = '"
             + process
-            + "' AND target_type = '"
-            + target_type
-            + "' AND month_year = '"
-            + month_year
-            + "' AND target_control = "
-            + str(target_control)
+            + "' AND sub_part_no = '"
+            + sub_part_no
+            + "' AND sub_part_name = '"
+            + sub_part_name
+            + "' AND unit_consumption = "
+            + str(unit_consumption)
             + " AND active = 'active' "
         )
 
-        stmt = f"""UPDATE master_target_line SET active = 'delete', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
+        stmt = f"""UPDATE master_sub_part SET active = 'delete', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
         await db.execute(text(stmt))
         await db.commit()
 
@@ -236,35 +250,6 @@ class Settings_Target_CRUD:
 
         return data
 
-    async def get_sub_part(self, db: AsyncSession, where_stmt: str | None = None):
-        data = where_stmt.dict()
-
-        line_name = data["line_name"]
-        process = data["process"]
-
-        line_id = self.get_line_id(line_name)
-
-        ## query db
-        where_stmt = (
-            "line_id = '"
-            + str(line_id)
-            + "' AND process = '"
-            + process
-            + "' AND active = 'active' "
-        )
-        stmt = f"""SELECT DISTINCT ON (sub_part_no) id,
-                    line_id,
-                    sub_part_no,
-                    sub_part_name
-                FROM master_sub_part
-                
-                WHERE  {where_stmt if where_stmt is not None else ''}
-                ORDER BY sub_part_no"""
-        # stmt = f"SELECT * FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
-        rs = await db.execute(text(stmt))
-
-        return rs
-
     async def add_row_ok(self, db: AsyncSession, where_stmt: str | None = None):
         data = where_stmt.dict()
 
@@ -273,17 +258,18 @@ class Settings_Target_CRUD:
         part_no = data["part_no"]
         sub_line = data["sub_line"]
         process = data["process"]
-        target_type = data["target_type"]
-        month_year = data["month_year"]
-        target_percent = data["target_percent"]
+        sub_part_no = data["sub_part_no"]
+        sub_part_name = data["sub_part_name"]
+        supplier = data["supplier"]
+        unit_consumption = data["unit_consumption"]
         creator = data["creator"]
 
         line_id = self.get_line_id(line_name)
 
         status = True
 
-        ## check new record ??
-        ## query db
+        # check new record ??
+        # query db
         where_stmt = (
             "line_id = '"
             + str(line_id)
@@ -295,28 +281,33 @@ class Settings_Target_CRUD:
             + part_name
             + "' AND sub_line = '"
             + sub_line
-            + "' AND target_type = '"
-            + target_type
-            + "' AND month_year = '"
-            + month_year
+            + "' AND sub_part_no = '"
+            + sub_part_no
+            + "' AND sub_part_name = '"
+            + sub_part_name
+            + "' AND supplier = '"
+            + supplier
             + "' AND active in ('delete','edit','active') "
         )
 
-        stmt = f"SELECT id FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        stmt = f"SELECT id FROM master_sub_part WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         for r in rs:
             ## case old record
             ## query db
-            stmt = f"""UPDATE master_target_line SET target_control = {target_percent}, active = 'active', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
-            await db.execute(text(stmt))
-            await db.commit()
+            # stmt = f"""UPDATE master_sub_part
+            # SET target_control = {target_percent},
+            # active = 'active'
+            # WHERE  {where_stmt if where_stmt is not None else ''} """
+            # await db.execute(text(stmt))
+            # await db.commit()
 
             status = False
 
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{target_type}','{month_year}',{target_percent},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_sub_part ( line_id, process, part_no, part_name, sub_line, sub_part_no, sub_part_name, supplier, creator, active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{sub_part_no}','{sub_part_name}','{supplier}','{creator}','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 

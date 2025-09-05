@@ -375,24 +375,52 @@ class SettingsManager:
             )
         return return_list
 
-    async def get_parts_by_line(self, line_id: int, db: AsyncSession = None):
-        where_stmt = f" AND line_id = {line_id}"
-        res = await self.crud.get_line_parts(where_stmt=where_stmt, db=db)
+    async def get_parts_by_line(
+        self,
+        line_id: int,
+        process: str,
+        db: AsyncSession = None,
+        app_db: AsyncSession = None,
+    ):
         return_list = []
-        for r in res:
-            key_index = r._key_to_index
-            return_list.append(
-                PartLine(
-                    part_id=r[key_index["part_id"]],
-                    part_no=r[key_index["pno"]],
-                    part_no_suffix=r[key_index["part_no_suffix"]],
-                    part_name=r[key_index["part_name"]],
-                    part_model=r[key_index["part_model"]],
-                    part_type=r[key_index["part_type"]],
-                    product_id=r[key_index["product_id"]],
-                    line_id=r[key_index["line_id"]],
+        if process != "Outline":
+            where_stmt = f" AND line_id = {line_id}"
+            res = await self.crud.get_line_parts(where_stmt=where_stmt, db=db)
+
+            for r in res:
+                key_index = r._key_to_index
+                return_list.append(
+                    PartLine(
+                        part_id=r[key_index["part_id"]],
+                        part_no=r[key_index["pno"]],
+                        part_no_suffix=r[key_index["part_no_suffix"]],
+                        part_name=r[key_index["part_name"]],
+                        part_model=r[key_index["part_model"]],
+                        part_type=r[key_index["part_type"]],
+                        product_id=r[key_index["product_id"]],
+                        line_id=r[key_index["line_id"]],
+                    )
                 )
+        elif process == "Outline":
+
+            res = await self.crud.get_line_sub_parts(
+                app_db=app_db, line_id=str(line_id)
             )
+            return_list = []
+            for r in res:
+                key_index = r._key_to_index
+                return_list.append(
+                    PartLine(
+                        part_id=r[key_index["id"]],
+                        part_no=r[key_index["sub_part_no"]],
+                        part_no_suffix=None,
+                        part_name=r[key_index["sub_part_name"]],
+                        part_model=None,
+                        part_type=None,
+                        product_id=None,
+                        line_id=r[key_index["line_id"]],
+                    )
+                )
         return return_list
 
     async def get_sub_lines_by_partline(
@@ -403,10 +431,12 @@ class SettingsManager:
         # return_list = []
         # try:
         ## get list_line_id, list_line_name from api
+        # print("self.BACKEND_URL_SERVICE:", self.BACKEND_URL_SERVICE)
         endpoint = (
             self.BACKEND_URL_SERVICE
             + f"/api/settings/sub_lines?line_code_rx={line_code_rx}&part_no={part_no}"
         )
+
         headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         sub_lines = requests.get(endpoint, headers=headers).json()["sub_lines"]
 

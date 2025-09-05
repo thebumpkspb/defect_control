@@ -522,7 +522,8 @@ class Settings_Target_Manager:
 
         list_line = []
         list_line_id = []
-
+        data = text_data.dict()
+        process = data["process"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -556,31 +557,47 @@ class Settings_Target_Manager:
             if res["line_name"] != "-":
                 index_select = list_line.index(res["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    ## get part_no, part_name from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
-                    )
-                    response_json = requests.get(endpoint, headers=headers).json()
-
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
-                        list_part_name.append(response_json["parts"][i]["part_name"])
+                if process and process == "Outline":
+                    result = await self.crud.get_sub_part(db=db, where_stmt=text_data)
+                    for r in result:
+                        key_index = r._key_to_index
 
                         list_parts.append(
-                            {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                            {
+                                "part_no": r[key_index["sub_part_no"]],
+                                "part_name": r[key_index["sub_part_name"]],
+                            }
                         )
+                else:
+                    try:
+                        ## get part_no, part_name from api
+                        endpoint = (
+                            self.BACKEND_URL_SERVICE
+                            + "/api/settings/parts_by_line?line_id="
+                            + str(select_line_id)
+                        )
+                        response_json = requests.get(endpoint, headers=headers).json()
 
-                    select_part_name = list_part_name[0]
+                        for i in range(0, len(response_json["parts"])):
+                            list_part_no.append(response_json["parts"][i]["part_no"])
+                            list_part_name.append(
+                                response_json["parts"][i]["part_name"]
+                            )
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                            list_parts.append(
+                                {
+                                    "part_no": list_part_no[i],
+                                    "part_name": list_part_name[i],
+                                }
+                            )
+
+                        select_part_name = list_part_name[0]
+
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"because {e}",
+                        )
 
             else:
                 select_part_name = "-"

@@ -31,7 +31,7 @@ from app.schemas.settings import (
 )
 
 
-def settings_routers(db: AsyncGenerator) -> APIRouter:
+def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
     router = APIRouter()
     setting_manager = SettingsManager()
 
@@ -233,9 +233,14 @@ def settings_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     # @cache(expire=300)
-    async def get_parts_by_line(line_id: int, db: AsyncSession = Depends(db)):
+    async def get_parts_by_line(
+        line_id: int,
+        process: str | None = None,
+        db: AsyncSession = Depends(db),
+        app_db: AsyncSession = Depends(app_db),
+    ):
         return PartLineResponse(
-            parts=await setting_manager.get_parts_by_line(line_id, db)
+            parts=await setting_manager.get_parts_by_line(line_id, process, db, app_db)
         )
 
     @router.get(

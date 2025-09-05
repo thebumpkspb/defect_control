@@ -9,6 +9,7 @@ import math
 import time
 import os
 import pandas as pd
+import ast
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ from app.schemas.p_chart_record import (
     History_Records_Edit,
     Add_New_Record_View_By_Part_Result,
 )
-from app.functions import get_last_day_from_month_year
+from app.functions import get_last_day_from_month_year, parse_defect_string
 from app.crud.p_chart_record import P_Chart_Record_CRUD
 from app.utils.logger import get_logger
 
@@ -124,16 +125,17 @@ class P_Chart_Record_Manager:
         list_defect = []
         # print("defect:", defect)
         for d in defect:
-            # # print("d1:", d)
+            # print("d1:", d)
             #!! need to fix this method
-            d = d.replace("(", "{")
-            d = d.replace(")", "}")
-            d = d.replace("id=", '"id":')
-            d = d.replace("defect_name=", '"defect_name":')
-            d = d.replace("value=", '"value":')
-            d = d.replace("=", ":")
-            # # print("d2:", d)
-            dict_defect = json.loads(d)
+            # d = d.replace("(", "{")
+            # d = d.replace(")", "}")
+            # d = d.replace("id=", '"id":')
+            # d = d.replace("defect_name=", '"defect_name":')
+            # d = d.replace("value=", '"value":')
+            # d = d.replace("=", ":")
+            # print("d2:", d)
+            # dict_defect = json.loads(d)
+            dict_defect = parse_defect_string(d)
             list_defect.append(
                 Defect_Graph(
                     id=dict_defect["id"],
@@ -316,6 +318,7 @@ class P_Chart_Record_Manager:
         # print("Start:", start_time)
         data = text_data.dict()
         sub_line = data["sub_line"]
+        data_process = data["process"]
         list_line = []
         list_line_id = []
         # # print("1")
@@ -459,14 +462,22 @@ class P_Chart_Record_Manager:
         try:
             ## get prod_qty shift=All from api
             if data["shift"] == "All":
-
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?part_line_id="
-                    + str(sub_line)
-                    + "&shift=All&date="
-                    + date_prod_qty
-                )
+                if data_process == "Outline":
+                    endpoint = (
+                        self.BACKEND_URL_SERVICE
+                        + "/api/prods/prod_qty?line_id="
+                        + str(select_line_id)
+                        + "&shift=All&date="
+                        + date_prod_qty
+                    )
+                else:
+                    endpoint = (
+                        self.BACKEND_URL_SERVICE
+                        + "/api/prods/prod_qty?part_line_id="
+                        + str(sub_line)
+                        + "&shift=All&date="
+                        + date_prod_qty
+                    )
                 response_json = requests.get(endpoint, headers=headers).json()
 
                 for i in range(0, len(response_json["prod_qty"])):
@@ -1055,6 +1066,7 @@ class P_Chart_Record_Manager:
             )
         data = text_data.dict()
         sub_line = data["sub_line"]
+        data_process = data["process"]
         list_line = []
         list_line_id = []
         try:
@@ -1076,7 +1088,7 @@ class P_Chart_Record_Manager:
         res, data = await self.crud.p_chart_record_table(db=db, where_stmt=text_data)
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
-
+        print("select_line_id:", select_line_id)
         current_year = datetime.now().strftime("%Y")
         current_month = datetime.now().strftime("%B-%Y")
         current_month_no = datetime.now().strftime("%m")
@@ -1155,14 +1167,23 @@ class P_Chart_Record_Manager:
             c = int(str(res_review_by_gm[i]["date"])[8:10])
             list_review_by_gm[c - 1] = res_review_by_gm[i]["review_by_gm"]
         try:
-            ## get prod_qty shift=A from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?part_line_id="
-                + str(sub_line)
-                + "&shift=A&date="
-                + date_prod_qty
-            )
+            ## get prod_qty shift=A from api\
+            if data_process == "Outline":
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?line_id="
+                    + str(select_line_id)
+                    + "&shift=A&date="
+                    + date_prod_qty
+                )
+            else:
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?part_line_id="
+                    + str(sub_line)
+                    + "&shift=A&date="
+                    + date_prod_qty
+                )
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["prod_qty"])):
@@ -1652,6 +1673,7 @@ class P_Chart_Record_Manager:
             )
         data = text_data.dict()
         sub_line = data["sub_line"]
+        data_process = data["process"]
         list_line = []
         list_line_id = []
 
@@ -1757,13 +1779,22 @@ class P_Chart_Record_Manager:
 
         try:
             ## get prod_qty shift=B from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?part_line_id="
-                + str(sub_line)
-                + "&shift=B&date="
-                + date_prod_qty
-            )
+            if data_process == "Outline":
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?line_id="
+                    + str(select_line_id)
+                    + "&shift=B&date="
+                    + date_prod_qty
+                )
+            else:
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?part_line_id="
+                    + str(sub_line)
+                    + "&shift=B&date="
+                    + date_prod_qty
+                )
             response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["prod_qty"])):
@@ -2273,7 +2304,8 @@ class P_Chart_Record_Manager:
 
         list_line = []
         list_line_id = []
-
+        data = text_data.dict()
+        data_process = data["process"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -2340,26 +2372,35 @@ class P_Chart_Record_Manager:
                 ## case new record
                 index_select = list_line.index(data["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    ## get part_no from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                list_part_no = []
+                if data_process and data_process == "Outline":
+                    sub_part_result = await self.crud.get_sub_part(
+                        db=db, where_stmt=text_data
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                    for r in sub_part_result:
+                        key_index = r._key_to_index
 
-                    list_part_no = []
+                        list_part_no.append(r[key_index["sub_part_no"]])
+                else:
+                    try:
+                        ## get part_no from api
+                        endpoint = (
+                            self.BACKEND_URL_SERVICE
+                            + "/api/settings/parts_by_line?line_id="
+                            + str(select_line_id)
+                        )
+                        response_json = requests.get(endpoint, headers=headers).json()
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                        # list_part_no = []
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                        for i in range(0, len(response_json["parts"])):
+                            list_part_no.append(response_json["parts"][i]["part_no"])
+
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"because {e}",
+                        )
 
                 return_list.append(
                     Add_New_Record_View_Result(
@@ -2383,26 +2424,33 @@ class P_Chart_Record_Manager:
                 ## case old record
                 index_select = list_line.index(data["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    ## get part_no from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                list_part_no = []
+                if data_process and data_process == "Outline":
+                    sub_part_result = await self.crud.get_sub_part(
+                        db=db, where_stmt=text_data
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                    for r in sub_part_result:
+                        key_index = r._key_to_index
 
-                    list_part_no = []
+                        list_part_no.append(r[key_index["sub_part_no"]])
+                else:
+                    try:
+                        ## get part_no from api
+                        endpoint = (
+                            self.BACKEND_URL_SERVICE
+                            + "/api/settings/parts_by_line?line_id="
+                            + str(select_line_id)
+                        )
+                        response_json = requests.get(endpoint, headers=headers).json()
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                        for i in range(0, len(response_json["parts"])):
+                            list_part_no.append(response_json["parts"][i]["part_no"])
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"because {e}",
+                        )
 
                 return_list.append(
                     Add_New_Record_View_Result(
@@ -2517,7 +2565,8 @@ class P_Chart_Record_Manager:
 
         list_line = []
         list_line_id = []
-
+        data = text_data.dict()
+        data_process = data["process"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -2587,25 +2636,32 @@ class P_Chart_Record_Manager:
                 ## case new record
                 index_select = list_line.index(data["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                list_part_no = []
+                if data_process and data_process == "Outline":
+                    sub_part_result = await self.crud.get_sub_part(
+                        db=db, where_stmt=text_data
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                    for r in sub_part_result:
+                        key_index = r._key_to_index
 
-                    list_part_no = []
+                        list_part_no.append(r[key_index["sub_part_no"]])
+                else:
+                    try:
+                        endpoint = (
+                            self.BACKEND_URL_SERVICE
+                            + "/api/settings/parts_by_line?line_id="
+                            + str(select_line_id)
+                        )
+                        response_json = requests.get(endpoint, headers=headers).json()
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                        for i in range(0, len(response_json["parts"])):
+                            list_part_no.append(response_json["parts"][i]["part_no"])
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"because {e}",
+                        )
 
                 return_list.append(
                     Add_New_Record_View_Result(
@@ -2629,25 +2685,32 @@ class P_Chart_Record_Manager:
                 ## case old record
                 index_select = list_line.index(data["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                list_part_no = []
+                if data_process and data_process == "Outline":
+                    sub_part_result = await self.crud.get_sub_part(
+                        db=db, where_stmt=text_data
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                    for r in sub_part_result:
+                        key_index = r._key_to_index
 
-                    list_part_no = []
+                        list_part_no.append(r[key_index["sub_part_no"]])
+                else:
+                    try:
+                        endpoint = (
+                            self.BACKEND_URL_SERVICE
+                            + "/api/settings/parts_by_line?line_id="
+                            + str(select_line_id)
+                        )
+                        response_json = requests.get(endpoint, headers=headers).json()
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                        for i in range(0, len(response_json["parts"])):
+                            list_part_no.append(response_json["parts"][i]["part_no"])
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"because {e}",
+                        )
 
                 return_list.append(
                     Add_New_Record_View_Result(

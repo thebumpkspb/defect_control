@@ -70,7 +70,7 @@ class Setting_Table_Re_Index_Response(BaseModel):
 
 
 class Add_Row_View(Setting_Table):
-    pass
+    process: str | None = None
 
 
 class Add_Row_View_Result(BaseModel):

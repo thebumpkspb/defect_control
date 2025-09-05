@@ -60,6 +60,10 @@ import {
   settingDefectModeTableEditViewLineNameChange,
   settingDefectModeTableReIndex,
   settingGroupParts,
+  settingSubPartTableDelete,
+  settingSubPartTableEditSave,
+  settingSubPartTableEditView,
+  settingSubPartTableEditViewLineNameChange,
   settingTargetOrgAddRowViewTargetLevelChange,
   settingTargetOrgTableDelete,
   settingTargetOrgTableEditSave,
@@ -78,6 +82,8 @@ import {
   Part,
   SettingDefectModeTableEditResult,
   SettingDefectModeTableEditSaveRequest,
+  SettingSubPartTableEditViewResult,
+  SettingSubPartTableLineNameChangeEditResult,
   SettingTableEditResult,
   SettingTableEditViewResult,
   SettingTableLineNameChangeEditResult,
@@ -88,6 +94,10 @@ import {
   SettingTargetOrgTableEditResult,
   SettingTargetOrgTableEditSaveRequest,
   SettingTargetTableEditSaveRequest,
+  SubPartTableEditViewResult,
+  SubPartTableLineNameChangeEditResult,
+  SubPartTableViewResult,
+  SubPartTargetTableEditSaveRequest,
 } from "@/types/settingApi";
 import DropdownEdit from "@/components/button/dropdown-edit";
 import dayjs from "dayjs";
@@ -159,6 +169,12 @@ interface MasterTypeTargetLineTableProps {
   username: string;
   triggerUpdateTableData: () => Promise<void> | void;
 }
+interface MasterTypeSubPartTableProps {
+  subPartDataSource: SubPartTableViewResult[];
+  groups: Group[];
+  username: string;
+  triggerUpdateTableData: () => Promise<void> | void;
+}
 
 interface DeflectModeColumnType {
   title?: string | ReactNode;
@@ -207,6 +223,22 @@ interface LineTargetColumnType {
   filterMode?: "menu" | "tree"; // Add filterMode property
   filterSearch?: boolean; // Add filterSearch property
   onFilter?: (value: Key | boolean, record: SettingTableViewResult) => boolean; // Add onFilter method
+}
+interface SubPartColumnType {
+  title: string | ReactNode;
+  dataIndex: string;
+  render?: (
+    text: string,
+    record?: SubPartTableViewResult
+  ) => string | JSX.Element;
+  filters?: {
+    text: string;
+    value: string;
+    children?: { text: string; value: string }[];
+  }[]; // Add filters property
+  filterMode?: "menu" | "tree"; // Add filterMode property
+  filterSearch?: boolean; // Add filterSearch property
+  onFilter?: (value: Key | boolean, record: SubPartTableViewResult) => boolean; // Add onFilter method
 }
 
 const MasterTypeOrganizationalTargetTable: React.FC<
@@ -2413,9 +2445,736 @@ const MasterTypeDefectModeTable: React.FC<MasterTypeDefectModeTableProps> = ({
     // </div>
   );
 };
+const MasterTypeSubPartTable: React.FC<MasterTypeSubPartTableProps> = ({
+  subPartDataSource,
+  groups,
+  triggerUpdateTableData,
+  username,
+}) => {
+  const column: SubPartColumnType[] = [
+    {
+      title: <div style={{ textAlign: "center" }}>Line Name</div>,
+      dataIndex: "line_name",
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.line_name)
+      ),
+      // filters: [{ text: "Line Name", value: "Line Name" }],
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.line_name.includes(value as string),
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+      //   // tableEditDropDownData
 
+      //   return editingId === record!!!.id ? (
+      //     <DropdownEdit
+      //       // disabled
+      //       value={{
+      //         label: editForm?.line_name || "",
+      //         value: editForm?.line_name || "",
+      //       }}
+      //       handleChange={async (value: {
+      //         value: string | number | null;
+      //         label: string;
+      //       }) => {
+      //         const data = await fetchFilteredTableEditDropDownData(
+      //           value.value as string, // line_name
+      //           "",
+      //           "",
+      //           "",
+      //           ""
+      //         );
+      //         // console.log("await fetchFilteredTable pn t:", data[0].parts);
+
+      //         // get line_name to set form
+      //         const selectedLineName = String(value.value ?? "");
+
+      //         // get first part_no in request to set form
+      //         const selectedPartNo = data[0].parts[0].part_no;
+
+      //         // get part_name to set form
+      //         const selectedPartName =
+      //           data[0].parts.find((item) => item.part_no === selectedPartNo)
+      //             ?.part_name || "";
+
+      //         setEditForm((prevForm) => ({
+      //           ...prevForm,
+      //           line_name: selectedLineName,
+      //           part_no: selectedPartNo,
+      //           part_name: selectedPartName,
+      //         }));
+      //       }}
+      //       options={tableEditDropDownData.line_name.map((lineName) => ({
+      //         value: lineName,
+      //         label: lineName,
+      //       }))}
+      //       placeholder={""}
+      //     />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // },
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Process</div>,
+      dataIndex: "process",
+      // filters: [{ text: "Inline", value: "Inline" }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.process)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.process.includes(value as string),
+      render: (text, record) => {
+        if (record === null) {
+          return text || "-";
+        }
+
+        return editingId === record!!!.id ? (
+          <DropdownEdit
+            value={{ label: editForm.process, value: editForm.process }}
+            handleChange={(value: {
+              value: string | number | null;
+              label: string;
+            }) => {
+              setEditForm((prevForm) => ({
+                ...prevForm,
+                process: String(value.value ?? ""),
+              }));
+            }}
+            options={
+              filteredTableEditDropDownData.process?.map((process) => ({
+                value: process,
+                label: process,
+              })) ??
+              processType.map(({ value }) => ({
+                value: value,
+                label: value,
+              }))
+            }
+            placeholder={""}
+          />
+        ) : (
+          text || "-"
+        );
+      },
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Part No</div>,
+      dataIndex: "part_no",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.part_no)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.part_no.includes(value as string),
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+
+      //   return editingId === record!!!.id ? (
+      //     <DropdownEdit
+      //       value={{ label: editForm.part_no, value: editForm.part_no }}
+      //       handleChange={(value: {
+      //         value: string | number | null;
+      //         label: string;
+      //       }) => {
+      //         const selectedPartNo = String(value.value ?? "");
+
+      //         // set part_name
+      //         const partName =
+      //           filteredTableEditDropDownData.parts.find(
+      //             (item) => item.part_no === selectedPartNo
+      //           )?.part_name || "";
+
+      //         // console.log(
+      //         //   "tartget update part_no data :",
+      //         //   filteredTableEditDropDownData.parts
+      //         // );
+      //         // console.log("tartget update select part no: ", selectedPartNo);
+      //         // console.log("tartget update select part name: ", partName);
+
+      //         setEditForm((prevForm) => ({
+      //           ...prevForm,
+      //           part_no: String(value.value ?? ""),
+      //           part_name: partName,
+      //         }));
+      //       }}
+      //       options={filteredTableEditDropDownData.parts.map((item) => ({
+      //         value: item.part_no,
+      //         label: item.part_no,
+      //       }))}
+      //       placeholder={""}
+      //     />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // }, // readonly [0].part_no
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Part Name</div>,
+      dataIndex: "part_name",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.part_name)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.part_name.includes(value as string),
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+
+      //   return editingId === record!!!.id ? (
+      //     <Input value={editForm.part_name} readOnly />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // }, // dropdown [0].part_name
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Sub line</div>,
+      dataIndex: "sub_line",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.sub_line)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.sub_line.includes(value as string),
+      render: (text, record) => {
+        return <>{record?.sub_line_label}</>;
+      },
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+
+      //   return editingId === record!!!.id ? (
+      //     <DropdownEdit
+      //       value={{ label: editForm.sub_line, value: editForm.sub_line }}
+      //       handleChange={(value: {
+      //         value: string | number | null;
+      //         label: string;
+      //       }) => {
+      //         setEditForm((prevForm) => ({
+      //           ...prevForm,
+      //           sub_line: String(value.value ?? ""),
+      //           month_year: "",
+      //         }));
+      //       }}
+      //       //!
+      //       options={[].map(({ value }) => ({
+      //         value: value,
+      //         label: value,
+      //       }))}
+      //       placeholder={""}
+      //     />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // }, // readonly [0].part_no
+    },
+    // targetType
+    {
+      title: <div style={{ textAlign: "center" }}>Sub Part No.</div>,
+      dataIndex: "sub_part_no",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.sub_part_no)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.sub_part_no === (value as string),
+      // render: (text, record) => {
+      //   return text;
+      // },
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+
+      //   return editingId === record!!!.id ? (
+      //     <Input
+      //       value={editForm.sub_part_no}
+      //       onChange={(e) => {
+      //         setEditForm((prevForm) => ({
+      //           ...prevForm,
+      //           sub_part_no: String(e.target.value ?? ""),
+      //         }));
+      //       }}
+      //     />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // },
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Sub Part Name</div>,
+      dataIndex: "sub_part_name",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.sub_part_name)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.sub_part_name === (value as string),
+      // render: (text, record) => {
+      //   return text;
+      // },
+      render: (text, record) => {
+        if (record === null) {
+          return text || "-";
+        }
+
+        return editingId === record!!!.id ? (
+          <Input
+            value={editForm.sub_part_name}
+            onChange={(e) => {
+              setEditForm((prevForm) => ({
+                ...prevForm,
+                sub_part_name: String(e.target.value ?? ""),
+              }));
+            }}
+          />
+        ) : (
+          text || "-"
+        );
+      },
+    },
+    {
+      title: <div style={{ textAlign: "center" }}>Supplier</div>,
+      dataIndex: "supplier",
+      // filters: [{ text: " ", value: " " }],
+      filters: toFilterListNoEmpty(
+        subPartDataSource.map((item) => item.supplier)
+      ),
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.supplier === (value as string),
+      // render: (text, record) => {
+      //   return text;
+      // },
+      render: (text, record) => {
+        if (record === null) {
+          return text || "-";
+        }
+
+        return editingId === record!!!.id ? (
+          <Input
+            value={editForm.supplier}
+            onChange={(e) => {
+              setEditForm((prevForm) => ({
+                ...prevForm,
+                supplier: String(e.target.value ?? ""),
+              }));
+            }}
+          />
+        ) : (
+          text || "-"
+        );
+      },
+    },
+    // {
+    //   title: <div style={{ textAlign: "center" }}>Unit Consumption</div>,
+    //   dataIndex: "unit_consumption",
+    //   // filters: [{ text: " ", value: " " }],
+    //   filters: toNumberFilterListNoEmpty(
+    //     subPartDataSource.map((item) => item.unit_consumption)
+    //   ),
+    //   filterMode: "menu",
+    //   filterSearch: true,
+    //   onFilter: (value, record) => record.unit_consumption === value,
+    //   render: (text, record) => {
+    //     if (record === null) {
+    //       return text || "-";
+    //     }
+
+    //     return editingId === record!!!.id ? (
+    //       <InputNumber
+    //         defaultValue={text} // Initial value
+    //         style={{ width: "100%" }}
+    //         onChange={(value) => {
+    //           setEditForm((prevForm) => ({
+    //             ...prevForm,
+    //             target_control: typeof value === "number" ? value : 0,
+    //           }));
+    //         }}
+    //         step={0.01} // Allows both integers and floating-point numbers
+    //         placeholder="Enter a number"
+    //       />
+    //     ) : (
+    //       text || "-"
+    //     );
+    //   }, // input field
+    // },
+    {
+      title: <div style={{ textAlign: "center" }}>Action</div>,
+      dataIndex: "",
+      render: (text, record) => {
+        // do not let user edit blank item
+        if (record === null || (record?.id === 0 && record.line_name === "")) {
+          return <Space></Space>;
+        }
+
+        return editingId === record?.id ? (
+          <Space>
+            <Button type="link" onClick={() => saveEdit(record.id)}>
+              Save
+            </Button>
+            <Button type="link" onClick={() => cancelEdit()}>
+              Cancel
+            </Button>
+          </Space>
+        ) : (
+          <Space>
+            <FaEdit
+              onClick={() => startEdit(record!!!.id, record!!!)}
+              style={{
+                cursor: "pointer",
+                width: "20px",
+                height: "20px",
+                color: "#1976D2",
+              }}
+            />
+
+            <CustomPopover
+              title=""
+              triggerElement={
+                <MdDelete
+                  // onClick={() => deleteRow(record!!!.id)}
+                  style={{
+                    cursor: "pointer",
+                    width: "20px",
+                    height: "20px",
+                    color: "#1976D2",
+                  }}
+                />
+              } // Trigger element
+              popoverContent={(closePopover) => (
+                // Popover content
+                <Flex vertical>
+                  <Flex>
+                    <Image
+                      src={alertDelete}
+                      alt="alertDelete"
+                      priority
+                      width={20}
+                    />
+                    <p style={{ marginLeft: "3px", marginBottom: "15px" }}>
+                      Sure to delete?
+                    </p>
+                  </Flex>
+
+                  <Flex>
+                    <Button
+                      style={{ marginRight: "5px" }}
+                      type="primary"
+                      onClick={() => deleteRow(record!!!.id)}
+                    >
+                      Ok
+                    </Button>
+                    <Button type="default" danger onClick={closePopover}>
+                      Cancel
+                    </Button>
+                  </Flex>
+                </Flex>
+              )}
+            />
+          </Space>
+        );
+      },
+    },
+  ];
+
+  const defaultTableEditDropDownData = {
+    id: 0,
+    group_name: [],
+    line_name: [],
+    process: [],
+    // part_no: [],
+    // part_name: "",
+    parts: [],
+    target_type: "",
+    month_year: "",
+    target_control: 0,
+  };
+  const defaultSubPartTableEditDropDownData = {
+    id: 0,
+    group_name: [],
+    line_name: [],
+    process: [],
+    // part_no: [],
+    // part_name: "",
+    parts: [],
+    sub_part_no: "",
+    sub_part_name: "",
+    unit_consumption: 0,
+  };
+  const defalutEditForm = {
+    id: 0,
+    group_name: "",
+    line_name: "",
+    part_no: "",
+    part_name: "",
+    process: "",
+    sub_line: "",
+    sub_part_no: "",
+    sub_part_name: "",
+    supplier: "",
+    unit_consumption: 0,
+    creator: "",
+  };
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const [tableEditDropDownData, settableEditDropDownData] =
+    useState<SettingSubPartTableEditViewResult>(
+      defaultSubPartTableEditDropDownData
+    );
+  const [filteredTableEditDropDownData, setFilteredTableEditDropDownData] =
+    useState<SettingSubPartTableLineNameChangeEditResult>(
+      defaultSubPartTableEditDropDownData
+    );
+  const [editForm, setEditForm] =
+    useState<SubPartTargetTableEditSaveRequest>(defalutEditForm);
+
+  const startEdit = async (key: number, record: SubPartTableViewResult) => {
+    // do not let user edit blank item
+    if (record.id === 0 && record.line_name === "") {
+      return;
+    }
+    // console.log("record:", record);
+    setEditingId(key);
+    setEditForm({
+      id: 0, // need to replacy this with actual id in db
+      line_name: record.line_name,
+      part_no: record.part_no,
+      part_name: record.part_name,
+      sub_line: record.sub_line,
+      process: record.process,
+      creator: username,
+
+      group_name: record.group_name,
+      sub_part_no: record.sub_part_no,
+      sub_part_name: record.sub_part_name,
+      supplier: record.supplier,
+      unit_consumption: record.unit_consumption | 1,
+      // target_control: record.target_control,
+    });
+
+    // fetch dropdown data
+    try {
+      const response = await settingSubPartTableEditView({
+        line_name: record.line_name,
+        part_no: record.part_no,
+        part_name: record.part_name,
+        sub_line: record.sub_line,
+        process: record.process,
+        id: record.id,
+        group_name: record.group_name,
+        sub_part_no: record.sub_part_no,
+        sub_part_name: record.sub_part_name,
+        unit_consumption: record.unit_consumption | 1,
+        // target_control: record.target_control,
+      });
+      // console.log("Updated data:", response.setting_table_edit_result);
+
+      // update data in table if saving success
+      if (response !== null) {
+        // Update the table data
+        settableEditDropDownData(response.sub_part_table_edit_result[0]);
+        // update id to actual id in db
+        setEditForm((previous) => ({
+          ...previous,
+          id: response.sub_part_table_edit_result[0].id,
+        }));
+      }
+    } catch (error) {
+      console.error("Error saving edits:", error);
+    }
+
+    // fetch filtered dropdown if line_name is not empty
+    if (record.line_name) {
+      await fetchFilteredTableEditDropDownData(
+        record.line_name,
+        record.part_no,
+        record.part_name,
+        record.sub_line,
+        record.group_name
+      );
+    }
+  };
+
+  const saveEdit = async (key: number) => {
+    const editedRow = subPartDataSource.find((row) => row.id === key);
+
+    if (editedRow === null) {
+      return;
+    }
+    const hasValue = [
+      editForm.id,
+      editForm.line_name,
+      editForm.part_no,
+      editForm.part_name,
+      editForm.process,
+      editForm.sub_line,
+      editForm.group_name,
+      editForm.sub_part_no,
+      editForm.sub_part_name,
+      editForm.supplier,
+      editForm.unit_consumption,
+      // editForm.target_control,
+    ].some((field) => {
+      if (typeof field === "string") {
+        return field.trim() !== "";
+      }
+      return field !== null && field !== undefined;
+    });
+
+    if (!hasValue) {
+      alert("กรุณากรอกข้อมูลก่อนบันทึก");
+      return;
+    }
+
+    try {
+      const response = await settingSubPartTableEditSave({
+        id: editForm.id,
+        line_name: editForm.line_name,
+        part_no: editForm.part_no,
+        part_name: editForm.part_name,
+        process: editForm.process,
+        sub_line: editForm.sub_line,
+        creator: username,
+        group_name: editForm.group_name,
+        sub_part_no: editForm.sub_part_no,
+        sub_part_name: editForm.sub_part_name,
+        supplier: editForm.supplier,
+        unit_consumption: editForm.unit_consumption | 1,
+        // target_control: editForm.target_control,
+      });
+      // console.log("Updated data:", response.setting_table_edit_save);
+
+      // update data in table if saving success
+      if (response !== null) {
+        // Update the table data
+        await delay(200);
+        await triggerUpdateTableData();
+      }
+
+      setEditingId(null);
+    } catch (error) {
+      console.error("Error saving edits:", error);
+    }
+  };
+
+  const deleteRow = async (key: number | null) => {
+    const deletedItem = subPartDataSource.find((item) => item.id === key);
+
+    if (!deletedItem) {
+      return;
+    }
+
+    const hasData = [
+      deletedItem.line_name,
+      deletedItem.part_no,
+      deletedItem.part_name,
+      deletedItem.process,
+      deletedItem.sub_line,
+      deletedItem.group_name,
+      deletedItem.sub_part_no,
+      deletedItem.sub_part_name,
+      deletedItem.unit_consumption,
+      // deletedItem.target_control,
+    ].some((field) => {
+      if (typeof field === "string") {
+        return field.trim() !== "";
+      }
+      return field !== null && field !== undefined;
+    });
+
+    if (!hasData) {
+      alert("ไม่สามารถลบแถวที่ไม่มีข้อมูลได้");
+      return;
+    }
+
+    try {
+      const response = await settingSubPartTableDelete({
+        id: deletedItem.id,
+        line_name: deletedItem.line_name,
+        part_no: deletedItem.part_no,
+        part_name: deletedItem.part_name,
+        process: deletedItem.process,
+        sub_line: deletedItem.sub_line,
+        group_name: deletedItem.group_name,
+        sub_part_no: deletedItem.sub_part_no,
+        sub_part_name: deletedItem.sub_part_name,
+        unit_consumption: deletedItem.unit_consumption | 1,
+        // target_control: deletedItem.target_control,
+      });
+
+      // update data in table if deletion success
+      if (response !== null) {
+        // Update the table data
+        await triggerUpdateTableData();
+      }
+    } catch (error) {
+      console.error("Error delete:", error);
+    }
+  };
+
+  const fetchFilteredTableEditDropDownData = async (
+    line_name: string,
+    part_no: string,
+    part_name: string,
+    sub_line: string,
+    group_name: string
+  ): Promise<SettingSubPartTableLineNameChangeEditResult[]> => {
+    // fetch dropdown data
+    try {
+      const response = await settingSubPartTableEditViewLineNameChange({
+        line_name: line_name,
+        part_no: part_no,
+        part_name: part_name,
+        sub_line: sub_line,
+        group_name: group_name,
+      });
+
+      // update data in table if saving success
+      if (response !== null) {
+        // Update the table data
+        setFilteredTableEditDropDownData(
+          response.sub_part_table_edit_result[0]
+        );
+        return response.sub_part_table_edit_result;
+      }
+    } catch (error) {
+      console.error("Error saving edits:", error);
+    }
+    return [];
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  return (
+    <Table
+      columns={column}
+      dataSource={subPartDataSource}
+      rowKey={(record) => record.id}
+      // pagination={true}
+    />
+  );
+};
 export {
   MasterTypeOrganizationalTargetTable,
   MasterTypeDefectModeTable,
   MasterTypeLineTargetTable,
+  MasterTypeSubPartTable,
 };

@@ -13,6 +13,7 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Table,
   TableColumnsType,
   Typography,
@@ -50,7 +51,11 @@ import {
 } from "@/types/settingApi";
 import { CalendarOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { DefectType, defectType } from "@/master_data/masterdata";
+import {
+  DefectType,
+  defectType,
+  defectTypeOutline,
+} from "@/master_data/masterdata";
 import { categories } from "@/constants";
 
 const { Title, Text } = Typography;
@@ -119,7 +124,8 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
   const [defectMode, setDefectMode] = useState<string>("");
   const [process, setProcess] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
-
+  const { isLoading } = LayoutStore();
+  const { setIsLoading } = LayoutStore.getState();
   const getDefectTypeFromView = (
     baseDefectTypes: DefectType[],
     viewDefectTypes: string[]
@@ -205,11 +211,13 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
   };
 
   const getSettingDefectModeAddRowViewLineNameChange = async () => {
+    setIsLoading(true);
     try {
       const data = await settingDefectModeAddRowViewLineNameChange({
         line_name: selectedSectionLine || "",
         part_no: selectedPartNo,
         part_name: partName,
+        process: process,
       });
 
       // set part name by part no
@@ -243,6 +251,8 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
     } catch (error) {
       console.error("Failed to fetch lines:", error);
     }
+    setSelectedPartNo("");
+    setIsLoading(false);
   };
 
   const submitSettingDefectModeAddRowOk = async () => {
@@ -339,13 +349,35 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
   }, [open]);
 
   useEffect(() => {
-    if (selectedSectionLine === null || selectedSectionLine === "") {
+    let defect = null;
+    if (process == "Outline") {
+      defect = defectTypeOutline;
+    } else {
+      defect = defectType;
+    }
+    setDefectTypeOptions(defect);
+  }, [process]);
+
+  useEffect(() => {
+    if (
+      (selectedSectionLine === null || selectedSectionLine === "") &&
+      (!process || process == "")
+    ) {
       return;
     }
 
     getSettingDefectModeAddRowViewLineNameChange();
-  }, [selectedSectionLine]);
-
+  }, [selectedSectionLine, process]);
+  // console.log(
+  //   "x:",
+  //   defectTypeOutline.find((value) => value.value === selectedDefectType)
+  //     ?.hasDefectMode
+  // );
+  // console.log(
+  //   "y:",
+  //   defectTypeOutline.find((value) => value.value === selectedDefectType)
+  //     ?.hasDefectMode
+  // );
   return (
     <Modal
       title="Add Row Setting"
@@ -356,312 +388,320 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
       maskClosable={false}
       keyboard
     >
-      <Form
-        name="basic"
-        autoComplete="off"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        style={{ maxWidth: 600, marginBottom: "20px" }}
+      <Spin
+        spinning={isLoading}
+        style={{ top: "50%", transform: "translateY(-50%)" }}
       >
-        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
+        <Form
+          name="basic"
+          autoComplete="off"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          style={{ maxWidth: 600, marginBottom: "20px" }}
+        >
+          <Space direction="vertical" size="small" style={{ width: "100%" }}>
+            <Input.Group
               style={{
-                background: "white",
-                padding: "0 8px",
                 display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
+                flexDirection: "row",
+                alignItems: "stretch",
               }}
             >
-              <Text
+              <div
                 style={{
                   background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                }}
-              >
-                Line Name :
-              </Text>
-            </div>
-            <Select
-              showSearch
-              value={selectedSectionLine}
-              placeholder="Select Line Name"
-              options={lines.map((line) => ({
-                value: line.section_line,
-                label: line.section_line,
-              }))}
-              style={{
-                flex: 3,
-              }}
-              onChange={(value) => setSelectedSectionLine(value)}
-              allowClear
-            />
-          </Input.Group>
-
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "0 8px",
-                display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                }}
-              >
-                Process :
-              </Text>
-            </div>
-            <Select
-              value={process}
-              showSearch
-              placeholder=""
-              options={[
-                { value: "Inline", label: "Inline" },
-                { value: "Outline", label: "Outline" },
-                { value: "Inspection", label: "Inspection" },
-              ]}
-              style={{
-                flex: 3,
-              }}
-              onChange={(value) => setProcess(value)}
-              allowClear
-            />
-          </Input.Group>
-
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "0 8px",
-                display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                }}
-              >
-                Part No :
-              </Text>
-            </div>
-            <Select
-              showSearch
-              value={selectedPartNo}
-              placeholder="Select Part No"
-              options={partNoOptions.map((part) => ({
-                value: part.part_no,
-                label: part.part_no,
-              }))}
-              style={{
-                flex: 3,
-              }}
-              onChange={handleSetSelectedPartNo}
-              allowClear
-            />
-          </Input.Group>
-
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "0 8px",
-                display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
                   flex: "1",
-                  background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                  // paddingRight: "5px"
+                  justifyContent: "center",
                 }}
               >
-                Part Name :
-              </Text>
-            </div>
-            <Input
-              value={partName}
-              readOnly
-              placeholder="Enter Part Name"
-              style={{
-                marginLeft: "8px",
-                flex: "3",
-              }}
-            />
-          </Input.Group>
+                <Text
+                  style={{
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Line Name :
+                </Text>
+              </div>
+              <Select
+                showSearch
+                value={selectedSectionLine}
+                placeholder="Select Line Name"
+                options={lines.map((line) => ({
+                  value: line.section_line,
+                  label: line.section_line,
+                }))}
+                style={{
+                  flex: 3,
+                }}
+                onChange={(value) => setSelectedSectionLine(value)}
+                allowClear
+              />
+            </Input.Group>
 
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
+            <Input.Group
               style={{
-                background: "white",
-                padding: "0 8px",
                 display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
+                flexDirection: "row",
+                alignItems: "stretch",
               }}
             >
-              <Text
+              <div
                 style={{
-                  flex: "1",
                   background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                  paddingRight: "8px",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
                 }}
               >
-                Defect Type :
-              </Text>
-            </div>
-            <Select
-              value={selectedDefectType}
-              showSearch
-              placeholder="Select Defect Type"
-              options={defectTypeOptions.map((type) => ({
-                value: type.value,
-                label: type.value,
-              }))}
-              style={{
-                flex: 3,
-              }}
-              onChange={(value) => {
-                setDefectMode("");
-                setSelectedDefectType(value);
-              }}
-              allowClear
-            />
-          </Input.Group>
+                <Text
+                  style={{
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Process :
+                </Text>
+              </div>
+              <Select
+                value={process}
+                showSearch
+                placeholder=""
+                options={[
+                  { value: "Inline", label: "Inline" },
+                  { value: "Outline", label: "Outline" },
+                  { value: "Inspection", label: "Inspection" },
+                ]}
+                style={{
+                  flex: 3,
+                }}
+                onChange={(value) => setProcess(value)}
+                allowClear
+              />
+            </Input.Group>
 
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
+            <Input.Group
               style={{
-                background: "white",
-                padding: "0 8px",
                 display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
+                flexDirection: "row",
+                alignItems: "stretch",
               }}
             >
-              <Text
+              <div
                 style={{
-                  flex: "1",
                   background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
                 }}
               >
-                Defect Mode :
-              </Text>
-            </div>
-            <Input
-              disabled={
-                !defectType.find((value) => value.value === selectedDefectType)
-                  ?.hasDefectMode
-              }
-              value={defectMode}
-              onChange={(e) => setDefectMode(e.target.value)}
-              placeholder="Enter Defect Mode"
-              style={{
-                marginLeft: "8px",
-                flex: "3",
-              }}
-            />
-          </Input.Group>
+                <Text
+                  style={{
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Part No :
+                </Text>
+              </div>
+              <Select
+                showSearch
+                value={selectedPartNo}
+                placeholder="Select Part No"
+                options={partNoOptions.map((part) => ({
+                  value: part.part_no,
+                  label: part.part_no,
+                }))}
+                style={{
+                  flex: 3,
+                }}
+                onChange={handleSetSelectedPartNo}
+                allowClear
+              />
+            </Input.Group>
 
-          <Input.Group
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "stretch",
-            }}
-          >
-            <div
+            <Input.Group
               style={{
-                background: "white",
-                padding: "0 8px",
                 display: "flex",
-                alignItems: "center",
-                height: "32px",
-                flex: "1",
-                justifyContent: "center",
+                flexDirection: "row",
+                alignItems: "stretch",
               }}
             >
-              <Text
+              <div
                 style={{
-                  flex: "1",
                   background: "white",
-                  textAlign: "right",
-                  borderRadius: "5px",
-                  paddingRight: "8px",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
                 }}
               >
-                Category :
-              </Text>
-            </div>
-            {/* <Select
+                <Text
+                  style={{
+                    flex: "1",
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                    // paddingRight: "5px"
+                  }}
+                >
+                  Part Name :
+                </Text>
+              </div>
+              <Input
+                value={partName}
+                readOnly
+                placeholder="Enter Part Name"
+                style={{
+                  marginLeft: "8px",
+                  flex: "3",
+                }}
+              />
+            </Input.Group>
+
+            <Input.Group
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    flex: "1",
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                    paddingRight: "8px",
+                  }}
+                >
+                  Defect Type :
+                </Text>
+              </div>
+              <Select
+                value={selectedDefectType}
+                showSearch
+                placeholder="Select Defect Type"
+                options={defectTypeOptions.map((type) => ({
+                  value: type.value,
+                  label: type.value,
+                }))}
+                style={{
+                  flex: 3,
+                }}
+                onChange={(value) => {
+                  setDefectMode("");
+                  setSelectedDefectType(value);
+                }}
+                allowClear
+              />
+            </Input.Group>
+
+            <Input.Group
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    flex: "1",
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Defect Mode :
+                </Text>
+              </div>
+              <Input
+                disabled={
+                  process !== "Outline"
+                    ? !defectType.find((v) => v.value === selectedDefectType)
+                        ?.hasDefectMode
+                    : !defectTypeOutline.find(
+                        (v) => v.value === selectedDefectType
+                      )?.hasDefectMode
+                }
+                value={defectMode}
+                onChange={(e) => setDefectMode(e.target.value)}
+                placeholder="Enter Defect Mode"
+                style={{
+                  marginLeft: "8px",
+                  flex: "3",
+                }}
+              />
+            </Input.Group>
+
+            <Input.Group
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    flex: "1",
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                    paddingRight: "8px",
+                  }}
+                >
+                  Category :
+                </Text>
+              </div>
+              {/* <Select
               value={selectedDefectType}
               showSearch
               mode="multiple"
@@ -680,45 +720,52 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
               }}
               allowClear
             /> */}
-            <Select
-              allowClear
-              labelInValue
-              value={selectedCategory}
-              placeholder="Select Category"
-              mode="multiple"
-              options={categories.map((item) => ({
-                value: item,
-                label: item,
-              }))}
-              onChange={(value: any) => {
-                setSelectedCategory(value.map((item: any) => item.value) ?? []);
-              }}
-              style={{
-                // border: "none",
-                // width: "100%",
-                // color: "black",
-                // flex: 1,
-                flex: 3,
-              }}
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-            />
-          </Input.Group>
-        </Space>
-        <Space
-          style={{ display: "flex", justifyContent: "end", marginTop: "10px" }}
-        >
-          <Button htmlType="button" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button htmlType="submit" type="primary" onClick={handleOnClickOk}>
-            OK
-          </Button>
-        </Space>
-      </Form>
+              <Select
+                allowClear
+                labelInValue
+                value={selectedCategory}
+                placeholder="Select Category"
+                mode="multiple"
+                options={categories.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value: any) => {
+                  setSelectedCategory(
+                    value.map((item: any) => item.value) ?? []
+                  );
+                }}
+                style={{
+                  // border: "none",
+                  // width: "100%",
+                  // color: "black",
+                  // flex: 1,
+                  flex: 3,
+                }}
+                filterOption={(input, option) =>
+                  (option?.label ?? "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+              />
+            </Input.Group>
+          </Space>
+          <Space
+            style={{
+              display: "flex",
+              justifyContent: "end",
+              marginTop: "10px",
+            }}
+          >
+            <Button htmlType="button" onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button htmlType="submit" type="primary" onClick={handleOnClickOk}>
+              OK
+            </Button>
+          </Space>
+        </Form>
+      </Spin>
     </Modal>
   );
 };

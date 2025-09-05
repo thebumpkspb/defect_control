@@ -35,7 +35,28 @@ const defectType: DefectType[] = [
   { value: "M/C Set up", hasDefectMode: false },
   { value: "Quality Test", hasDefectMode: false },
 ];
-
+const defectTypeOutline: DefectType[] = [
+  {
+    value: "B-2",
+    hasDefectMode: true,
+  },
+  {
+    value: "Local",
+    hasDefectMode: true,
+  },
+  {
+    value: "CKD",
+    hasDefectMode: true,
+  },
+  {
+    value: "Sub Assy Line",
+    hasDefectMode: true,
+  },
+  {
+    value: "Store / Warehouse",
+    hasDefectMode: true,
+  },
+];
 interface TargetType {
   value: string;
 }
@@ -129,6 +150,7 @@ export {
   shiftList,
   settingMasterTypeList,
   settingTargetLevel,
+  defectTypeOutline,
 };
 export type {
   DefectType,

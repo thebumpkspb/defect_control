@@ -8,6 +8,7 @@ from app.routers.users import users_routers
 from app.routers.settings_target import settings_target_routers
 from app.routers.settings_target_org import settings_target_org_routers
 from app.routers.settings_defect_mode import settings_defect_mode_routers
+from app.routers.settings_sub_part import settings_subpart_routers
 from app.routers.p_chart_record import p_chart_record_routers
 from app.routers.inline_outline import inline_outline_routers
 from app.routers.export_p_chart import export_p_chart_routers
@@ -25,4 +26,5 @@ __all__ = [
     "p_chart_record_routers",
     "inline_outline_routers",
     "export_p_chart_routers",
+    "settings_subpart_routers",
 ]

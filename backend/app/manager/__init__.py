@@ -3,7 +3,7 @@ from app.manager.settings import SettingsManager
 from app.manager.productions import ProductionsManager
 from app.manager.search import SearchManager
 from app.manager.approval import ApprovalManager
-
+from app.manager.settings_sub_part import Settings_SubPart_Manager
 from app.manager.settings_target import Settings_Target_Manager
 from app.manager.settings_target_org import Settings_Target_Org_Manager
 from app.manager.settings_defect_mode import Settings_Defect_Mode_Manager

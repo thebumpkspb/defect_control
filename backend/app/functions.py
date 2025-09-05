@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from starlette import status
 from typing import Any, List, Dict, get_origin, get_args, Union
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 X_API_KEY = APIKeyHeader(name="X-API-Key")
@@ -377,3 +378,36 @@ def call_request(
     elif method == "DELETE":
         response = requests.delete(url=url, headers=headers)
     return response
+
+
+def parse_defect_string(s):
+    # Remove surrounding parentheses
+    s = s.strip()
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1]
+    # Regex to split at commas only at the top level (not inside brackets)
+    parts = re.split(r", (?=\w+=)", s)
+    d = {}
+    for part in parts:
+        key, value = part.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        # Handle strings with single or double quotes
+        if (value.startswith("'") and value.endswith("'")) or (
+            value.startswith('"') and value.endswith('"')
+        ):
+            value = value[1:-1]
+        # Handle lists
+        elif value.startswith("[") and value.endswith("]"):
+            value = eval(value)  # Only safe if you trust your input!
+        # Try to convert to int or float
+        else:
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+        d[key] = value
+    return d

@@ -3,22 +3,26 @@ from typing import List
 
 
 class Setting_Table(BaseModel):
+    group_name: str | None = None
     line_name: str
     part_name: str | None = None
-    part_no: str
-    sub_line: str
+    part_no: str | None = None
+    sub_line: str | None = None
+    sub_line_label: str | None = None
 
 
 class Setting_SubPart_Table(BaseModel):
     line_name: str
+    line_code_rx: str | None = None
 
 
 class Setting_Table_Result(Setting_Table):
     id: int | None = None
     process: str | None = None
-    target_type: str | None = None
-    month_year: str | None = None
-    target_control: float | None = None
+    sub_part_no: str | None = None
+    sub_part_name: str | None = None
+    supplier: str | None = None
+    unit_consumption: int | None = None
 
 
 class Setting_SubPart_Table_Result(Setting_Table):
@@ -27,6 +31,7 @@ class Setting_SubPart_Table_Result(Setting_Table):
     process: str | None = None
     sub_part_no: str
     sub_part_name: str | None = None
+    supplier: str | None = None
     unit_consumption: int
 
 
@@ -58,7 +63,7 @@ class Setting_Table_Edit_Result(BaseModel):
 
 
 class Setting_Table_Edit_Result_Response(BaseModel):
-    setting_table_edit_result: List[Setting_Table_Edit_Result]
+    sub_part_table_edit_result: List[Setting_Table_Edit_Result]
 
 
 class Setting_Table_Edit_Save(Setting_Table_Edit):
@@ -70,7 +75,7 @@ class Setting_Table_Edit_Save_Response(BaseModel):
 
 
 class Add_Row_View(Setting_Table):
-    process: str | None = None
+    pass
 
 
 class Add_Row_View_Result(BaseModel):
@@ -88,9 +93,10 @@ class Add_Row_View_Result_Response(BaseModel):
 
 class Add_Row_Ok_Result(Add_Row_View):
     process: str | None = None
-    target_type: str | None = None
-    month_year: str | None = None
-    target_percent: float | None = None
+    sub_part_no: str | None = None
+    sub_part_name: str | None = None
+    supplier: str | None = None
+    unit_consumption: int | None = None
     creator: str | None = None
 
 

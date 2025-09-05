@@ -27,6 +27,7 @@ from app.routers import (
     settings_target_routers,
     settings_target_org_routers,
     settings_defect_mode_routers,
+    settings_subpart_routers,
     p_chart_record_routers,
     inline_outline_routers,
     export_p_chart_routers,
@@ -75,7 +76,9 @@ app.include_router(
     approval_routers(get_epddev_pg_async_db), prefix="/api/approval", tags=["Approval"]
 )
 app.include_router(
-    settings_routers(get_common_pg_async_db), prefix="/api/settings", tags=["Settings"]
+    settings_routers(get_common_pg_async_db, get_epddev_pg_async_db),
+    prefix="/api/settings",
+    tags=["Settings"],
 )
 # app.include_router(schemas_routers(), prefix="/api/schemas", tags=["Schemas"])
 app.include_router(
@@ -97,6 +100,12 @@ app.include_router(
     prefix="/api/settings_defect_mode",
     tags=["Settings Defect Mode"],
 )
+app.include_router(
+    settings_subpart_routers(get_epddev_pg_async_db),
+    prefix="/api/settings_sub_part",
+    tags=["Settings Sub Part"],
+)
+
 app.include_router(
     p_chart_record_routers(get_epddev_pg_async_db),
     prefix="/api/p_chart_record",

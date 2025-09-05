@@ -686,6 +686,20 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         pChartPageSelectedDayNum
       ); // fallback if no fetch needed
     }, [isModalVisible, pChartPageSelectedDate]);
+    // useEffect(() => {
+    //   const parsedDate = dayjs(pChartPageSelectedDate, dateFormat);
+    //   addNewRecordView({
+    //     date: convertToDateString(parsedDate),
+    //     line_name: createForm.line_name || "",
+    //     defect_type: "",
+    //     process: createForm.process || "",
+    //     sub_line: "",
+    //     part_no: "",
+    //   }).then((res) => {
+    //     // const resData = res.add_new_record_view_result[0];
+    //     setAddNewRecordViewResult(res.add_new_record_view_result[0]);
+    //   });
+    // }, [createForm.process]);
 
     const showModal = () => {
       // message.error("Over UCL Target Please Input Action record");
@@ -701,6 +715,7 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
       setSelectedDate(date);
       closeHistoryRecordTableVisible();
     };
+
     const handleSetDefectType = (value: string) => {
       // fetch by defective_items comment
       changeNewRecordView({
@@ -957,13 +972,7 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
               .map((item: any) => item.defect_mode)
           ),
         ];
-        const sub_line: any = [
-          ...new Set(
-            subLines
-              .filter((item) => item.rxno_part === createForm.sub_line)
-              .map((item: any) => item.rxno_part)
-          ),
-        ];
+
         setDefectTypeOptions(defect_type);
         // console.log("defect_type:", defect_type);
         // console.log("createForm.defect_type:", createForm.defect_type);
@@ -979,11 +988,25 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
             defective_items: "",
           }));
         }
-        if (!sub_line.includes(createForm.sub_line)) {
+        if (createForm.process == "Outline") {
           setCreateForm((prev) => ({
             ...prev,
-            sub_line: "",
+            sub_line: "Outline",
           }));
+        } else {
+          const sub_line: any = [
+            ...new Set(
+              subLines
+                .filter((item) => item.rxno_part === createForm.sub_line)
+                .map((item: any) => item.rxno_part)
+            ),
+          ];
+          if (!sub_line.includes(createForm.sub_line)) {
+            setCreateForm((prev) => ({
+              ...prev,
+              sub_line: "",
+            }));
+          }
         }
       }
     }, [createForm.part_no, defectData]);
@@ -1054,7 +1077,14 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         width="90%"
       >
         {/* General Information */}
-        <Title level={5}>General Information</Title>
+        <div style={{ display: "flex" }}>
+          <Title level={5}>General Information</Title>
+          <div
+            style={{ color: "red", paddingLeft: "20px", fontWeight: "bold" }}
+          >
+            ***หากต้องการเปลี่ยน Line Name หรือ Process โปรดกลับไปที่หน้าหลัก***
+          </div>
+        </div>
         <Row gutter={[16, 16]}>
           <Col span={4}>
             <Input.Group
@@ -1152,7 +1182,54 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
               />
             </Input.Group>
           </Col>
-
+          <Col span={3}>
+            <Input.Group
+              compact
+              style={{
+                display: "flex",
+                alignItems: "center",
+                border: "1px solid #d9d9d9",
+                borderRadius: "5px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  background: "#f5f5f5",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                }}
+              >
+                <Text style={{ color: "gray" }}>Process</Text>
+              </div>
+              <Select
+                disabled
+                placeholder=""
+                style={{
+                  border: "none",
+                  flex: 1,
+                  height: "32px",
+                  color: "black",
+                }}
+                value={createForm.process}
+                // todo: use changeNewRecordViewData
+                // if needed to use change add api
+                options={addNewRecordViewResult.process.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value) => {
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    process: value,
+                  }));
+                  closeHistoryRecordTableVisible();
+                }}
+              />
+            </Input.Group>
+          </Col>
           <Col span={3}>
             <Input.Group
               compact
@@ -1302,53 +1379,6 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
                   setCreateForm((prev) => ({
                     ...prev,
                     defective_items: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-          <Col span={3}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
-                  display: "flex",
-                  alignItems: "center",
-                  height: "32px",
-                }}
-              >
-                <Text style={{ color: "gray" }}>Process</Text>
-              </div>
-              <Select
-                placeholder=""
-                style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                value={createForm.process}
-                // todo: use changeNewRecordViewData
-                // if needed to use change add api
-                options={addNewRecordViewResult.process.map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    process: value,
                   }));
                   closeHistoryRecordTableVisible();
                 }}
