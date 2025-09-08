@@ -641,7 +641,7 @@ class P_Chart_Record_CRUD:
         process = data["process"]
         sub_line = data["sub_line"]
 
-        str_table_json = str(graph_data).replace("'", '"')
+        str_table_json = str(graph_data).replace("'", "''")
 
         status = True
 

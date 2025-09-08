@@ -66,6 +66,7 @@ import {
   SettingTableViewResult,
   SettingTargetTableEditSaveRequest,
   SubPartTableResult,
+  SubPartTableViewResult,
 } from "@/types/settingApi";
 import AddRowSettingModalDefectMode from "./addRowSettingModalDefectMode";
 import DropdownEdit from "@/components/button/dropdown-edit";
@@ -163,7 +164,7 @@ const MasterDataPage: NextPage = () => {
 
   const getPartsByLineWitoutSetParts = async (
     line_id: string,
-    process: string
+    process?: string
   ): Promise<Part[]> => {
     if (!line_id) return [];
     setIsLoading(true);
@@ -447,7 +448,7 @@ const MasterDataPage: NextPage = () => {
   const [lineTargetModes, setLineTargetModes] = useState<
     SettingTableViewResult[]
   >([]);
-  const [subPartData, setSubPartData] = useState<SubPartTableResult[]>([]);
+  const [subPartData, setSubPartData] = useState<SubPartTableViewResult[]>([]);
   const [targetOrgModes, setTargetOrgModes] = useState<SettingTableResult2[]>(
     []
   );

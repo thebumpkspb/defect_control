@@ -77,7 +77,8 @@ export default function PChartHeader() {
     setIsLoading(true);
     try {
       const response = await pChartCtlPartByLineNoErr(
-        selectedLineId.toString()
+        selectedLineId.toString(),
+        process
       );
       // console.log("Parts:", response.parts);
       setParts(response.parts);
@@ -162,7 +163,7 @@ export default function PChartHeader() {
       missingFields.push("Part No");
     }
     if (!selectedSubLine) {
-      missingFields.push("Part No");
+      missingFields.push("Sub Line");
     }
 
     if (!process) {
@@ -228,15 +229,23 @@ export default function PChartHeader() {
       return;
     }
     fetchParts();
-  }, [selectedLineId]);
+    if (process && process == "Outline") {
+      setSelectedSubLine("Outline");
+    } else {
+      setSelectedSubLine(null);
+    }
+  }, [selectedLineId, process]);
   useEffect(() => {
     console.log("user effect selectedPartNo: triggered");
-    setSelectedSubLine(null);
+
     setSelectedSubLineLabel(null);
     if (!selectedLineId && !selectedPartNo) {
       return;
     }
-    fetchSubLines();
+    if (process && process !== "Outline") {
+      setSelectedSubLine(null);
+      fetchSubLines();
+    }
   }, [selectedPartNo]);
 
   return (

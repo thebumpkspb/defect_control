@@ -440,7 +440,8 @@ class Export_P_Chart_Utils:
             result = chr(97 + remainder) + result  # Use 97 for 'a'
         return result
 
-    def extract_pchart_graph(self, pchart_graph_str):
+    # def extract_pchart_graph(self, pchart_graph_str):
+    def extract_pchart_graph(self, pchart_graph_data):
         """
         Extracts and converts the pchart_graph JSON-like string into structured data.
 
@@ -452,20 +453,21 @@ class Export_P_Chart_Utils:
         Returns a dictionary with keys such as "defect_list", "x_axis_label", etc.
         """
         try:
-            if not pchart_graph_str or pchart_graph_str.strip() == "":
-                # print ( "Warning: pchart_graph_str is empty or None." )
-                return {}
+            # *!
+            # if not pchart_graph_str or pchart_graph_str.strip() == "":
+            #     # print ( "Warning: pchart_graph_str is empty or None." )
+            #     return {}
 
-            # Convert to valid JSON format using the custom conversion function.
-            pchart_graph_str = self.convert_to_json_compatible_format(pchart_graph_str)
-            # Replace Python's None with JSON null
-            pchart_graph_str = pchart_graph_str.replace("None", "null")
-            # Remove trailing commas before a closing brace or bracket.
-            pchart_graph_str = re.sub(r",\s*([\]}])", r"\1", pchart_graph_str)
+            # # Convert to valid JSON format using the custom conversion function.
+            # pchart_graph_str = self.convert_to_json_compatible_format(pchart_graph_str)
+            # # Replace Python's None with JSON null
+            # pchart_graph_str = pchart_graph_str.replace("None", "null")
+            # # Remove trailing commas before a closing brace or bracket.
+            # pchart_graph_str = re.sub(r",\s*([\]}])", r"\1", pchart_graph_str)
 
-            # Parse the JSON data.
-            pchart_graph_data = json.loads(pchart_graph_str)
-
+            # # Parse the JSON data.
+            # pchart_graph_data = json.loads(pchart_graph_str)
+            # *!
             # Extract defect list, ensuring that only dictionaries are processed.
             defect_list = []
             if "defect" in pchart_graph_data:

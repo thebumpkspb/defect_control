@@ -11,6 +11,8 @@ from app.crud.export_p_chart import Export_P_Chart_CRUD
 from app.utils.export_p_chart import Export_P_Chart_Utils
 from collections import namedtuple
 import math
+from app.functions import parse_defect_string
+import json
 
 
 class Export_P_Chart_Manager:
@@ -66,7 +68,8 @@ class Export_P_Chart_Manager:
             else:
                 # Keep the first value (or implement special logic if needed)
                 result[key] = data[0][key]
-        return str(result).replace("'", '"')
+        # return str(result).replace("'", '"')
+        return result
 
     def combine_json_list_defect_table(self, data, skip_keys={}):
         # Defect_table = namedtuple(
@@ -136,7 +139,8 @@ class Export_P_Chart_Manager:
                 )
             else:
                 result["defect_ratio"][idx] = 0
-        return str(result).replace("'", '"')
+        # return str(result).replace("'", '"')
+        return result
 
     async def fetch_pchart_defect_records_service(
         self, filters: Dict, db: AsyncSession = None
@@ -158,9 +162,14 @@ class Export_P_Chart_Manager:
         # Get the Unix timestamp
         unix_time = int(now.timestamp())
         current_directory = os.getcwd()
-        base_excel_path = (
-            current_directory + "/app/utils/export_p_chart/Form.xlsx"
-        )  # Base Excel file
+        if filters["process"] == "Outline":
+            base_excel_path = (
+                current_directory + "/app/utils/export_p_chart/Form_Outline.xlsx"
+            )  # Base Excel file
+        else:
+            base_excel_path = (
+                current_directory + "/app/utils/export_p_chart/Form.xlsx"
+            )  # Base Excel file
         output_excel_path1 = (
             current_directory + "/app/utils/export_p_chart/p_chart_output1.xlsx"
         )  # Output file
@@ -180,13 +189,13 @@ class Export_P_Chart_Manager:
         records = await self.crud.fetch_filtered_records(db=db, filters=filters)
         for r in records:
             key_index = r._key_to_index
-            part_name = r[key_index["part_name"]]
-            n_bar = r[key_index["n_bar"]]
-            p_bar = r[key_index["p_bar"]]
-            k = r[key_index["k"]]
-            uclp = r[key_index["uclp"]]
-            lclp = r[key_index["lclp"]]
-            p_bar_last = r[key_index["p_bar_last"]]
+            part_name = r[key_index["part_name"]] or filters["part_no"]
+            n_bar = r[key_index["n_bar"]] or 0
+            p_bar = r[key_index["p_bar"]] or 0
+            k = r[key_index["k"]] or 0
+            uclp = r[key_index["uclp"]] or 0
+            lclp = r[key_index["lclp"]] or 0
+            p_bar_last = r[key_index["p_bar_last"]] or 0
 
         pchart_graph = None
         #!
@@ -210,9 +219,12 @@ class Export_P_Chart_Manager:
         target = await self.crud.fetch_filtered_master_target_line(
             db=db, filters=filters
         )
-        for r in target:
-            key_index = r._key_to_index
-            target_control = r[key_index["target_control"]]
+        if target and len(target.fetchall()) > 0:
+            for r in target:
+                key_index = r._key_to_index
+                target_control = r[key_index["target_control"]]
+        else:
+            target_control = "-"
 
         #!
         table = await self.crud.fetch_filtered_table(db=db, filters=filters)
@@ -226,11 +238,15 @@ class Export_P_Chart_Manager:
         result_table = "[" + ", ".join(str(item) for item in result_table) + "]"
         # print("result_table:", result_table)
         table_pchart_table = self.combine_json_list_defect_table(result_table)
-        # print("table_pchart_table:", table_pchart_table)
-        table_pchart_table = self.utils.extract_pchart_table(table_pchart_table)
+        print("table_pchart_table1:", table_pchart_table)
+        # print("type table_pchart_table1:", type(table_pchart_table))
+
+        # table_pchart_table = self.utils.extract_pchart_table(table_pchart_table)
+        # table_pchart_table = json.loads(table_pchart_table)
+        # table_pchart_table = parse_defect_string(table_pchart_table)
         # print("-------------------------",table )
         data_table = table_pchart_table
-
+        print("table_pchart_table2:", table_pchart_table)
         date = []
         trouble = []
         action = []
@@ -279,8 +295,9 @@ class Export_P_Chart_Manager:
                 shift_a, shift_b = "✓", "✓"
 
         # Define the data to insert into specific Excel cells
+        month_cell = "AL3" if filters["process"] != "Outline" else "AC7"
         data_to_write = {
-            "AL3": filters.get("month", ""),
+            month_cell: filters.get("month", ""),
             "R3": filters.get("line_name", ""),
             "R4": part_name,
             "R5": (
@@ -296,53 +313,76 @@ class Export_P_Chart_Manager:
             "AF3": process_inspection,
             "AC5": shift_a,
             "AF5": shift_b,
-            "AZ9": f"{n_bar:.2f}",
-            "AZ12": f"{p_bar:.2f}",
-            "AZ18": f"{k:.2f}",
-            "AZ22": f"{uclp:.2f}",
-            "AZ24": f"{lclp:.2f}",
-            "AY27": target_control,
-            "AY29": f"{p_bar_last:.5f}",
         }
-
+        if filters["process"] != "Outline":
+            data_to_write.update(
+                {
+                    "AZ9": f"{n_bar:.2f}",
+                    "AZ12": f"{p_bar:.2f}",
+                    "AZ18": f"{k:.2f}",
+                    "AZ22": f"{uclp:.2f}",
+                    "AZ24": f"{lclp:.2f}",
+                    "AY27": target_control,
+                    "AY29": f"{p_bar_last:.5f}",
+                }
+            )
         start_col = 14
-
+        if filters["process"] == "Outline":
+            start_row = 8
+        else:
+            start_row = 30
         for i, day in enumerate(data_table["day"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}31"
+            row = str(start_row + 1)
+            # cell_address = f"{col_letter}31"
+            cell_address = f"{col_letter}{row}"
             data_to_write[cell_address] = day
 
         for i, day in enumerate(data_table["day"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}32"
+            row = str(start_row + 2)
+            # cell_address = f"{col_letter}32"
+            cell_address = f"{col_letter}{row}"
             data_to_write[cell_address] = i + 1
 
         for i, value in enumerate(data_table["prod_qty"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}33"
+            row = str(start_row + 3)
+            # cell_address = f"{col_letter}33"
+            cell_address = f"{col_letter}{row}"
             if i == len(data_table["prod_qty"]) - 1:
-                cell_address = f"AS33"
+                # cell_address = f"AS33"
+                cell_address = f"AS{row}"
             data_to_write[cell_address] = str(value)
             # addition
             if i == len(data_table["prod_qty"]) - 1:
-                cell_address = f"AV33"
-                data_to_write[cell_address] = str(value)
+                if filters["process"] != "Outline":
+                    # cell_address = f"AV33"
+                    cell_address = f"AV{row}"
+                    data_to_write[cell_address] = str(value)
 
         for i, value in enumerate(data_table["defect_qty"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}34"
+            row = str(start_row + 4)
+            # cell_address = f"{col_letter}34"
+            cell_address = f"{col_letter}{row}"
             if i == len(data_table["defect_qty"]) - 1:
-                cell_address = f"AS34"
+                # cell_address = f"AS34"
+                cell_address = f"AS{row}"
             data_to_write[cell_address] = str(value)
             # addition
             if i == len(data_table["defect_qty"]) - 1:
-                cell_address = f"AV34"
-                data_to_write[cell_address] = str(value)
+                if filters["process"] != "Outline":
+                    # cell_address = f"AV34"
+                    cell_address = f"AV{row}"
+                    data_to_write[cell_address] = str(value)
 
         # *******
         for i, value in enumerate(data_table["record_by"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}82"
+            row = str(start_row + 52)
+            # cell_address = f"{col_letter}82"
+            cell_address = f"{col_letter}{row}"
             # if i == len(data_table["defect_qty"]) - 1:
             #     cell_address = f"AS34"
             # print("value:", value)
@@ -355,7 +395,9 @@ class Export_P_Chart_Manager:
             # data_to_write[cell_address] = str(value)
         for i, value in enumerate(data_table["review_by_tl"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}83"
+            row = str(start_row + 53)
+            # cell_address = f"{col_letter}83"
+            cell_address = f"{col_letter}{row}"
             # if i == len(data_table["defect_qty"]) - 1:
             #     cell_address = f"AS34"
             # print("value:", value)
@@ -372,7 +414,9 @@ class Export_P_Chart_Manager:
             #     data_to_write[cell_address] = str(value)
         for i, value in enumerate(data_table["review_by_mgr"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}84"
+            row = str(start_row + 54)
+            # cell_address = f"{col_letter}84"
+            cell_address = f"{col_letter}{row}"
             # if i == len(data_table["defect_qty"]) - 1:
             #     cell_address = f"AS34"
             # data_to_write[cell_address] = str(value)
@@ -388,7 +432,9 @@ class Export_P_Chart_Manager:
             #     data_to_write[cell_address] = str(value)
         for i, value in enumerate(data_table["review_by_gm"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}85"
+            row = str(start_row + 55)
+            # cell_address = f"{col_letter}85"
+            cell_address = f"{col_letter}{row}"
             # if i == len(data_table["defect_qty"]) - 1:
             #     cell_address = f"AS34"
             # data_to_write[cell_address] = str(value)
@@ -406,9 +452,12 @@ class Export_P_Chart_Manager:
 
         for i, value in enumerate(data_table["defect_ratio"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
-            cell_address = f"{col_letter}35"
+            row = str(start_row + 5)
+            # cell_address = f"{col_letter}35"
+            cell_address = f"{col_letter}{row}"
             if i == len(data_table["defect_ratio"]) - 1:
-                cell_address = f"AS35"
+                # cell_address = f"AS35"
+                cell_address = f"AS{row}"
             data_to_write[cell_address] = str(value)
         # #!
         # sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
@@ -630,7 +679,10 @@ class Export_P_Chart_Manager:
             # print("counts:", counts)
             row_del = 0
             for i, value in enumerate(chunk_sorted_defect_table):
-                initial_row = 36
+                if filters["process"] == "Outline":
+                    initial_row = 14
+                else:
+                    initial_row = 36
                 row = initial_row + i
                 row_del = row + 1
 
@@ -652,8 +704,16 @@ class Export_P_Chart_Manager:
                 cell_address = f"F{row}"
                 data_to_write[cell_address] = str(value["defect_item"])
 
+            for row in wb[f"Page{idx_page}"].iter_rows(
+                min_row=row_del, max_row=initial_row + 45
+            ):
+                for cell in row:
+                    cell.value = None
             # for header
-            initial_row = 35
+            if filters["process"] == "Outline":
+                initial_row = 13
+            else:
+                initial_row = 35
             merge_cell_list = []
             # count_item=1
             for key, value in counts.items():
@@ -688,6 +748,8 @@ class Export_P_Chart_Manager:
                 except:
                     pass
             # wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
+            print("pchart_graph:", pchart_graph)
+            print("type pchart_graph:", type(pchart_graph))
             if pchart_graph != None:
                 pchart_graph = self.utils.extract_pchart_graph(pchart_graph)
 
@@ -706,26 +768,32 @@ class Export_P_Chart_Manager:
                     # Update the original data
                     pchart_graph["defect_list"] = filtered_list
 
-                print("pchart_graph:", pchart_graph)
-            self.utils.create_graph_as_image(graph_image_path, pchart_graph)
+                # print("pchart_graph:", pchart_graph)
+            if filters["process"] != "Outline":
+                self.utils.create_graph_as_image(graph_image_path, pchart_graph)
 
-            # Insert the graph image into a fixed position
-            img = OpenPyxlImage(graph_image_path)
-            img.anchor = "C8"
-            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+                # Insert the graph image into a fixed position
+                img = OpenPyxlImage(graph_image_path)
+                img.anchor = "C8"
+                wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+
+                # ws.add_image(img)  # Adjust position as needed
+
+                img = OpenPyxlImage(equation_image)
+                img.anchor = "AT9"
+                wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+                # ws.add_image(img)  # Adjust position as needed
+
+                img = OpenPyxlImage(equation_image2)
+                img.anchor = "AT33"
+                wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
             # ws.add_image(img)  # Adjust position as needed
-
-            img = OpenPyxlImage(equation_image)
-            img.anchor = "AT9"
-            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
-            # ws.add_image(img)  # Adjust position as needed
-
-            img = OpenPyxlImage(equation_image2)
-            img.anchor = "AT33"
-            wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
-            # ws.add_image(img)  # Adjust position as needed
-
-            wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
+            # for row in wb[f"Page{idx_page}"].iter_rows(min_row=row_del, max_row=81):
+            #     for cell in row:
+            #         cell.value = None
+            #!wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
+            # if filters["process"] != "Outline":
+            #     wb[f"Page{idx_page}"].delete_rows(7, 23)
             # ws.delete_rows(idx=row_del, amount=82 - row_del)
         new_ws2 = wb.copy_worksheet(ws2)
         new_ws2.title = f"Page{page_amount+1}"

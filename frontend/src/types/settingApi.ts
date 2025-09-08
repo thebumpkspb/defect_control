@@ -31,12 +31,13 @@ export interface SubPartTableResult {
   sub_part_no: string;
   sub_part_name: string;
   unit_consumption: number;
+  supplier?: string;
 }
 export interface SettingDefectModeResponse {
   setting_table_result: SettingTableResult[];
 }
 export interface SettingSubPartResponse {
-  setting_subpart_table_result: SubPartTableResult[];
+  setting_subpart_table_result: SubPartTableViewResult[];
 }
 
 export interface Part {
