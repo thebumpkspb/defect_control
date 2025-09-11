@@ -144,7 +144,7 @@ export default function PChartHeader() {
     const year: number = now.getFullYear();
     const unix_time: number = Math.floor(now.getTime() / 1000); // Unix timestamp in seconds
 
-    return `${process}-${part_no}-${month}-${year}-${unix_time}`;
+    return `${process}-${part_no || "All"}-${month}-${year}-${unix_time}`;
   };
 
   const handleDownloadExportDeflectFile: any = (file_type: string) => {
@@ -159,10 +159,10 @@ export default function PChartHeader() {
       missingFields.push("Line Name");
     }
 
-    if (!selectedPartNo) {
+    if (!selectedPartNo && process != "Outline") {
       missingFields.push("Part No");
     }
-    if (!selectedSubLine) {
+    if (!selectedSubLine && process != "Outline") {
       missingFields.push("Sub Line");
     }
 
@@ -577,6 +577,7 @@ export default function PChartHeader() {
                     </div>
                     <Select
                       showSearch
+                      disabled={process == "Outline"}
                       placeholder="Select Part No"
                       value={selectedPartNo}
                       options={parts.map(({ part_no }) => ({
@@ -623,6 +624,7 @@ export default function PChartHeader() {
                       </Text>
                     </div>
                     <Select
+                      disabled={process == "Outline"}
                       showSearch
                       placeholder="Select Sub Line"
                       value={selectedSubLine}

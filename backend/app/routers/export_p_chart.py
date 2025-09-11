@@ -71,11 +71,15 @@ def export_p_chart_routers(db: AsyncGenerator) -> APIRouter:
                 )
                 # Return the PDF with inline Content-Disposition
             # print('filters["file_type"]:', filters["file_type"])
+            part_no_filename = (
+                filters["part_no"] if filters["process"] != "Outline" else "All"
+            )
             if filters["file_type"] == "pdf":
-                filename = f'P-Chart-{filters [ "process" ]}-{filters [ "part_no" ]}-{filters [ "sub_line" ]}-{month_year}-{unix_time}.pdf'
+                part_no_filename
+                filename = f'P-Chart-{filters [ "process" ]}-{part_no_filename}-{filters [ "sub_line" ]}-{month_year}-{unix_time}.pdf'
                 media_type = "application/pdf"
             elif filters["file_type"] == "excel":
-                filename = f'P-Chart-{filters [ "process" ]}-{filters [ "part_no" ]}-{filters [ "sub_line" ]}-{month_year}-{unix_time}.xlsx'
+                filename = f'P-Chart-{filters [ "process" ]}-{part_no_filename}-{filters [ "sub_line" ]}-{month_year}-{unix_time}.xlsx'
                 media_type = (
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )

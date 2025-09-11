@@ -216,14 +216,18 @@ class Export_P_Chart_Manager:
         graph_image_path = (
             current_directory + "/app/utils/export_p_chart/temp_graph.png"
         )  # Path to the graph image
+        part_no_filename = (
+            filters["part_no"] if filters["process"] != "Outline" else "All"
+        )
         output_pdf_path = (
             current_directory
-            + f'/app/utils/export_p_chart/P-Chart-{filters [ "process" ]}-{filters [ "part_no" ]}-{month_year}-{unix_time}.pdf'
+            + f'/app/utils/export_p_chart/P-Chart-{filters [ "process" ]}-{part_no_filename }-{month_year}-{unix_time}.pdf'
         )  # Final PDF file
         equation_image = current_directory + "/app/utils/export_p_chart/equation.png"
         equation_image2 = current_directory + "/app/utils/export_p_chart/equation2.png"
 
         records = await self.crud.fetch_filtered_records(db=db, filters=filters)
+        part_name = "All"
         for r in records:
             key_index = r._key_to_index
             part_name = (
@@ -252,10 +256,13 @@ class Export_P_Chart_Manager:
             result_graph.append(r[key_index["pchart_graph"]])
         result_graph = "[" + ", ".join(str(item) for item in result_graph) + "]"
         # print("result_graph:", result_graph)
-        pchart_graph = self.combine_json_list_defect_graph(
-            result_graph,
-            {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
-        )
+        if filters["process"] != "Outline":
+            pchart_graph = self.combine_json_list_defect_graph(
+                result_graph,
+                {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
+            )
+        else:
+            pchart_graph = None
         # print("pchart_graph:", pchart_graph)
         target = await self.crud.fetch_filtered_master_target_line(
             db=db, filters=filters
@@ -1020,8 +1027,8 @@ class Export_P_Chart_Manager:
                 except:
                     pass
             # wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
-            print("pchart_graph:", pchart_graph)
-            print("type pchart_graph:", type(pchart_graph))
+            # print("pchart_graph:", pchart_graph)
+            # print("type pchart_graph:", type(pchart_graph))
             if pchart_graph != None:
                 pchart_graph = self.utils.extract_pchart_graph(pchart_graph)
 
