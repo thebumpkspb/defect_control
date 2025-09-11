@@ -21,6 +21,7 @@ import {
   Space,
   Table,
   message,
+  AutoComplete,
 } from "antd";
 import type { GetRef, InputRef, RadioChangeEvent } from "antd";
 import Image from "next/image";
@@ -1594,14 +1595,17 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
               >
                 <Text style={{ color: "gray" }}>หน่วยงานที่รับผิดชอบ</Text>
               </div>
-              <Select
+              {/* <Select
+                // mode="tags"
                 allowClear
                 placeholder=""
+                maxTagCount={1}
                 style={{
                   border: "none",
                   flex: 1,
                   height: "32px",
                   color: "black",
+                  // width: "100%",
                 }}
                 value={createForm.pic}
                 // todo: use changeNewRecordViewData
@@ -1610,6 +1614,35 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
                   value: item,
                   label: item,
                 }))}
+                onChange={(value) => {
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    pic: value,
+                  }));
+                  closeHistoryRecordTableVisible();
+                }}
+                  
+              /> */}
+              <AutoComplete
+                // style={{ width: 200 }}
+                allowClear
+                options={pics.map((item) => ({
+                  value: item,
+                }))}
+                value={createForm.pic}
+                placeholder=""
+                filterOption={(inputValue, option) =>
+                  option!.value
+                    .toUpperCase()
+                    .indexOf(inputValue.toUpperCase()) !== -1
+                }
+                style={{
+                  border: "none",
+                  flex: 1,
+                  height: "32px",
+                  color: "black",
+                  // width: "100%",
+                }}
                 onChange={(value) => {
                   setCreateForm((prev) => ({
                     ...prev,

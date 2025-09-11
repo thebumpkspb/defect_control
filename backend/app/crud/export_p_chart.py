@@ -13,6 +13,8 @@ import calendar
 import psycopg2
 import os
 
+# from datetime import datetime
+
 load_dotenv()
 
 
@@ -184,6 +186,142 @@ class Export_P_Chart_CRUD:
                 return {}
 
             return rows
+
+        except Exception as e:
+            # print ( f"Error fetching data: {e}" )
+            raise
+
+    async def get_defect_outline(self, db: AsyncSession, filters: Dict):
+        """
+        Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
+        """
+        print("month: ", filters["month"])
+        date_obj = datetime.datetime.strptime(filters["month"], "%B-%Y")
+
+        first_day = date_obj.replace(day=1).strftime("%Y-%m-%d")
+        last_day = date_obj.replace(
+            day=calendar.monthrange(date_obj.year, date_obj.month)[1]
+        ).strftime("%Y-%m-%d")
+        line_id = self.get_line_id(filters["line_name"])
+        try:
+            # Construct the query with filters
+            query = f"""
+                        select 	
+                                t0.defect_type as master_defect_type,
+		                        t0.defect_mode as master_defect_mode,
+                                t1.date,
+                                t1.year_month,
+                                t1.week_number,
+                                t1.half_month,
+                                t1.line_id,
+                                t1.part_no,
+                                t0.part_name, 
+                                t1.process,
+                                t1.defect_type,
+                                t1.defect_mode,
+                                t1.defect_qty,
+                                t1.record_by,
+                                t1.updated_at,
+                                MAX(t2.user_name) as review_by_tl,
+                                MAX(t3.user_name) as review_by_mgr,
+                                MAX(t4.user_name) as review_by_gm,
+                                MAX(t1.pic) as pic
+                        from 
+                        (select part_name,defect_type,defect_mode,ref,master_defect_index from master_defect 
+                        where line_id = {line_id} and process='Outline' and active='active'
+                        ) t0
+                        left join (
+                            SELECT      pdr.date,
+                                        date_trunc('month', pdr.date)::date AS year_month  ,
+                                        EXTRACT(WEEK FROM pdr.date) - EXTRACT(WEEK FROM date_trunc('month', pdr.date))  as week_number ,
+                                        CASE  
+                                            WHEN EXTRACT(DAY FROM pdr.date) <= 15 THEN 1  
+                                            ELSE 2  
+                                        END AS half_month,
+                                        pdr.line_id,
+                                        pdr.part_no,
+                                        pdr.process,
+                                        pdr.defect_type,
+                                        pdr.id_defective_items,
+                                        MAX(pdr.defective_items) as defect_mode,
+                                        sum(pdr.qty_shift_{filters['shift'].lower()}) as defect_qty , 
+                                        MAX(pdr.creator) as record_by,
+                                        MAX(pdr.updated_at) as updated_at,
+                                        MAX(pdrl.pic) as pic 
+                                    FROM public.pchart_defect_record pdr
+                                    left join pchart_defect_record_log pdrl 
+                                    on pdr.date = pdrl.date and 
+                                    pdr.line_id = pdrl.line_id and 
+                                    pdr.part_no = pdrl.part_no and 
+                                    pdr.process = pdrl.process and 
+                                    pdr.defect_type = pdrl.defect_type and 
+                                    pdr.id_defective_items= pdrl.id_defective_items and active='active' 
+                            where pdr.line_id={line_id} and pdr.process='Outline' and pdr.date >= '{first_day}' and pdr.date <='{last_day}' 
+                            group by pdr.line_id,pdr.date,pdr.part_no,pdr.process,pdr.defect_type,pdr.id_defective_items
+                        ) t1 on t0.ref = t1. id_defective_items
+                        left join approval_daily t2 using(date,line_id)
+                        left join approval_weekly t3 using(week_number,year_month,line_id)
+                        left join approval_bi_weekly t4 using(half_month,year_month,line_id)
+                        --where t2.date >= {first_day} and t2.date <={last_day} and 
+                        --t3.date >= {first_day} and t3.date <={last_day} and
+                        --t4.date >= {first_day} and t4.date <={last_day} 
+                        group by t1.date,
+                                t1.year_month,
+                                t1.week_number,
+                                t1.half_month,
+                                t1.line_id,
+                                t1.part_no,
+                                t0.part_name,
+                                t1.process,
+                                t1.defect_type,
+                                t1.defect_mode,
+                                t1.id_defective_items,
+                                t0.defect_type,
+		                        t0.defect_mode,
+                                t1.defect_qty,
+                                t1.record_by,
+                                t1.updated_at
+                """
+            # params = []
+            # if filters["shift"] == "All":
+            #     shift = "'A','B'"
+            # else:
+            #     shift = f"'{filters['shift']}'"
+
+            # if filters.get("month"):
+            #     query += " AND month = '" + filters["month"] + "' "
+            # if filters.get("line_name"):
+            #     line_id = self.get_line_id(filters["line_name"])
+            #     query += " AND line_id = '" + str(line_id) + "' "
+            # if filters.get("shift"):
+            #     # query += " AND shift = '" + filters["shift"] + "' "
+            #     query += " AND shift in (" + shift + ") "
+            # if filters.get("part_no"):
+            #     query += " AND part_no = '" + filters["part_no"] + "' "
+            # if filters.get("process"):
+            #     query += " AND process = '" + filters["process"] + "' "
+            # if filters.get("sub_line"):
+            #     query += " AND sub_line = '" + filters["sub_line"] + "' "
+
+            # if filters.get("updated_at_start"):
+            #     query += " AND updated_at >= '" + filters["updated_at_start"] + "' "
+            # if filters.get("updated_at_end"):
+            #     query += " AND updated_at <= '" + filters["updated_at_end"] + "' "
+
+            # Limit the query to fetch one record
+            # query += " LIMIT 1"
+            rows = await db.execute(text(query))
+            # result = rows.mappings().all()
+            result = [
+                {k: str(v) for k, v in row.items()} for row in rows.mappings().all()
+            ]
+            # rows_dicts = [dict(row._mapping) for row in result]
+            # Option 1: Return as JSON string
+
+            if rows is None:
+                return {}
+            return result
+            # return rows
 
         except Exception as e:
             # print ( f"Error fetching data: {e}" )

@@ -13,12 +13,28 @@ from collections import namedtuple
 import math
 from app.functions import parse_defect_string
 import json
+from dotenv import load_dotenv
+import os
+from app.functions import (
+    get_days_in_month,
+    transform_defect_data_to_defect_table,
+    generate_month_data,
+    sum_defects_by_day,
+    calculate_defect_ratio,
+    extract_fields_by_day,
+)
+import requests
+import json
+
+# from collections import defaultdict
 
 
 class Export_P_Chart_Manager:
     def __init__(self):
         self.crud = Export_P_Chart_CRUD()
         self.utils = Export_P_Chart_Utils()
+        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
+        self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
 
     def combine_json_list_defect_graph(self, data, skip_keys={}):
         Defect_Graph = namedtuple("Defect_Graph", ["id", "defect_name", "value"])
@@ -92,30 +108,51 @@ class Export_P_Chart_Manager:
         # Combine defect_table by defect_item
         sum_defect_tables = defaultdict(lambda: None)
         id_type_map = {}
-
+        print("data:", data)
+        # for entry in data:
+        #     for d in entry["defect_table"]:
+        #         name = d.defect_item
+        #         values = d.value
+        #         if sum_defect_tables[name] is None:
+        #             sum_defect_tables[name] = list(values)
+        #             id_type_map[name] = (d.id, d.defect_type)
+        #         else:
+        #             sum_defect_tables[name] = [
+        #                 a + b for a, b in zip(sum_defect_tables[name], values)
+        #             ]
         for entry in data:
             for d in entry["defect_table"]:
-                name = d.defect_item
+                key = (d.defect_item, d.defect_type)  # Use both as the unique key
                 values = d.value
-                if sum_defect_tables[name] is None:
-                    sum_defect_tables[name] = list(values)
-                    id_type_map[name] = (d.id, d.defect_type)
+                if sum_defect_tables.get(key) is None:
+                    sum_defect_tables[key] = list(values)
+                    id_type_map[key] = d.id
                 else:
-                    sum_defect_tables[name] = [
-                        a + b for a, b in zip(sum_defect_tables[name], values)
+                    sum_defect_tables[key] = [
+                        a + b for a, b in zip(sum_defect_tables[key], values)
                     ]
-
+        print("sum_defect_tables:", sum_defect_tables)
+        print("id_type_map:", id_type_map)
         # Assemble the combined defect_table (as dicts; you can return as Defect_table if desired)
+        # result["defect_table"] = [
+        #     {
+        #         "defect_item": name,
+        #         "defect_type": id_type_map[name][1],
+        #         "id": id_type_map[name][0],
+        #         "value": vals,
+        #     }
+        #     for name, vals in sum_defect_tables.items()
+        # ]
         result["defect_table"] = [
             {
-                "defect_item": name,
-                "defect_type": id_type_map[name][1],
-                "id": id_type_map[name][0],
+                "defect_item": key[0],
+                "defect_type": key[1],
+                "id": id_type_map[key],
                 "value": vals,
             }
-            for name, vals in sum_defect_tables.items()
+            for key, vals in sum_defect_tables.items()
         ]
-
+        print('result["defect_table"]:', result["defect_table"])
         # Combine all numerical lists by key (skip defect_table, keep day/index as per the first)
         for key in data[0]:
             if key == "defect_table":
@@ -189,7 +226,11 @@ class Export_P_Chart_Manager:
         records = await self.crud.fetch_filtered_records(db=db, filters=filters)
         for r in records:
             key_index = r._key_to_index
-            part_name = r[key_index["part_name"]] or filters["part_no"]
+            part_name = (
+                r[key_index["part_name"]] or filters["part_no"]
+                if filters["process"] != "Outline"
+                else "All"
+            )
             n_bar = r[key_index["n_bar"]] or 0
             p_bar = r[key_index["p_bar"]] or 0
             k = r[key_index["k"]] or 0
@@ -227,45 +268,99 @@ class Export_P_Chart_Manager:
             target_control = "-"
 
         #!
-        table = await self.crud.fetch_filtered_table(db=db, filters=filters)
+
+        # for i in range(day_in_month + 1):
+        #     print("i:", i)
+        dt = datetime.strptime(filters["month"], "%B-%Y")
+        date_str = dt.strftime("%Y-%m-01")
+        day_in_month = get_days_in_month(filters["month"])
+        list_prod_qty = [0] * day_in_month
+        if filters["process"] == "Outline":
+            line_id = self.crud.get_line_id(filters["line_name"])
+            endpoint = (
+                self.BACKEND_URL_SERVICE
+                + "/api/prods/prod_qty?line_id="
+                + str(line_id)
+                + f"&shift={filters['shift']}"
+                + f"&date={date_str}"
+            )
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            response_json = requests.get(endpoint, headers=headers).json()
+
+            for i in range(0, len(response_json["prod_qty"])):
+                c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+                list_prod_qty[c - 1] = response_json["prod_qty"][i]["actual_val"]
+
+            list_prod_qty = list_prod_qty + [sum(list_prod_qty)]
+
+            defect_outline = await self.crud.get_defect_outline(db=db, filters=filters)
+            print("defect_outline:", defect_outline)
+            defect_table_list = transform_defect_data_to_defect_table(
+                defect_outline, day_in_month
+            )
+            day_table_list = generate_month_data(filters["month"])
+            defect_qty_list = sum_defects_by_day(defect_outline, day_in_month)[
+                "defect_qty"
+            ]
+            defect_ratio_list = calculate_defect_ratio(defect_qty_list, list_prod_qty)
+            review_list = extract_fields_by_day(defect_outline)
+            defect_outline_table = {
+                "defect_table": defect_table_list,
+                "day": day_table_list["day"],
+                "index": day_table_list["index"],
+                "prod_qty": list_prod_qty,
+                "defect_qty": defect_qty_list,
+                "defect_ratio": defect_ratio_list,
+                "record_by": review_list["record_by"],
+                "review_by_tl": review_list["review_by_tl"],
+                "review_by_mgr": review_list["review_by_mgr"],
+                "review_by_gm": review_list["review_by_gm"],
+            }
+            # print("defect_outline_table:", defect_outline_table)
+            data_table = defect_outline_table
+        else:
+            table = await self.crud.fetch_filtered_table(db=db, filters=filters)
+            result_table = []
+            for r in table:
+                key_index = r._key_to_index
+                result_table.append(r[key_index["pchart_table"]])
+            result_table = "[" + ", ".join(str(item) for item in result_table) + "]"
+            # print("result_table:", result_table)
+            table_pchart_table = self.combine_json_list_defect_table(result_table)
+            # print("table_pchart_table1:", table_pchart_table)
+            data_table = table_pchart_table
         # for r in table:
         #     key_index = r._key_to_index
         #     table_pchart_table = r[key_index["pchart_table"]]
-        result_table = []
-        for r in table:
-            key_index = r._key_to_index
-            result_table.append(r[key_index["pchart_table"]])
-        result_table = "[" + ", ".join(str(item) for item in result_table) + "]"
-        # print("result_table:", result_table)
-        table_pchart_table = self.combine_json_list_defect_table(result_table)
-        print("table_pchart_table1:", table_pchart_table)
+
         # print("type table_pchart_table1:", type(table_pchart_table))
 
         # table_pchart_table = self.utils.extract_pchart_table(table_pchart_table)
         # table_pchart_table = json.loads(table_pchart_table)
         # table_pchart_table = parse_defect_string(table_pchart_table)
         # print("-------------------------",table )
-        data_table = table_pchart_table
-        print("table_pchart_table2:", table_pchart_table)
-        date = []
-        trouble = []
-        action = []
-        in_change = []
-        manager = []
+        # data_table = table_pchart_table
+        # print("table_pchart_table2:", table_pchart_table)
+        #!
+        # date = []
+        # trouble = []
+        # action = []
+        # in_change = []
+        # manager = []
 
-        len_abnormal = 0
+        # len_abnormal = 0
 
-        abnormal = await self.crud.fetch_filtered_abnormal(db=db, filters=filters)
-        for r in abnormal:
-            key_index = r._key_to_index
+        # abnormal = await self.crud.fetch_filtered_abnormal(db=db, filters=filters)
+        # for r in abnormal:
+        #     key_index = r._key_to_index
 
-            len_abnormal += 1
-            date.append(r[key_index["date"]])
-            trouble.append(r[key_index["trouble"]])
-            action.append(r[key_index["action"]])
-            in_change.append(r[key_index["in_change"]])
-            manager.append(r[key_index["manager"]])
-
+        #     len_abnormal += 1
+        #     date.append(r[key_index["date"]])
+        #     trouble.append(r[key_index["trouble"]])
+        #     action.append(r[key_index["action"]])
+        #     in_change.append(r[key_index["in_change"]])
+        #     manager.append(r[key_index["manager"]])
+        #!
         # print(abnormal)
         # Load base Excel
         wb = openpyxl.load_workbook(base_excel_path)
@@ -301,12 +396,16 @@ class Export_P_Chart_Manager:
             "R3": filters.get("line_name", ""),
             "R4": part_name,
             "R5": (
-                filters.get("part_no", "")
-                + (
-                    f' [{filters.get("sub_line_label", "")}]'
-                    if filters.get("sub_line_label", "")
-                    else ""
+                (
+                    filters.get("part_no", "")
+                    + (
+                        f' [{filters.get("sub_line_label", "")}]'
+                        if filters.get("sub_line_label", "")
+                        else ""
+                    )
                 )
+                if filters["process"] != "Outline"
+                else "All"
             ),
             "AC3": process_inline,
             "AC4": process_outline,
@@ -529,97 +628,267 @@ class Export_P_Chart_Manager:
         #     except:
         #         pass
         # #!
-        data_to_write_2 = {}
 
-        MAX_ROW = 26
-        LEFT_COL_OFFSET = 0  # columns B-G
-        RIGHT_COL_OFFSET = 7  # columns I-N
+        date = []
+        trouble = []
+        action = []
+        in_change = []
+        manager = []
 
-        row = 5
-        col_offset = LEFT_COL_OFFSET
+        len_abnormal = 0
+        if filters["process"] != "Outline":
+            abnormal = await self.crud.fetch_filtered_abnormal(db=db, filters=filters)
+            for r in abnormal:
+                key_index = r._key_to_index
 
-        for i in range(len_abnormal):
+                len_abnormal += 1
+                date.append(r[key_index["date"]])
+                trouble.append(r[key_index["trouble"]])
+                action.append(r[key_index["action"]])
+                in_change.append(r[key_index["in_change"]])
+                manager.append(r[key_index["manager"]])
 
-            # ── wrap wide fields
-            trouble_lines = textwrap.wrap(trouble[i], width=45)
-            action_lines = textwrap.wrap(action[i], width=45)
-            max_lines = max(len(trouble_lines), len(action_lines))
+            data_to_write_2 = {}
 
-            # ── wrap narrow fields
-            in_change_lines = textwrap.wrap(in_change[i], width=15)
-            manager_lines = textwrap.wrap(manager[i], width=15)
+            MAX_ROW = 26
+            LEFT_COL_OFFSET = 0  # columns B-G
+            RIGHT_COL_OFFSET = 7  # columns I-N
 
-            base_idx = 0
-            remaining = max_lines
+            row = 5
+            col_offset = LEFT_COL_OFFSET
 
-            while remaining:
-                free_lines = MAX_ROW - row + 1
-                lines_now = min(remaining, free_lines)
+            for i in range(len_abnormal):
 
-                if base_idx == 0:
-                    # write index and date only once (first line of record)
-                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = i + 1
-                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = date[i]
+                # ── wrap wide fields
+                trouble_lines = textwrap.wrap(trouble[i], width=45)
+                action_lines = textwrap.wrap(action[i], width=45)
+                max_lines = max(len(trouble_lines), len(action_lines))
 
-                    # write in_change and manager, only on first slice
+                # ── wrap narrow fields
+                in_change_lines = textwrap.wrap(in_change[i], width=15)
+                manager_lines = textwrap.wrap(manager[i], width=15)
+
+                base_idx = 0
+                remaining = max_lines
+
+                while remaining:
+                    free_lines = MAX_ROW - row + 1
+                    lines_now = min(remaining, free_lines)
+
+                    if base_idx == 0:
+                        # write index and date only once (first line of record)
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = i + 1
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = date[i]
+
+                        # write in_change and manager, only on first slice
+                        for k in range(lines_now):
+                            idx = base_idx + k
+                            in_change_text = (
+                                in_change_lines[idx]
+                                if idx < len(in_change_lines)
+                                else ""
+                            )
+                            manager_text = (
+                                manager_lines[idx] if idx < len(manager_lines) else ""
+                            )
+
+                            data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
+                                in_change_text
+                            )
+                            data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
+                                manager_text
+                            )
+                    else:
+                        # clear index/date in overflow rows
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+
+                        # clear in_change and manager in overflow rows
+                        for k in range(lines_now):
+                            data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = ""
+                            data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = ""
+
+                    # write trouble and action
                     for k in range(lines_now):
                         idx = base_idx + k
-                        in_change_text = (
-                            in_change_lines[idx] if idx < len(in_change_lines) else ""
+                        trouble_text = (
+                            trouble_lines[idx] if idx < len(trouble_lines) else ""
                         )
-                        manager_text = (
-                            manager_lines[idx] if idx < len(manager_lines) else ""
+                        action_text = (
+                            action_lines[idx] if idx < len(action_lines) else ""
                         )
 
+                        data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
+                            trouble_text
+                        )
+                        data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = (
+                            action_text
+                        )
+
+                    # advance
+                    row += lines_now
+                    base_idx += lines_now
+                    remaining -= lines_now
+
+                    # overflow → switch to right block
+                    if remaining:
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                        col_offset = RIGHT_COL_OFFSET
+                        row = 5
+
+            for cell, value in data_to_write_2.items():
+                col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+                    cell
+                )  # Correctly unpack column and row
+                col = openpyxl.utils.column_index_from_string(
+                    col_letter
+                )  # Convert column letter to index
+                ws2.cell(row=row, column=col, value=value)
+        else:
+            data_to_write_2 = {}
+
+            MAX_ROW = 26
+            LEFT_COL_OFFSET = 0  # columns B-G
+            RIGHT_COL_OFFSET = 10  # columns I-N
+
+            row = 5
+            col_offset = LEFT_COL_OFFSET
+            defect_outline_page2 = list(
+                filter(
+                    lambda d: (
+                        int(d["defect_qty"]) > 0
+                        if d["defect_qty"] not in ("", None, "None")
+                        else False
+                    ),
+                    defect_outline,
+                )
+            )
+            for i, defect in enumerate(defect_outline_page2):
+                print("i:", i)
+                print("defect:", defect)
+                # ── wrap wide fields
+                trouble_lines = textwrap.wrap(defect["master_defect_mode"], width=45)
+                area_lines = textwrap.wrap(defect["master_defect_type"], width=45)
+                partno_lines = textwrap.wrap(defect["part_no"], width=45)
+                partname_lines = textwrap.wrap(defect["part_name"], width=45)
+                qty_lines = textwrap.wrap(defect["defect_qty"], width=45)
+                incharge_lines = textwrap.wrap(defect["pic"], width=45)
+                max_lines = max(
+                    len(trouble_lines),
+                    len(area_lines),
+                    len(partno_lines),
+                    len(partname_lines),
+                    len(qty_lines),
+                )
+
+                # # ── wrap narrow fields
+                # in_change_lines = textwrap.wrap(in_change[i], width=15)
+                # manager_lines = textwrap.wrap(manager[i], width=15)
+
+                base_idx = 0
+                remaining = max_lines
+
+                while remaining:
+                    free_lines = MAX_ROW - row + 1
+                    lines_now = min(remaining, free_lines)
+
+                    if base_idx == 0:
+                        # write index and date only once (first line of record)
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = i + 1
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = defect[
+                            "date"
+                        ]
+
+                        # write in_change and manager, only on first slice
+                        # for k in range(lines_now):
+                        #     idx = base_idx + k
+                        #     in_change_text = (
+                        #         in_change_lines[idx]
+                        #         if idx < len(in_change_lines)
+                        #         else ""
+                        #     )
+                        #     manager_text = (
+                        #         manager_lines[idx] if idx < len(manager_lines) else ""
+                        #     )
+
+                        #     data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
+                        #         in_change_text
+                        #     )
+                        #     data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
+                        #         manager_text
+                        #     )
+                    else:
+                        # clear index/date in overflow rows
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+
+                        # clear in_change and manager in overflow rows
+                        for k in range(lines_now):
+                            data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = ""
+                            data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = ""
+
+                    # write trouble and action
+                    for k in range(lines_now):
+                        idx = base_idx + k
+
+                        partname_text = (
+                            partname_lines[idx] if idx < len(partname_lines) else ""
+                        )
+                        partno_text = (
+                            partno_lines[idx] if idx < len(partno_lines) else ""
+                        )
+
+                        area_text = area_lines[idx] if idx < len(area_lines) else ""
+                        trouble_text = (
+                            trouble_lines[idx] if idx < len(trouble_lines) else ""
+                        )
+                        qty_text = qty_lines[idx] if idx < len(qty_lines) else ""
+
+                        incharge_text = (
+                            incharge_lines[idx] if idx < len(incharge_lines) else ""
+                        )
+
+                        data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
+                            partname_text
+                        )
+                        data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = (
+                            partno_text
+                        )
                         data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
-                            in_change_text
+                            area_text
                         )
                         data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
-                            manager_text
+                            trouble_text
                         )
-                else:
-                    # clear index/date in overflow rows
-                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
-                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                        data_to_write_2[f"{chr ( 72 + col_offset )}{row + k}"] = (
+                            qty_text
+                        )
+                        data_to_write_2[f"{chr ( 73 + col_offset )}{row + k}"] = "ST"
+                        data_to_write_2[f"{chr ( 74 + col_offset )}{row + k}"] = (
+                            incharge_text
+                        )
 
-                    # clear in_change and manager in overflow rows
-                    for k in range(lines_now):
-                        data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = ""
-                        data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = ""
+                    # advance
+                    row += lines_now
+                    base_idx += lines_now
+                    remaining -= lines_now
 
-                # write trouble and action
-                for k in range(lines_now):
-                    idx = base_idx + k
-                    trouble_text = (
-                        trouble_lines[idx] if idx < len(trouble_lines) else ""
-                    )
-                    action_text = action_lines[idx] if idx < len(action_lines) else ""
+                    # overflow → switch to right block
+                    if remaining:
+                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                        col_offset = RIGHT_COL_OFFSET
+                        row = 5
 
-                    data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
-                        trouble_text
-                    )
-                    data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = action_text
-
-                # advance
-                row += lines_now
-                base_idx += lines_now
-                remaining -= lines_now
-
-                # overflow → switch to right block
-                if remaining:
-                    data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
-                    data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
-                    col_offset = RIGHT_COL_OFFSET
-                    row = 5
-
-        for cell, value in data_to_write_2.items():
-            col_letter, row = openpyxl.utils.cell.coordinate_from_string(
-                cell
-            )  # Correctly unpack column and row
-            col = openpyxl.utils.column_index_from_string(
-                col_letter
-            )  # Convert column letter to index
-            ws2.cell(row=row, column=col, value=value)
+            for cell, value in data_to_write_2.items():
+                col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+                    cell
+                )  # Correctly unpack column and row
+                col = openpyxl.utils.column_index_from_string(
+                    col_letter
+                )  # Convert column letter to index
+                ws2.cell(row=row, column=col, value=value)
 
         # for idx, value in enumerate ( merge_cell_list ):
         #    ws.merge_cells ( value )
@@ -630,6 +899,7 @@ class Export_P_Chart_Manager:
 
         #!
         sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
+        print('data_table["defect_table"]:', data_table["defect_table"])
         # if filters['is_not_zero']:
         if filters["is_not_zero"]:
             # Step 1: Filter
@@ -649,7 +919,7 @@ class Export_P_Chart_Manager:
         # print("sorted_defect_table.length", len(sorted_defect_table))
         defect_amount = len(sorted_defect_table)
         # print("page :", math.ceil(defect_amount / 37))
-        page_amount = math.ceil(defect_amount / 37)
+        page_amount = math.ceil(defect_amount / 46)
         ws2.title = f"Page{page_amount+2}"
         ws.title = f"Page{page_amount+3}"
 
@@ -657,14 +927,16 @@ class Export_P_Chart_Manager:
             # print(f"Page{idx_page}")
             new_ws = wb.copy_worksheet(ws)
             new_ws.title = f"Page{idx_page}"
-            start_idx = (idx_page - 1) * 37
-            end_idx = (idx_page) * 37
+            # start_idx = (idx_page - 1) * 37
+            # end_idx = (idx_page) * 37
+            start_idx = (idx_page - 1) * 46
+            end_idx = (idx_page) * 46
             if end_idx >= defect_amount:
                 end_idx = defect_amount
 
             # print(f"data --> {start_idx}:{end_idx}")
             chunk_sorted_defect_table = sorted_defect_table[start_idx:end_idx]
-
+            print("chunk_sorted_defect_table:", chunk_sorted_defect_table)
             # sorted_defect_table = sorted_defect_table[:37]
             ##!!
 
@@ -703,13 +975,13 @@ class Export_P_Chart_Manager:
 
                 cell_address = f"F{row}"
                 data_to_write[cell_address] = str(value["defect_item"])
-
-            for row in wb[f"Page{idx_page}"].iter_rows(
-                min_row=row_del, max_row=initial_row + 45
-            ):
-                for cell in row:
-                    cell.value = None
-            # for header
+            #!
+            # for row in wb[f"Page{idx_page}"].iter_rows(
+            #     min_row=row_del, max_row=initial_row + 45
+            # ):
+            #     for cell in row:
+            #         cell.value = None
+            # # for header
             if filters["process"] == "Outline":
                 initial_row = 13
             else:
@@ -791,6 +1063,12 @@ class Export_P_Chart_Manager:
             # for row in wb[f"Page{idx_page}"].iter_rows(min_row=row_del, max_row=81):
             #     for cell in row:
             #         cell.value = None
+            #!
+            for row in wb[f"Page{idx_page}"].iter_rows(
+                min_row=row_del, max_row=(81 if filters["process"] != "Outline" else 59)
+            ):
+                for cell in row:
+                    cell.value = None
             #!wb[f"Page{idx_page}"].delete_rows(idx=row_del, amount=82 - row_del)
             # if filters["process"] != "Outline":
             #     wb[f"Page{idx_page}"].delete_rows(7, 23)

@@ -8,7 +8,17 @@ export const LanguageOptions = [
   { label: "Thai", value: "th" },
   { label: "Japanese", value: "jp" },
 ];
-export const pics = ["Design", "Improve.", "JIDX", "Maint.", "PC", "PE", "QA"];
+export const pics = [
+  "Receive",
+  "Part Store",
+  "Design",
+  "Improve.",
+  "JIDX",
+  "Maint.",
+  "PC",
+  "PE",
+  "QA",
+];
 
 export const categories = [
   "Man",

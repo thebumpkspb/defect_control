@@ -13,6 +13,7 @@ from starlette import status
 from typing import Any, List, Dict, get_origin, get_args, Union
 from dotenv import load_dotenv
 import re
+from collections import defaultdict
 
 load_dotenv()
 X_API_KEY = APIKeyHeader(name="X-API-Key")
@@ -411,3 +412,151 @@ def parse_defect_string(s):
                     pass
         d[key] = value
     return d
+
+
+def generate_month_data(month_str):
+    # month_str: 'MonthName-YYYY'
+    month_name, year = month_str.split("-")
+    year = int(year)
+    # Get month number from name
+    month_number = list(calendar.month_name).index(month_name)
+    # Find number of days in the month
+    num_days = calendar.monthrange(year, month_number)[1]
+    # Find the first weekday (0=Monday, 6=Sunday)
+    first_weekday = datetime(year, month_number, 1).weekday()
+    weekday_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    days = []
+    for i in range(num_days):
+        days.append(weekday_names[(first_weekday + i) % 7])
+    indexes = [str(i + 1) for i in range(num_days)] + ["Total"]
+    return {"day": days, "index": indexes}
+
+
+def get_days_in_month(month_str):
+    # Split the string
+    month_name, year = month_str.split("-")
+    year = int(year)
+    # Convert month name to month number
+    month_number = list(calendar.month_name).index(month_name)
+    # Get number of days in the month
+    num_days = calendar.monthrange(year, month_number)[1]
+    return num_days
+
+
+def transform_defect_data_to_defect_table(data, day_in_month):
+    grouped = defaultdict(list)
+    for row in data:
+        defect_type = row.get("master_defect_type")
+        defect_mode = row.get("master_defect_mode")
+        grouped[(defect_type, defect_mode)].append(row)
+
+    result = []
+    for idx, ((defect_type, defect_mode), rows) in enumerate(grouped.items(), 1):
+        value = [0] * (day_in_month)
+        # print("defect_mode:", defect_mode)
+        for r in rows:
+            date_str = r.get("date", "")
+            qty_str = r.get("defect_qty", "0")
+            # Check if date is valid in format YYYY-MM-DD
+            if (
+                isinstance(date_str, str)
+                and len(date_str) == 10
+                and date_str[4] == "-"
+                and date_str[7] == "-"
+            ):
+                try:
+                    day = int(date_str[8:10])
+                    qty = int(qty_str) if qty_str.isdigit() else 0
+                    if 1 <= day <= 31:
+                        value[day - 1] += qty
+                except Exception:
+                    pass
+        total = sum(value)
+        value.append(total)
+        # Use defect_mode from master_defect_mode if defect_mode is None or 'None'
+        defect_item = defect_mode
+        if not defect_mode or defect_mode == "None":
+            defect_item = rows[0].get("master_defect_mode", "")
+        # Use defect_type from master_defect_type if defect_type is None or 'None'
+        defect_type_out = defect_type
+        if not defect_type or defect_type == "None":
+            defect_type_out = rows[0].get("master_defect_type", "")
+        result.append(
+            {
+                "defect_item": defect_item,
+                "defect_type": defect_type_out,
+                "id": idx,
+                "value": value,
+            }
+        )
+    return result
+
+
+def sum_defects_by_day(data, day_in_month):
+    defect_qty = [0] * (day_in_month)  # 31 days
+
+    for row in data:
+        date_str = row.get("date", "")
+        qty_str = row.get("defect_qty", "0")
+        # Check if date is valid in format YYYY-MM-DD
+        if (
+            isinstance(date_str, str)
+            and len(date_str) == 10
+            and date_str[4] == "-"
+            and date_str[7] == "-"
+        ):
+            try:
+                day = int(date_str[8:10])
+                qty = int(qty_str) if qty_str.isdigit() else 0
+                if 1 <= day <= 31:
+                    defect_qty[day - 1] += qty
+            except Exception:
+                pass
+
+    total = sum(defect_qty)
+    defect_qty.append(total)
+    return {"defect_qty": defect_qty}
+
+
+def calculate_defect_ratio(defect_qty, prod_qty):
+    defect_ratio = []
+    for dq, pq in zip(defect_qty, prod_qty):
+        if pq == 0:
+            ratio = 0.0
+        else:
+            ratio = round((dq / pq) * 100, 2)
+        defect_ratio.append(ratio)
+    return defect_ratio
+
+
+def extract_by_day(data, field):
+    result = [""] * 31
+    # For each record, check if it has a valid date, then update the corresponding day
+    for row in data:
+        date_str = row.get("date", "")
+        value = row.get(field, "")
+        if (
+            isinstance(date_str, str)
+            and len(date_str) == 10
+            and date_str[4] == "-"
+            and date_str[7] == "-"
+            and value
+            and value != "None"
+        ):
+            try:
+                day = int(date_str[8:10])
+                # Only fill if not already filled (prioritize first non-empty per day)
+                if 1 <= day <= 31 and result[day - 1] == "":
+                    result[day - 1] = value
+            except Exception:
+                pass
+    return result
+
+
+def extract_fields_by_day(
+    data, fields=("record_by", "review_by_tl", "review_by_mgr", "review_by_gm")
+):
+    output = {}
+    for field in fields:
+        output[field] = extract_by_day(data, field)
+    return output

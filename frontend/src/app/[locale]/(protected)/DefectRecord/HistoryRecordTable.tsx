@@ -6,7 +6,7 @@ import {
   HistoryRecordsResultDetail,
   PChartRecordHistoryRecordsEditSaveRequest,
 } from "@/types/settingApi";
-import { Flex, Table, Tag } from "antd";
+import { AutoComplete, Flex, Table, Tag } from "antd";
 import type { GetRef, TableProps } from "antd";
 import {
   Button,
@@ -544,33 +544,60 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
         }
 
         return editingId === record!!!.id ? (
-          <DropdownEdit
-            allowClear={true}
-            value={{ label: editForm.pic, value: editForm.pic }}
-            handleChange={(value: {
-              value: string | number | null;
-              label: string;
-            }) => {
-              setEditForm((prevForm: any) => ({
-                ...prevForm,
-                pic: value?.value ? String(value?.value) : null,
-              }));
-            }}
-            // options={
-            //   filteredTableEditDropDownData.defect_mode?.map((defect_mode) => ({
-            //     value: defect_mode,
-            //     label: defect_mode,
-            //   })) ??
-            //   defectType.map(({ value }) => ({
-            //     value: value,
-            //     label: value,
-            //   }))
-            // }
+          // <DropdownEdit
+          //   allowClear={true}
+          //   value={{ label: editForm.pic, value: editForm.pic }}
+          //   handleChange={(value: {
+          //     value: string | number | null;
+          //     label: string;
+          //   }) => {
+          //     setEditForm((prevForm: any) => ({
+          //       ...prevForm,
+          //       pic: value?.value ? String(value?.value) : null,
+          //     }));
+          //   }}
+          //   // options={
+          //   //   filteredTableEditDropDownData.defect_mode?.map((defect_mode) => ({
+          //   //     value: defect_mode,
+          //   //     label: defect_mode,
+          //   //   })) ??
+          //   //   defectType.map(({ value }) => ({
+          //   //     value: value,
+          //   //     label: value,
+          //   //   }))
+          //   // }
+          //   options={pics.map((item) => ({
+          //     value: item,
+          //     label: item,
+          //   }))}
+          //   placeholder={""}
+          // />
+          <AutoComplete
+            style={{ width: 100 }}
+            allowClear
             options={pics.map((item) => ({
               value: item,
-              label: item,
             }))}
-            placeholder={""}
+            value={editForm.pic}
+            placeholder=""
+            filterOption={(inputValue, option) =>
+              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !==
+              -1
+            }
+            // style={{
+            //   border: "none",
+            //   flex: 1,
+            //   height: "32px",
+            //   color: "black",
+            //   // width: "100%",
+            // }}
+            onChange={(value) => {
+              setEditForm((prev) => ({
+                ...prev,
+                pic: value,
+              }));
+              // closeHistoryRecordTableVisible();
+            }}
           />
         ) : (
           text || "-"
