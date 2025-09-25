@@ -441,13 +441,13 @@ class P_Chart_Record_CRUD:
         # """
 
         stmt = f"""
-        select date, qty_shift_all, qty_shift_a, qty_shift_b,t2.defect_type,t2.defect_mode as defective_items        
+        select date, qty_shift_all, qty_shift_a, qty_shift_b,t1.defect_type,t2.defect_mode as defective_items        
             FROM  pchart_defect_record  t1
             left join master_defect t2 --using(part_no,process,line_id,defect_type)
 			on t1.part_no=t2.part_no and
                 t1.process=t2.process 
                 and t1.line_id=t2.line_id 
-                and t1.defect_type=t2.defect_type 
+                -- and t1.defect_type=t2.defect_type 
                 and t1.id_defective_items=t2.ref 
                 -- and t1.defective_items=t2.defect_mode
              WHERE {where_stmt if where_stmt is not None else ''}

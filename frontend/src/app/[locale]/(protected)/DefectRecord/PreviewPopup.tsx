@@ -19,7 +19,11 @@ import {
   TablePaginationConfig,
   RadioChangeEvent,
   Tag,
+  Collapse,
 } from "antd";
+const { Panel } = Collapse;
+// const { Option } = Select
+// const { TextArea } = Input
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   pChartAbnormalOccurrenceView,
@@ -64,6 +68,7 @@ import { isNotEmptyValue } from "@/functions";
 import { categories, pics } from "@/constants";
 import { LayoutStore } from "@/store";
 import { SettingTableResult } from "@/types/settingApi";
+// import Panel from "antd/es/cascader/Panel";
 
 // Define the row type
 interface DataRow {
@@ -1621,52 +1626,64 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
         wrapperCol={{ span: 16 }} // ความกว้างของ Input
         style={{ width: "100%" }}
       >
-        {/* Date */}
-        <Form.Item
-          label={
-            <p>
-              Date <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="date"
-        >
-          <DatePicker style={{ width: "100%" }} />
-        </Form.Item>
+        <Collapse defaultActiveKey={["required"]} size="large" className="mb-6">
+          {/* Required Fields Panel - Always expanded by default */}
+          <Panel
+            header={
+              <Space>
+                <span>📋</span>
+                <span className="font-semibold">ข้อมูลที่จำเป็นต้องกรอก</span>
+                <span className="text-red-500">*</span>
+              </Space>
+            }
+            key="required"
+          >
+            {/* Date */}
+            <Form.Item
+              label={
+                <p>
+                  Date <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="date"
+            >
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
 
-        {/* Part No */}
-        <Form.Item
-          label={
-            <p>
-              Part No <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="partNo"
-        >
-          <Input
-            // value={addRowView?.part_no || "[Debugging] No Value Set"}
-            readOnly
-          />
-        </Form.Item>
-        {/* Shift */}
+            {/* Part No */}
+            <Form.Item
+              label={
+                <p>
+                  Part No <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="partNo"
+            >
+              <Input
+                // value={addRowView?.part_no || "[Debugging] No Value Set"}
+                readOnly
+              />
+            </Form.Item>
+            {/* Shift */}
 
-        <Form.Item
-          label={
-            <p>
-              Shift <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="shift"
-        >
-          {/* <Select> */}
-          <Radio.Group>
-            {shiftAbnormalList.map((item: any) => (
-              <Radio.Button key={item.value} value={item.value}>
-                {item.value}
-              </Radio.Button>
-            ))}
-          </Radio.Group>
-          {/* </Select> */}
-          {/* <Radio.Group
+            <Form.Item
+              label={
+                <p>
+                  Shift <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="shift"
+            >
+              {/* <Select> */}
+              <Radio.Group>
+                {shiftAbnormalList.map((item: any) => (
+                  <Radio.Button key={item.value} value={item.value}>
+                    {item.value}
+                  </Radio.Button>
+                ))}
+              </Radio.Group>
+              {/* </Select> */}
+              {/* <Radio.Group
             buttonStyle="solid"
             value={shiftAddRow}
             style={{
@@ -1700,17 +1717,17 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               B
             </Radio.Button>
           </Radio.Group> */}
-        </Form.Item>
-        {/*defect_item*/}
-        <Form.Item
-          label={
-            <p>
-              Defect item <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="defect_item"
-        >
-          {/* <Input.Group
+            </Form.Item>
+            {/*defect_item*/}
+            <Form.Item
+              label={
+                <p>
+                  Defect item <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="defect_item"
+            >
+              {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -1720,39 +1737,39 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-          <Select
-            placeholder=""
-            style={{
-              border: "none",
-              flex: 1,
-              // height: "32px",
-              color: "black",
-            }}
-            mode="multiple"
-            options={defectModes.map((item) => ({
-              value: item.id,
-              label: `[${item.defect_type}] ${item.defect_mode}`,
-            }))}
-            onChange={(value) => {
-              // setCreateForm((prev) => ({
-              //   ...prev,
-              //   pic: value,
-              // }));
-              // closeHistoryRecordTableVisible();
-            }}
-          />
-          {/* </Input.Group> */}
-        </Form.Item>
-        {/*category*/}
-        <Form.Item
-          label={
-            <p>
-              Category <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="category"
-        >
-          {/* <Input.Group
+              <Select
+                placeholder=""
+                style={{
+                  border: "none",
+                  flex: 1,
+                  // height: "32px",
+                  color: "black",
+                }}
+                mode="multiple"
+                options={defectModes.map((item) => ({
+                  value: item.id,
+                  label: `[${item.defect_type}] ${item.defect_mode}`,
+                }))}
+                onChange={(value) => {
+                  // setCreateForm((prev) => ({
+                  //   ...prev,
+                  //   pic: value,
+                  // }));
+                  // closeHistoryRecordTableVisible();
+                }}
+              />
+              {/* </Input.Group> */}
+            </Form.Item>
+            {/*category*/}
+            <Form.Item
+              label={
+                <p>
+                  5M1E <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="category"
+            >
+              {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -1762,258 +1779,271 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-          <Select
-            placeholder=""
-            style={{
-              border: "none",
-              flex: 1,
-              // height: "32px",
-              // minWidth: "120px",
-              // width: "100%",
-              color: "black",
-            }}
-            mode="multiple"
-            options={categories.map((item) => ({
-              value: item,
-              label: item,
-            }))}
-            onChange={(value) => {
-              // setCreateForm((prev) => ({
-              //   ...prev,
-              //   pic: value,
-              // }));
-              // closeHistoryRecordTableVisible();
-            }}
-          />
-          {/* </Input.Group> */}
-        </Form.Item>
-        {/* Trouble */}
-        <Form.Item
-          label={
-            <p>
-              Trouble <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="trouble"
-        >
-          <Input
-          // value={createRowForm.trouble}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     trouble: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+              <Select
+                placeholder=""
+                style={{
+                  border: "none",
+                  flex: 1,
+                  // height: "32px",
+                  // minWidth: "120px",
+                  // width: "100%",
+                  color: "black",
+                }}
+                mode="multiple"
+                options={categories.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value) => {
+                  // setCreateForm((prev) => ({
+                  //   ...prev,
+                  //   pic: value,
+                  // }));
+                  // closeHistoryRecordTableVisible();
+                }}
+              />
+              {/* </Input.Group> */}
+            </Form.Item>
+            {/* Trouble */}
+            <Form.Item
+              label={
+                <p>
+                  Trouble <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="trouble"
+            >
+              <Input
+              // value={createRowForm.trouble}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     trouble: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* Action */}
-        <Form.Item
-          label={
-            <p>
-              Action <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="action"
-        >
-          <Input
-          // value={createRowForm.action}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     action: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+            {/* Action */}
+            <Form.Item
+              label={
+                <p>
+                  Action <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="action"
+            >
+              <Input
+              // value={createRowForm.action}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     action: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* In Charge */}
-        <Form.Item
-          label={
-            <p>
-              In Charge <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="inCharge"
-        >
-          <Input
-          // value={createRowForm.in_change}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     in_change: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+            {/* In Charge */}
+            <Form.Item
+              label={
+                <p>
+                  In Charge <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="inCharge"
+            >
+              <Input
+              // value={createRowForm.in_change}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     in_change: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* Manager */}
-        <Form.Item
-          label={
-            <p>
-              Manager <text style={{ color: "red" }}>*</text>
-            </p>
-          }
-          name="manager"
-        >
-          <Input
-          // value={createRowForm.manager}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     manager: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
-
-        {/* Detect By */}
-        <Form.Item label="Detect By" name="detectBy">
-          <Radio.Group
-          // value={createRowForm.detect_by}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     detect_by: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
+            {/* Manager */}
+            <Form.Item
+              label={
+                <p>
+                  Manager <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="manager"
+            >
+              <Input
+              // value={createRowForm.manager}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     manager: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
+          </Panel>
+          <Panel
+            header={
+              <Space>
+                <span>⚙️</span>
+                <span className="font-semibold">ข้อมูลเสริม</span>
+                <span className="text-muted-foreground text-sm">
+                  (คลิกเพื่อแสดง)
+                </span>
+              </Space>
+            }
+            key="optional"
           >
-            {detectBy.map((item) => (
-              <Radio key={item.value} value={item.value}>
-                {item.value}
-              </Radio>
-            ))}
-          </Radio.Group>
-        </Form.Item>
+            {/* Detect By */}
+            <Form.Item label="Detect By" name="detectBy">
+              <Radio.Group
+              // value={createRowForm.detect_by}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     detect_by: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              >
+                {detectBy.map((item) => (
+                  <Radio key={item.value} value={item.value}>
+                    {item.value}
+                  </Radio>
+                ))}
+              </Radio.Group>
+            </Form.Item>
 
-        {/* Defect details */}
-        <Form.Item label="Defect details" name="defectDetails">
-          <Input
-          // value={createRowForm.defect_detail}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     defect_detail: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+            {/* Defect details */}
+            <Form.Item label="Defect details" name="defectDetails">
+              <Input
+              // value={createRowForm.defect_detail}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     defect_detail: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* Rank */}
-        <Form.Item label="Rank" name="rank">
-          <Radio.Group
-          // value={createRowForm.rank}
-          // onChange={(value) => {
-          //   console.log("Trouble e.target.value:", value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     rank: value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          >
-            {/* <Option value="A">A</Option>
+            {/* Rank */}
+            <Form.Item label="Rank" name="rank">
+              <Radio.Group
+              // value={createRowForm.rank}
+              // onChange={(value) => {
+              //   console.log("Trouble e.target.value:", value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     rank: value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              >
+                {/* <Option value="A">A</Option>
             <Option value="B">B</Option>
             <Option value="C">C</Option> */}
-            {rankList.map((item) => (
-              <Radio key={item.value} value={item.value}>
-                {item.value}
-              </Radio>
-            ))}
-          </Radio.Group>
-        </Form.Item>
+                {rankList.map((item) => (
+                  <Radio key={item.value} value={item.value}>
+                    {item.value}
+                  </Radio>
+                ))}
+              </Radio.Group>
+            </Form.Item>
 
-        {/* Root Cause Process */}
-        <Form.Item label="Root cause process" name="rootCauseProcess">
-          <Radio.Group
-          // value={createRowForm.root_cause_process}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     root_cause_process: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          >
-            {/* <Radio value="In-house">In-house</Radio>
+            {/* Root Cause Process */}
+            <Form.Item label="Root cause process" name="rootCauseProcess">
+              <Radio.Group
+              // value={createRowForm.root_cause_process}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     root_cause_process: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              >
+                {/* <Radio value="In-house">In-house</Radio>
             <Radio value="Supplier">Supplier</Radio> */}
-            {rootCauseProcess.map((item) => (
-              <Radio key={item.value} value={item.value}>
-                {item.value}
-              </Radio>
-            ))}
-          </Radio.Group>
-        </Form.Item>
+                {rootCauseProcess.map((item) => (
+                  <Radio key={item.value} value={item.value}>
+                    {item.value}
+                  </Radio>
+                ))}
+              </Radio.Group>
+            </Form.Item>
 
-        {/* Process Name / Supplier Name */}
-        <Form.Item
-          label="Process name / Supplier name"
-          name="processNameOrSupplierName"
-        >
-          <Input
-          // value={createRowForm.process_name_supplier_name}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     process_name_supplier_name: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+            {/* Process Name / Supplier Name */}
+            <Form.Item
+              label="Process name / Supplier name"
+              name="processNameOrSupplierName"
+            >
+              <Input
+              // value={createRowForm.process_name_supplier_name}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     process_name_supplier_name: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* Cause */}
-        <Form.Item label="Cause" name="cause">
-          <Input
-          // value={createRowForm.cause}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     cause: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          />
-        </Form.Item>
+            {/* Cause */}
+            <Form.Item label="Cause" name="cause">
+              <Input
+              // value={createRowForm.cause}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     cause: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              />
+            </Form.Item>
 
-        {/* New / Re-occur */}
-        <Form.Item label="New / Re-occur" name="newOrReoccur">
-          <Radio.Group
-          // value={createRowForm.new_re_occur}
-          // onChange={(e) => {
-          //   console.log("Trouble e.target.value:", e.target.value);
-          //   setCreateRowForm((prev) => ({
-          //     ...prev,
-          //     new_re_occur: e.target.value,
-          //   }));
-          //   console.log("createRowForm:", createRowForm);
-          // }}
-          >
-            {/* <Radio value="New">New</Radio>
+            {/* New / Re-occur */}
+            <Form.Item label="New / Re-occur" name="newOrReoccur">
+              <Radio.Group
+              // value={createRowForm.new_re_occur}
+              // onChange={(e) => {
+              //   console.log("Trouble e.target.value:", e.target.value);
+              //   setCreateRowForm((prev) => ({
+              //     ...prev,
+              //     new_re_occur: e.target.value,
+              //   }));
+              //   console.log("createRowForm:", createRowForm);
+              // }}
+              >
+                {/* <Radio value="New">New</Radio>
             <Radio value="Re-occur">Re-occur</Radio> */}
-            {newOrReoccur.map((item) => (
-              <Radio key={item.value} value={item.value}>
-                {item.value}
-              </Radio>
-            ))}
-          </Radio.Group>
-        </Form.Item>
-
+                {newOrReoccur.map((item) => (
+                  <Radio key={item.value} value={item.value}>
+                    {item.value}
+                  </Radio>
+                ))}
+              </Radio.Group>
+            </Form.Item>
+          </Panel>
+        </Collapse>
         {/* Footer Buttons */}
         <Form.Item
           wrapperCol={{ offset: 8, span: 16 }}

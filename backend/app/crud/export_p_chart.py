@@ -207,7 +207,10 @@ class Export_P_Chart_CRUD:
             # Construct the query with filters
             query = f"""
                         select 	
-                                t0.defect_type as master_defect_type,
+                                CASE
+                                    WHEN t1.defect_type = 'Repeat NG' THEN 'Repeat NG'  
+                                    ELSE t0.defect_type
+                                END as master_defect_type,
 		                        t0.defect_mode as master_defect_mode,
                                 t1.date,
                                 t1.year_month,
@@ -228,7 +231,7 @@ class Export_P_Chart_CRUD:
                                 MAX(t1.pic) as pic
                         from 
                         (select part_name,defect_type,defect_mode,ref,master_defect_index from master_defect 
-                        where line_id = {line_id} and process='Outline' and active='active'
+                        where line_id = {line_id} and process='{filters['process']}' and active='active'
                         ) t0
                         left join (
                             SELECT      pdr.date,
@@ -249,14 +252,17 @@ class Export_P_Chart_CRUD:
                                         MAX(pdr.updated_at) as updated_at,
                                         MAX(pdrl.pic) as pic 
                                     FROM public.pchart_defect_record pdr
-                                    left join pchart_defect_record_log pdrl 
+                                    left join (
+                                        select date,line_id,part_no,process,defect_type,id_defective_items,shift,active,max(pic) as pic  from pchart_defect_record_log
+                                        group by date,line_id,part_no,process,defect_type,id_defective_items,shift,active
+                                        )pdrl 
                                     on pdr.date = pdrl.date and 
                                     pdr.line_id = pdrl.line_id and 
                                     pdr.part_no = pdrl.part_no and 
                                     pdr.process = pdrl.process and 
                                     pdr.defect_type = pdrl.defect_type and 
                                     pdr.id_defective_items= pdrl.id_defective_items and active='active' 
-                            where pdr.line_id={line_id} and pdr.process='Outline' and pdr.date >= '{first_day}' and pdr.date <='{last_day}' 
+                            where pdr.line_id={line_id} and pdr.process='{filters['process']}' and pdr.date >= '{first_day}' and pdr.date <='{last_day}'   and pdrl.shift='{filters['shift']}' and pdrl.active='active' 
                             group by pdr.line_id,pdr.date,pdr.part_no,pdr.process,pdr.defect_type,pdr.id_defective_items
                         ) t1 on t0.ref = t1. id_defective_items
                         left join approval_daily t2 using(date,line_id)
@@ -281,6 +287,7 @@ class Export_P_Chart_CRUD:
                                 t1.defect_qty,
                                 t1.record_by,
                                 t1.updated_at
+                        order by t0.defect_type,t0.defect_mode
                 """
             # params = []
             # if filters["shift"] == "All":

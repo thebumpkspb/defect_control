@@ -1253,6 +1253,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
 }) => {
   const addNewRecordRef = useRef<AddNewRecordRef>(null);
   const { isAdmin, isOP_up, isTL_up, isMGR_up, isGM_up } = UserStore.getState();
+  // console.log(isTL_up(), isMGR_up(), isGM_up());
   // console.log("table -> username:", username);
   // const [isFetchingAllShiftOfTableData, setIsFetchingAllShiftOfTableData] = useState<boolean>(false);
   // const isFetchingRef = useRef(false);
@@ -2174,12 +2175,9 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
             // console.log("record krub:", record);
             if (
               record[`day${dayIndex + 1}`] == "" &&
-              ((record.defectType == "Review by (TL)" &&
-                isTL_up() &&
-                record.defectType == "Review by (MGR)" &&
-                isMGR_up() &&
-                record.defectType == "Review by (GM)" &&
-                isGM_up()) ||
+              ((record.defectType == "Review by (TL)" && isTL_up()) ||
+                (record.defectType == "Review by (MGR)" && isMGR_up()) ||
+                (record.defectType == "Review by (GM)" && isGM_up()) ||
                 isAdmin())
             ) {
               return (

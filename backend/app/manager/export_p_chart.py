@@ -250,6 +250,7 @@ class Export_P_Chart_Manager:
         # for r in graph_records:
         #     key_index = r._key_to_index
         #     pchart_graph = r[key_index["pchart_graph"]]
+        # TODO:
         result_graph = []
         for r in graph_records:
             key_index = r._key_to_index
@@ -263,6 +264,8 @@ class Export_P_Chart_Manager:
             )
         else:
             pchart_graph = None
+        # print("pchart_graph:", pchart_graph)
+        # !
         # print("pchart_graph:", pchart_graph)
         target = await self.crud.fetch_filtered_master_target_line(
             db=db, filters=filters
@@ -282,7 +285,13 @@ class Export_P_Chart_Manager:
         date_str = dt.strftime("%Y-%m-01")
         day_in_month = get_days_in_month(filters["month"])
         list_prod_qty = [0] * day_in_month
-        if filters["process"] == "Outline":
+        print('filters["part_no"]:', filters["part_no"])
+        print('type(filters["part_no"]):', type(filters["part_no"]))
+        if (
+            filters["process"] == "Outline"
+            or not filters["part_no"]
+            or filters["part_no"] == "null"
+        ):
             line_id = self.crud.get_line_id(filters["line_name"])
             endpoint = (
                 self.BACKEND_URL_SERVICE
@@ -412,6 +421,8 @@ class Export_P_Chart_Manager:
                     )
                 )
                 if filters["process"] != "Outline"
+                # or filters["part_no"]
+                and filters["part_no"] != "null"
                 else "All"
             ),
             "AC3": process_inline,
@@ -420,18 +431,19 @@ class Export_P_Chart_Manager:
             "AC5": shift_a,
             "AF5": shift_b,
         }
-        if filters["process"] != "Outline":
-            data_to_write.update(
-                {
-                    "AZ9": f"{n_bar:.2f}",
-                    "AZ12": f"{p_bar:.2f}",
-                    "AZ18": f"{k:.2f}",
-                    "AZ22": f"{uclp:.2f}",
-                    "AZ24": f"{lclp:.2f}",
-                    "AY27": target_control,
-                    "AY29": f"{p_bar_last:.5f}",
-                }
-            )
+        # TODO:
+        # if filters["process"] != "Outline":
+        # data_to_write.update(
+        #     {
+        #         "AZ9": f"{n_bar:.2f}",
+        #         "AZ12": f"{p_bar:.2f}",
+        #         "AZ18": f"{k:.2f}",
+        #         "AZ22": f"{uclp:.2f}",
+        #         "AZ24": f"{lclp:.2f}",
+        #         "AY27": target_control,
+        #         "AY29": f"{p_bar_last:.5f}",
+        #     }
+        # )
         start_col = 14
         if filters["process"] == "Outline":
             start_row = 8
@@ -1049,7 +1061,8 @@ class Export_P_Chart_Manager:
 
                 # print("pchart_graph:", pchart_graph)
             if filters["process"] != "Outline":
-                self.utils.create_graph_as_image(graph_image_path, pchart_graph)
+                if pchart_graph != None:
+                    self.utils.create_graph_as_image(graph_image_path, pchart_graph)
 
                 # Insert the graph image into a fixed position
                 img = OpenPyxlImage(graph_image_path)

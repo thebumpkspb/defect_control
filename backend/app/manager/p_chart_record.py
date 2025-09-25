@@ -1292,6 +1292,7 @@ class P_Chart_Record_Manager:
             where_stmt=text_data,
             data_search={"start_date": s_date, "end_date": e_date},
         )
+        # df_qty.to_excel("test.xlsx")
         # TODO New
         for defect in list_defect_type:
 
@@ -1305,7 +1306,7 @@ class P_Chart_Record_Manager:
 
             e_date = datetime.strptime(now_month + "-" + str(day_in_month), "%B-%Y-%d")
             e_date = str(e_date)[:10]
-
+            # TODO:
             temp_qty = pd.DataFrame()
             if not (df_qty.empty):
 
