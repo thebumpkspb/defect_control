@@ -206,7 +206,7 @@ class Settings_Target_Manager:
                         parts=[{"part_no": "", "part_name": ""}],
                         target_type="",
                         month_year="",
-                        target_control="",
+                        target_control=0,
                     )
                 )
             return return_list
@@ -220,7 +220,7 @@ class Settings_Target_Manager:
                     parts=[{"part_no": "", "part_name": ""}],
                     target_type="",
                     month_year="",
-                    target_control="",
+                    target_control=0,
                 )
             )
             return return_list
@@ -404,7 +404,8 @@ class Settings_Target_Manager:
 
         list_line = []
         list_line_id = []
-
+        data = text_data.dict()
+        part_no = data["part_no"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -435,11 +436,13 @@ class Settings_Target_Manager:
         list_parts = []
 
         if res["line_name"] != "-":
+
             index_select = list_line.index(res["line_name"])
             select_line_id = list_line_id[index_select]
 
-            try:
-                ## get part_no, part_name from api
+            # try:
+            ## get part_no, part_name from api
+            if part_no:
                 endpoint = (
                     self.BACKEND_URL_SERVICE
                     + "/api/settings/parts_by_line?line_id="
@@ -457,12 +460,14 @@ class Settings_Target_Manager:
 
                 index_select = list_part_no.index(res["part_no"])
                 select_part_name = list_part_name[index_select]
+            else:
+                select_part_name = None
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
         else:
             select_part_name = res["part_no"]

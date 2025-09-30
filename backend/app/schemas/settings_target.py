@@ -4,9 +4,10 @@ from typing import List
 
 class Setting_Table(BaseModel):
     line_name: str
+    process: str | None = None
     part_name: str | None = None
-    part_no: str
-    sub_line: str
+    part_no: str | None = None
+    sub_line: str | None = None
 
 
 class Setting_SubPart_Table(BaseModel):

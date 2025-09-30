@@ -1521,6 +1521,7 @@ const toSettingDefectModeTableEditSaveReqBody = (
   data: SettingTableResult,
   username: string
 ): SettingDefectModeTableEditSaveRequest => {
+  console.log("data.id:", data.id);
   return {
     id: data.id,
     line_name: data.line_name,
@@ -1529,6 +1530,7 @@ const toSettingDefectModeTableEditSaveReqBody = (
     process: data.process,
     defect_type: data.defect_type,
     defect_mode: data.defect_mode,
+    target_by_piece: data.target_by_piece,
     category: data.category,
     creator: username,
   };
@@ -1552,6 +1554,7 @@ const defalutEditForm = {
   process: "",
   defect_type: "",
   defect_mode: "",
+  target_by_piece: 0,
   category: [],
   creator: "",
 };
@@ -2083,6 +2086,95 @@ const MasterTypeDefectModeTable: React.FC<MasterTypeDefectModeTableProps> = ({
       },
     },
     {
+      title: <div style={{ textAlign: "center" }}>Target by piece</div>,
+      dataIndex: "target_by_piece",
+      filters:
+        toFilterListNoEmpty(
+          defectModesDataSource.map((item: any) => item?.target_by_piece)
+        ) || [],
+      filterMode: "menu",
+      filterSearch: true,
+      onFilter: (value, record) => record.target_by_piece === value,
+      render: (text, record) => {
+        if (record === null) {
+          return text || "-";
+        }
+
+        return editingId === record!!!.id ? (
+          <InputNumber
+            defaultValue={editForm.target_by_piece || 0} // Initial value
+            style={{ width: "100%" }}
+            onChange={(value) => {
+              setEditForm((prevForm) => ({
+                ...prevForm,
+                target_by_piece: typeof value === "number" ? value : 0,
+              }));
+            }}
+            step={1} // Allows both integers and floating-point numbers
+            placeholder="Enter a number"
+          />
+        ) : (
+          text || "-"
+        );
+      }, // input field
+      // onFilter: (value, record) => record.defect_type.includes(value as string),
+      // render: (text, record) => {
+      //   if (record === null) {
+      //     return text || "-";
+      //   }
+
+      //   return editingId === record!!!.id ? (
+      //     <DropdownEdit
+      //       value={{
+      //         label: editForm.defect_type,
+      //         value: editForm.defect_type,
+      //       }}
+      //       handleChange={(value: {
+      //         value: string | number | null;
+      //         label: string;
+      //       }) => {
+      //         const selectedDefectType = defectType.find(
+      //           // ({ value }) => editForm.defect_type === value
+      //           (item) => item.value === String(value.value ?? "")
+      //         );
+
+      //         // console.log(
+      //         //   "defect mode select defect_type:",
+      //         //   selectedDefectType
+      //         // );
+      //         // console.log(
+      //         //   "defect mode defect_mode:",
+      //         //   selectedDefectType?.hasDefectMode ? editForm.defect_mode : ""
+      //         // );
+
+      //         setEditForm((prevForm) => ({
+      //           ...prevForm,
+      //           defect_type: String(value.value ?? ""),
+
+      //           // reset defect_mode if defect_type has no defect_mode
+      //           defect_mode: selectedDefectType?.hasDefectMode
+      //             ? editForm.defect_mode
+      //             : "",
+      //         }));
+      //       }}
+      //       options={
+      //         tableEditDropDownData.defect_type?.map((defect_type) => ({
+      //           value: defect_type,
+      //           label: defect_type,
+      //         })) ??
+      //         defectType.map(({ value }) => ({
+      //           value: value,
+      //           label: value,
+      //         }))
+      //       }
+      //       placeholder={""}
+      //     />
+      //   ) : (
+      //     text || "-"
+      //   );
+      // }, // dropdown [0].defect_type
+    },
+    {
       title: "Category",
       dataIndex: "category",
       // key: "category",
@@ -2177,7 +2269,7 @@ const MasterTypeDefectModeTable: React.FC<MasterTypeDefectModeTableProps> = ({
             ) {
               return <Space></Space>;
             }
-
+            console.log("record:", record);
             return editingId === record?.id ? (
               <Space>
                 <Button type="link" onClick={() => saveEdit(record.id)}>
@@ -2281,6 +2373,7 @@ const MasterTypeDefectModeTable: React.FC<MasterTypeDefectModeTableProps> = ({
       process: record.process,
       defect_type: record.defect_type,
       defect_mode: record.defect_mode,
+      target_by_piece: record.target_by_piece || 0,
       category: record.category,
       creator: username,
     });
@@ -2405,7 +2498,7 @@ const MasterTypeDefectModeTable: React.FC<MasterTypeDefectModeTableProps> = ({
   const cancelEdit = () => {
     setEditingId(null);
   };
-
+  console.log("sortedData:", sortedData);
   return (
     // <div style={{ position: "relative" }}>
     <div>

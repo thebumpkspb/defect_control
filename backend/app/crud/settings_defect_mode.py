@@ -47,6 +47,7 @@ class Settings_Defect_Mode_CRUD:
         data = where_stmt.dict()
 
         line_name = data["line_name"]
+        process = data["process"]
         part_name = data["part_name"]
         part_no = data["part_no"]
 
@@ -66,11 +67,14 @@ class Settings_Defect_Mode_CRUD:
                 + str(line_id)
                 # + "' AND part_name = '"
                 # + part_name
-                + "' AND part_no = '"
-                + part_no
                 + "' AND active = 'active' "
             )
 
+        if process:
+            where_stmt = where_stmt + " AND process = '" + process + "' "
+
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "' "
         stmt = f"SELECT * FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY ref"
         rs = await db.execute(text(stmt))
         # print("stmt: ", stmt)
@@ -94,17 +98,24 @@ class Settings_Defect_Mode_CRUD:
             + str(line_id)
             + "' AND process = '"
             + process
-            + "' AND part_no = '"
-            + part_no
-            + "' AND part_name = '"
-            + part_name
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND part_name = '"
+            # + part_name
             + "' AND defect_type = '"
             + defect_type
             + "' AND defect_mode = '"
             + defect_mode
             + "' AND active = 'active' "
         )
-
+        if part_name:
+            where_stmt = where_stmt + " AND part_name = '" + part_name + "'"
+        else:
+            where_stmt = where_stmt + " AND part_name is null"
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
         stmt = f"SELECT * FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
 
@@ -141,6 +152,7 @@ class Settings_Defect_Mode_CRUD:
         part_name = data["part_name"]
         defect_type = data["defect_type"]
         defect_mode = data["defect_mode"]
+        target_by_piece = data["target_by_piece"]
         if data["category"]:
             category = "'{" + ",".join(data["category"]) + "}'"
         else:
@@ -153,15 +165,19 @@ class Settings_Defect_Mode_CRUD:
 
         ## query db
         ref_id = None
-
-        stmt = f"SELECT ref,defect_mode FROM master_defect WHERE  id = " + str(id)
+        master_defect_index = None
+        stmt = (
+            f"SELECT ref,defect_mode,master_defect_index FROM master_defect WHERE  id = "
+            + str(id)
+        )
         rs = await db.execute(text(stmt))
         for r in rs:
             key_index = r._key_to_index
 
             ref_id = r[key_index["ref"]]
+            master_defect_index = r[key_index["master_defect_index"]]
             old_defect_mode = r[key_index["defect_mode"]]
-
+        print("master_defect_index:", master_defect_index)
         stmt = (
             "UPDATE master_defect SET active = 'edit', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  id = "
             + str(id)
@@ -172,11 +188,18 @@ class Settings_Defect_Mode_CRUD:
         ## check new record ??
         ## query db
         where_stmt = (
-            f"line_id = '{str(line_id)}' AND process = '{process}' AND part_no = '{part_no}' AND part_name = '{part_name}' AND defect_type = '{defect_type}' AND defect_mode = '{defect_mode}'"
+            f"line_id = '{str(line_id)}' AND process = '{process}' AND defect_type = '{defect_type}' AND defect_mode = '{defect_mode}'"
+            + (f" AND category = {category}" if category else " AND category is NULL")
             + (
-                f" AND category = {category}"
-                if category != "NULL"
-                else " AND category is NULL"
+                f" AND target_by_piece = {target_by_piece}"
+                if target_by_piece
+                else " AND target_by_piece is NULL"
+            )
+            + (f" AND part_no = '{part_no}'" if part_no else " AND part_no is NULL")
+            + (
+                f" AND part_name = '{part_name}'"
+                if part_name
+                else " AND part_name is NULL"
             )
             + " AND active in ('delete','edit','active') "
         )
@@ -198,18 +221,29 @@ class Settings_Defect_Mode_CRUD:
             if defect_type in ["M/C Set up", "Quality Test"]:
                 defect_mode = ""
 
-            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{defect_type}','{defect_mode}',{category},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{"'"+part_no+"'" if part_no else 'NULL'},{"'"+part_name+"'" if part_name else 'NULL'},'{defect_type}','{defect_mode}',{target_by_piece},{category},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 
             new_id = None
 
             where_stmt = (
-                f"line_id = '{str(line_id)}' AND process = '{process}' AND part_no = '{part_no}' AND part_name = '{part_name}' AND defect_type = '{defect_type}' AND defect_mode = '{defect_mode}' "
+                f"line_id = '{str(line_id)}' AND process = '{process}'  AND defect_type = '{defect_type}' AND defect_mode = '{defect_mode}' "
                 + (
                     f" AND category = {category}"
-                    if category != "NULL"
+                    if category
                     else " AND category is NULL"
+                )
+                + (
+                    f" AND target_by_piece = {target_by_piece}"
+                    if target_by_piece
+                    else " AND target_by_piece is NULL"
+                )
+                + (f" AND part_no = '{part_no}'" if part_no else " AND part_no is NULL")
+                + (
+                    f" AND part_name = '{part_name}'"
+                    if part_name
+                    else " AND part_name is NULL"
                 )
                 + " AND creator = '"
                 + creator
@@ -223,7 +257,7 @@ class Settings_Defect_Mode_CRUD:
 
                 new_id = r[key_index["id"]]
 
-            stmt = f"""UPDATE master_defect SET ref = {ref_id}, updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  id = {new_id}"""
+            stmt = f"""UPDATE master_defect SET master_defect_index={master_defect_index if master_defect_index else 'NULL'},ref = {ref_id }, updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  id = {new_id}"""
             await db.execute(text(stmt))
             await db.commit()
 
@@ -340,7 +374,7 @@ class Settings_Defect_Mode_CRUD:
         defect_mode = data["defect_mode"]
         category = "{" + ",".join(data["category"]) + "}"
         creator = data["creator"]
-
+        target_by_piece = data["target_by_piece"]
         line_id = self.get_line_id(line_name)
 
         status = True
@@ -352,10 +386,10 @@ class Settings_Defect_Mode_CRUD:
             + str(line_id)
             + "' AND process = '"
             + process
-            + "' AND part_no = '"
-            + part_no
-            + "' AND part_name = '"
-            + part_name
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND part_name = '"
+            # + part_name
             + "' AND defect_type = '"
             + defect_type
             + "' AND defect_mode = '"
@@ -364,7 +398,24 @@ class Settings_Defect_Mode_CRUD:
             + category
             + "' AND active in ('delete','edit','active') "
         )
+        if part_name:
+            where_stmt = where_stmt + " AND part_name = '" + part_name + "'"
+        else:
+            where_stmt = where_stmt + " AND part_name is null"
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if target_by_piece:
+            where_stmt = where_stmt + " AND target_by_piece = " + str(target_by_piece)
+        else:
+            where_stmt = where_stmt + " AND target_by_piece is null"
 
+        part_no = "'" + part_no + "'" if part_no else "null"
+        part_name = "'" + part_name + "'" if part_name else "null"
+        target_by_piece = (
+            "'" + str(target_by_piece) + "'" if target_by_piece else "null"
+        )
         stmt = f"SELECT id FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         for r in rs:
@@ -382,7 +433,7 @@ class Settings_Defect_Mode_CRUD:
             if defect_type in ["M/C Set up", "Quality Test"]:
                 defect_mode = ""
 
-            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{defect_type}','{defect_mode}','{category}','{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{part_no},{part_name},'{defect_type}','{defect_mode}',{target_by_piece},'{category}','{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 

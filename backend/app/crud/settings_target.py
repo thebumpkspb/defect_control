@@ -45,6 +45,7 @@ class Settings_Target_CRUD:
         data = where_stmt.dict()
 
         line_name = data["line_name"]
+        process = data["process"]
         part_name = data["part_name"]
         part_no = data["part_no"]
         sub_line = data["sub_line"]
@@ -58,13 +59,16 @@ class Settings_Target_CRUD:
         if line_name != "":
             where_stmt = where_stmt + " AND line_id = '" + str(line_id) + "' "
 
-        if part_name != "":
+        if process:
+            where_stmt = where_stmt + " AND process = '" + process + "' "
+
+        if part_name:
             where_stmt = where_stmt + " AND part_name = '" + part_name + "' "
 
-        if part_no != "":
+        if part_no:
             where_stmt = where_stmt + " AND part_no = '" + part_no + "' "
 
-        if sub_line != "":
+        if sub_line:
             where_stmt = where_stmt + " AND sub_line = '" + sub_line + "' "
 
         stmt = f"SELECT * FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
@@ -90,12 +94,12 @@ class Settings_Target_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_name = '"
-            + part_name
-            + "' AND part_no = '"
-            + part_no
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND part_name = '"
+            # + part_name
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND process = '"
             + process
             + "' AND target_type = '"
@@ -104,7 +108,18 @@ class Settings_Target_CRUD:
             + month_year
             + "' AND active = 'active' "
         )
-
+        if part_name:
+            where_stmt = where_stmt + " AND part_name = '" + part_name + "'"
+        else:
+            where_stmt = where_stmt + " AND part_name is null"
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
         stmt = f"SELECT * FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
 
@@ -149,19 +164,33 @@ class Settings_Target_CRUD:
             + str(line_id)
             + "' AND process = '"
             + process
-            + "' AND part_no = '"
-            + part_no
-            + "' AND part_name = '"
-            + part_name
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND part_name = '"
+            # + part_name
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND target_type = '"
             + target_type
             + "' AND month_year = '"
             + month_year
             + "' AND active in ('delete','edit','active') "
         )
-
+        if part_name:
+            where_stmt = where_stmt + " AND part_name = '" + part_name + "'"
+        else:
+            where_stmt = where_stmt + " AND part_name is null"
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
+        part_name = "'" + part_name + "'" if part_name else "null"
+        part_no = "'" + part_no + "'" if part_no else "null"
+        sub_line = "'" + sub_line + "'" if sub_line else "null"
         ## query db
         stmt = f"SELECT id FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
@@ -177,7 +206,7 @@ class Settings_Target_CRUD:
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{target_type}','{month_year}',{target_control},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}',{part_no},{part_name},{sub_line},'{target_type}','{month_year}',{target_control},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 
@@ -272,6 +301,9 @@ class Settings_Target_CRUD:
         part_name = data["part_name"]
         part_no = data["part_no"]
         sub_line = data["sub_line"]
+        # part_name = f"""'{data["part_name"]}'""" if data["part_name"] else "null"
+        # part_no = f"""'{data["part_no"]}'""" if data["part_no"] else "null"
+        # sub_line = f"""'{data["sub_line"]}'""" if data["sub_line"] else "null"
         process = data["process"]
         target_type = data["target_type"]
         month_year = data["month_year"]
@@ -289,19 +321,33 @@ class Settings_Target_CRUD:
             + str(line_id)
             + "' AND process = '"
             + process
-            + "' AND part_no = '"
-            + part_no
-            + "' AND part_name = '"
-            + part_name
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND part_name = '"
+            # + part_name
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND target_type = '"
             + target_type
             + "' AND month_year = '"
             + month_year
             + "' AND active in ('delete','edit','active') "
         )
-
+        if part_name:
+            where_stmt = where_stmt + " AND part_name = '" + part_name + "'"
+        else:
+            where_stmt = where_stmt + " AND part_name is null"
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
+        part_name = "'" + part_name + "'" if part_name else "null"
+        part_no = "'" + part_no + "'" if part_no else "null"
+        sub_line = "'" + sub_line + "'" if sub_line else "null"
         stmt = f"SELECT id FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         for r in rs:
@@ -316,7 +362,7 @@ class Settings_Target_CRUD:
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}','{part_no}','{part_name}','{sub_line}','{target_type}','{month_year}',{target_percent},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_target_line ( line_id, process, part_no, part_name, sub_line, target_type, month_year, target_control, creator, created_at, updated_at, active) VALUES ( '{line_id}','{process}',{part_no},{part_name},{sub_line},'{target_type}','{month_year}',{target_percent},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 

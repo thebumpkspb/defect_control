@@ -109,12 +109,12 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
   const [selectedSectionLine, setSelectedSectionLine] = useState<string | null>(
     ""
   );
-  const [selectedPartNo, setSelectedPartNo] = useState<string>("");
-  const [partName, setPartName] = useState<string>("");
+  const [selectedPartNo, setSelectedPartNo] = useState<string | null>(null);
+  const [partName, setPartName] = useState<string | null>(null);
   const [groupName, setGroupName] = useState<string>("");
   const [selectTargetType, setSelectTargetType] = useState<string>("");
   const [selectMonthYear, setSelectMonthYear] = useState<string>("");
-  const [targetControl, setTargetControl] = useState<number>(0.0);
+  const [targetByPiece, setTargetByPiece] = useState<number | null>(null);
   //   const [partNameOptions, setPartNameOptions] = useState<string[]>([]);
   const [partNoOptions, setPartNoOptions] = useState<
     DefectModeAddRowViewLineNameChangePart[]
@@ -156,7 +156,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
 
     setSelectMonthYear("");
     setSelectTargetType("");
-    setTargetControl(0.0);
+    setTargetByPiece(null);
     onCancel();
 
     onCancel();
@@ -183,7 +183,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
       setPartName(
         data.add_row_view_result[0].parts.find(
           (item) => item.part_no === masterDataPageSelectedPartNo
-        )?.part_name || ""
+        )?.part_name || null
       );
       setPartNoOptions(data.add_row_view_result[0].parts || []);
       setDefectTypeOptions(
@@ -224,7 +224,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
       setPartName(
         data.add_row_view_result[0].parts.find(
           (item) => item.part_no === selectedPartNo
-        )?.part_name || ""
+        )?.part_name || null
       );
 
       // set part no list
@@ -251,7 +251,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
     } catch (error) {
       console.error("Failed to fetch lines:", error);
     }
-    setSelectedPartNo("");
+    setSelectedPartNo(null);
     setIsLoading(false);
   };
 
@@ -265,6 +265,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
         process: process,
         defect_type: selectedDefectType,
         defect_mode: defectMode,
+        target_by_piece: targetByPiece,
         category: selectedCategory,
         creator: userName,
       });
@@ -276,7 +277,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
   const handleSetSelectedPartNo = (value: string) => {
     setSelectedPartNo(value);
     setPartName(
-      partNoOptions.find((item) => item.part_no === value)?.part_name || ""
+      partNoOptions.find((item) => item.part_no === value)?.part_name || null
     );
   };
 
@@ -285,9 +286,9 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
 
     if (!selectedSectionLine || selectedSectionLine === "-")
       missingFields.push("Line Name");
-    if (!selectedPartNo || selectedPartNo === "-")
-      missingFields.push("Part No");
-    if (!partName || partName === "-") missingFields.push("Part Name");
+    // if (!selectedPartNo || selectedPartNo === "-")
+    //   missingFields.push("Part No");
+    // if (!partName || partName === "-") missingFields.push("Part Name");
     if (!process || process === "-") missingFields.push("Process");
     if (!selectedDefectType || selectedDefectType === "-")
       missingFields.push("Defect Type");
@@ -317,15 +318,15 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
     await delay(200);
     await triggerUpdateTableData();
 
-    setPartName("");
-    setSelectedPartNo("");
+    setPartName(null);
+    setSelectedPartNo(null);
     setDefectMode("");
     setSelectedDefectType("");
     setProcess("");
 
     setSelectMonthYear("");
     setSelectTargetType("");
-    setTargetControl(0.0);
+    setTargetByPiece(null);
     onCancel();
   };
 
@@ -337,7 +338,14 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
 
     setSelectedSectionLine(masterDataPageSelectedSectionLine);
     setSelectedPartNo(masterDataPageSelectedPartNo!!);
-    setPartName(masterDataPageSelectedPartName!!);
+    let temp_part_name = null;
+    if (masterDataPageSelectedPartName == "") {
+      temp_part_name = null;
+    } else {
+      temp_part_name = masterDataPageSelectedPartName;
+    }
+    // setPartName(masterDataPageSelectedPartName!!);
+    setPartName(temp_part_name);
     setDefectTypeOptions(defectType);
 
     console.log("open add row modal:");
@@ -564,7 +572,7 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
                 </Text>
               </div>
               <Input
-                value={partName}
+                value={partName || ""}
                 readOnly
                 placeholder="Enter Part Name"
                 style={{
@@ -670,7 +678,47 @@ const AddRowSettingModal: React.FC<AddRowSettingModalProps> = ({
                 }}
               />
             </Input.Group>
-
+            <Input.Group
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "0 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: "32px",
+                  flex: "1",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    flex: "1",
+                    whiteSpace: "nowrap",
+                    background: "white",
+                    textAlign: "right",
+                    borderRadius: "5px",
+                    paddingRight: "3px",
+                  }}
+                >
+                  Target By Piece :
+                </Text>
+              </div>
+              <InputNumber
+                value={targetByPiece} // Initial value
+                style={{ flex: 3 }}
+                onChange={(value) => {
+                  setTargetByPiece(value || null);
+                }}
+                step={1} // Allows both integers and floating-point numbers
+                placeholder="Enter a number"
+              />
+            </Input.Group>
             <Input.Group
               style={{
                 display: "flex",

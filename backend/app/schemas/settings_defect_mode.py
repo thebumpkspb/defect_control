@@ -4,8 +4,9 @@ from typing import List
 
 class Setting_Table(BaseModel):
     line_name: str
-    part_name: str
-    part_no: str
+    process: str | None = None
+    part_name: str | None = None
+    part_no: str | None = None
 
 
 class Setting_Table_Result(Setting_Table):
@@ -14,6 +15,7 @@ class Setting_Table_Result(Setting_Table):
     defect_type: str | None = None
     defect_mode: str | None = None
     category: List[str] | None = None
+    target_by_piece: int | None = None
     master_defect_index: int | None = None
 
 
@@ -52,6 +54,7 @@ class Setting_Table_Edit_Save(Setting_Table):
     process: str | None = None
     defect_type: str | None = None
     defect_mode: str | None = None
+    target_by_piece: int | None = None
     category: List[str] | None = None
     creator: str | None = None
 
@@ -89,6 +92,7 @@ class Add_Row_Ok_Result(Setting_Table):
     process: str | None = None
     defect_type: str | None = None
     defect_mode: str | None = None
+    target_by_piece: int | None = None
     category: List[str] | None = None
     creator: str | None = None
 

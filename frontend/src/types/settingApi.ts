@@ -1,7 +1,8 @@
 export interface SettingDefectModeRequest {
   line_name: string | null;
+  process?: string | null;
   part_no: string | null;
-  part_name: string;
+  part_name: string | null;
 }
 
 export interface SettingSubPartRequest {
@@ -16,6 +17,7 @@ export interface SettingTableResult {
   process: string;
   defect_type: string;
   defect_mode: string;
+  target_by_piece: number | null;
   category: string[];
   master_defect_index?: number | null;
 }
@@ -107,8 +109,8 @@ export interface SettingDefectModeAddRowViewResponse {
 
 export interface SettingDefectModeAddRowViewLineNameChangeRequest {
   line_name: string;
-  part_no: string;
-  part_name: string;
+  part_no: string | null;
+  part_name: string | null;
   process?: string;
 }
 
@@ -143,11 +145,12 @@ export interface SettingDefectModeAddRowViewLineNameChangeResponse {
 
 export interface SettingDefectModeAddRowOkRequest {
   line_name: string;
-  part_no: string;
-  part_name: string;
+  part_no: string | null;
+  part_name: string | null;
   process: string;
   defect_type: string;
   defect_mode: string;
+  target_by_piece: number | null;
   category: string[];
   creator: string;
 }
@@ -168,8 +171,8 @@ export interface SettingDefectModeAddRowOkResponse {
 
 export interface SettingDefectModeAddRowOkRequest {
   line_name: string;
-  part_no: string;
-  part_name: string;
+  part_no: string | null;
+  part_name: string | null;
   process: string;
   defect_type: string;
   defect_mode: string;
@@ -264,9 +267,10 @@ export interface settingGroupPartsResponse {
 export interface SettingTargetTableViewRequest {
   group_name: string;
   line_name: string;
-  part_no: string;
-  part_name: string;
-  sub_line: string;
+  process: string | null;
+  part_no: string | null;
+  part_name: string | null;
+  sub_line: string | null;
 }
 
 export interface SettingTableViewResult {
@@ -314,9 +318,9 @@ export interface SettingTargetTableViewResponse {
 export interface SettingTargetAddRowViewRequest {
   group_name: string;
   line_name: string;
-  part_no: string;
-  part_name: string;
-  sub_line: string;
+  part_no: string | null;
+  part_name: string | null;
+  sub_line: string | null;
 }
 export interface SettingSubPartAddRowViewRequest {
   group_name: string;
@@ -364,10 +368,10 @@ export interface SettingSubPartAddRowViewResponse {
 export interface SettingTargetAddRowViewLineNameChangeRequest {
   group_name: string;
   line_name: string;
-  part_no: string;
-  part_name: string;
+  part_no: string | null;
+  part_name: string | null;
   sub_line: string | null;
-  process?: string;
+  process?: string | null;
 }
 
 export interface SettingTargetAddRowViewLineNameChangeResponse {
@@ -376,10 +380,10 @@ export interface SettingTargetAddRowViewLineNameChangeResponse {
 
 export interface SettingTargetAddRowOkRequest {
   line_name: string;
-  part_no: string;
-  part_name: string;
+  part_no: string | null;
+  part_name: string | null;
   sub_line: string | null;
-  process: string;
+  process: string | null;
   group_name: string;
   target_type: string;
   month_year: string;
@@ -971,6 +975,7 @@ export interface SettingDefectModeTableEditSaveRequest {
   process: string;
   defect_type: string;
   defect_mode: string;
+  target_by_piece: number | null;
   category: string[];
   creator: string;
 }

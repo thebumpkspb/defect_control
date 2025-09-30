@@ -247,11 +247,11 @@ const MasterDataPage: NextPage = () => {
       setParts(partData || []);
       // Update partName, set part no to the first item
       if (partData.length > 0) {
-        setSelectedPartNo(partData[0].part_no);
-        setSelectedPartName(partData[0].part_name);
+        // setSelectedPartNo(partData[0].part_no);
+        // setSelectedPartName(partData[0].part_name);
       } else {
-        setSelectedPartNo("-");
-        setSelectedPartName("-");
+        setSelectedPartNo(null);
+        setSelectedPartName(null);
       }
       setIsLoading(false);
     }
@@ -261,7 +261,7 @@ const MasterDataPage: NextPage = () => {
     label: string;
   }) => {
     const selectedLine = lines.find((line) => {
-      return line.line_id === value.value;
+      return line.line_id === value?.value;
     });
     setSelectedLineCodeRx(
       lines.find((line) => line.line_id === value.value)?.line_code_rx || ""
@@ -291,8 +291,8 @@ const MasterDataPage: NextPage = () => {
         setParts(partData || []);
         // Update partName, set part no to the first item
         if (partData.length > 0) {
-          setSelectedPartNo(partData[0].part_no);
-          setSelectedPartName(partData[0].part_name);
+          // setSelectedPartNo(partData[0].part_no);
+          // setSelectedPartName(partData[0].part_name);
         } else {
           setSelectedPartNo("-");
           setSelectedPartName("-");
@@ -308,14 +308,14 @@ const MasterDataPage: NextPage = () => {
     const selectedLine = lines.find((line) => {
       return line.line_id === selectedLineId;
     });
-    setProcess(value.value);
+    setProcess(value?.value);
 
-    if (selectedLine && value.value) {
+    if (selectedLine && value?.value) {
       setIsLoading(true);
 
       const partData = await getPartsByLineWitoutSetParts(
         selectedLine.line_id.toString(),
-        value.value
+        value?.value
       );
 
       console.log("handleLineChange: partData", partData);
@@ -323,11 +323,11 @@ const MasterDataPage: NextPage = () => {
       setParts(partData || []);
       // Update partName, set part no to the first item
       if (partData.length > 0) {
-        setSelectedPartNo(partData[0].part_no);
-        setSelectedPartName(partData[0].part_name);
+        // setSelectedPartNo(partData[0].part_no);
+        // setSelectedPartName(partData[0].part_name);
       } else {
-        setSelectedPartNo("-");
-        setSelectedPartName("-");
+        setSelectedPartNo(null);
+        setSelectedPartName(null);
       }
       setIsLoading(false);
     }
@@ -394,11 +394,13 @@ const MasterDataPage: NextPage = () => {
 
   // deletable???
   const updateDefectModesTable = async () => {
-    if (!selectedSectionLine || !selectedPartNo || !selectedPartName) return; // ตรวจสอบค่า
+    if (!selectedSectionLine /*|| !selectedPartNo || !selectedPartName*/)
+      return; // ตรวจสอบค่า
     setIsLoading(true);
     try {
       const data = await fetchDefectModes({
         line_name: selectedSectionLine,
+        process: process,
         part_no: selectedPartNo,
         part_name: selectedPartName,
       });
@@ -456,9 +458,9 @@ const MasterDataPage: NextPage = () => {
     null
   );
   const [selectedLineName, setSelectedLineName] = useState<string>("");
-  const [selectedPartNo, setSelectedPartNo] = useState<string>("");
+  const [selectedPartNo, setSelectedPartNo] = useState<string | null>(null);
   const [selectedSubLine, setSelectedSubLine] = useState<string | null>("");
-  const [selectedPartName, setSelectedPartName] = useState<string>("");
+  const [selectedPartName, setSelectedPartName] = useState<string | null>(null);
   // console.log("subPartData:", subPartData);
   // console.log("SelectedLineCodeRx:", selectedLineCodeRx);
   // console.log("selectedPartNo:", selectedPartNo);
@@ -468,7 +470,7 @@ const MasterDataPage: NextPage = () => {
   //   fetchParts();
   // }, [selectedLineId]);
   const fetchSubLines = async () => {
-    if (selectedLineId === null && selectedPartNo === null) {
+    if (selectedLineId == null || selectedPartNo == null) {
       return;
     }
     setIsLoading(true);
@@ -493,6 +495,9 @@ const MasterDataPage: NextPage = () => {
 
     // fetchLineSettings();
     fetchSubLines();
+    if (selectedPartNo == null) {
+      setSubLines([]);
+    }
   }, [selectedPartNo]);
 
   useEffect(() => {
@@ -501,7 +506,7 @@ const MasterDataPage: NextPage = () => {
 
   useEffect(() => {
     updateDefectModesTable();
-  }, [selectedSectionLine, selectedPartNo, selectedPartName]);
+  }, [selectedSectionLine, selectedPartNo, selectedPartName, process]);
 
   const { Option } = Select;
   const { setHeaderTitle, setBackable } = LayoutStore.getState();
@@ -576,10 +581,10 @@ const MasterDataPage: NextPage = () => {
   const updateLineTargetModesTable = async () => {
     if (
       // !selectedGroup ||
-      !selectedSectionLine ||
-      !selectedPartNo ||
+      !selectedSectionLine //||
+      // !selectedPartNo ||
       // !selectedPartName ||
-      !selectedSubLine
+      // !selectedSubLine
     ) {
       console.log("not load");
       return;
@@ -590,9 +595,10 @@ const MasterDataPage: NextPage = () => {
         // group_name: selectedGroup || "-",
         group_name: "",
         line_name: selectedSectionLine || "-",
-        part_no: selectedPartNo || "-",
-        part_name: selectedPartName || "-",
-        sub_line: selectedSubLine || "-",
+        process: process,
+        part_no: selectedPartNo,
+        part_name: selectedPartName,
+        sub_line: selectedSubLine,
       });
       setLineTargetModes(data.setting_table_result);
     } catch (error) {
@@ -602,7 +608,13 @@ const MasterDataPage: NextPage = () => {
   };
   useEffect(() => {
     updateLineTargetModesTable();
-  }, [selectedSectionLine, selectedPartNo, selectedPartName, selectedSubLine]);
+  }, [
+    selectedSectionLine,
+    selectedPartNo,
+    selectedPartName,
+    selectedSubLine,
+    process,
+  ]);
   console.log("isSaveReIndexDefectMode", isSaveReIndexDefectMode);
   const handleReIndexClick = () => {
     if (isReIndexDefectMode == true) {
@@ -616,13 +628,13 @@ const MasterDataPage: NextPage = () => {
     // validate lineId and PartNo before open modal
     if (
       selectedLineId &&
-      selectedPartNo &&
+      //selectedPartNo &&
       currentMasterType === "defect_mode"
     ) {
       setIsOpenModalAddRowDefectMode(true);
     }
     if (
-      (!selectedLineId || !selectedPartNo) &&
+      !selectedLineId /*|| !selectedPartNo*/ &&
       currentMasterType === "defect_mode"
     ) {
       // Show a warning modal using Ant Design
@@ -637,13 +649,13 @@ const MasterDataPage: NextPage = () => {
     // validate lineId and PartNo before open modal
     if (
       selectedLineId &&
-      selectedPartNo &&
+      //selectedPartNo &&
       currentMasterType === "line_target"
     ) {
       setIsOpenModalAddRowLineTarget(true); // Open the modal
     }
     if (
-      (!selectedLineId || !selectedPartNo) &&
+      !selectedLineId /*|| !selectedPartNo*/ &&
       currentMasterType === "line_target"
     ) {
       // Show a warning modal using Ant Design
@@ -1019,6 +1031,7 @@ const MasterDataPage: NextPage = () => {
                     <Text style={{ color: "gray" }}>Process</Text>
                   </div>
                   <Select
+                    allowClear
                     labelInValue
                     showSearch
                     placeholder="Select Process"
@@ -1085,6 +1098,7 @@ const MasterDataPage: NextPage = () => {
                     <Text style={{ color: "gray" }}>Part No.</Text>
                   </div>
                   <Select
+                    allowClear
                     labelInValue
                     showSearch
                     placeholder="Select Line Name"
@@ -1114,12 +1128,14 @@ const MasterDataPage: NextPage = () => {
                         .includes(input.toLowerCase())
                     }
                     onChange={(value: { value: string; label: string }) => {
-                      setSelectedPartNo(value.value);
-                      const part = parts.find((p) => p.part_no === value.value);
+                      setSelectedPartNo(value?.value);
+                      const part = parts.find(
+                        (p) => p.part_no === value?.value
+                      );
                       if (part) {
                         setSelectedPartName(part.part_name);
                       } else {
-                        setSelectedPartName("");
+                        setSelectedPartName(null);
                       }
                     }}
                   />
@@ -1208,6 +1224,7 @@ const MasterDataPage: NextPage = () => {
                     <Text style={{ color: "gray" }}>Process</Text>
                   </div>
                   <Select
+                    allowClear
                     labelInValue
                     showSearch
                     placeholder="Select Process"
@@ -1275,6 +1292,7 @@ const MasterDataPage: NextPage = () => {
                     <Text style={{ color: "gray" }}>Part No.</Text>
                   </div>
                   <Select
+                    allowClear
                     labelInValue
                     showSearch
                     placeholder="Select Line Name"
@@ -1304,8 +1322,10 @@ const MasterDataPage: NextPage = () => {
                         .includes(input.toLowerCase())
                     }
                     onChange={(value: { value: string; label: string }) => {
-                      setSelectedPartNo(value.value);
-                      const part = parts.find((p) => p.part_no === value.value);
+                      setSelectedPartNo(value?.value);
+                      const part = parts.find(
+                        (p) => p.part_no === value?.value
+                      );
                       if (part) {
                         setSelectedPartName(part.part_name);
                       } else {
@@ -1348,6 +1368,7 @@ const MasterDataPage: NextPage = () => {
                     }}
                   /> */}
                   <Select
+                    allowClear
                     labelInValue
                     showSearch
                     placeholder="Select Sub Line"

@@ -57,6 +57,7 @@ class Settings_Defect_Mode_Manager:
                         defect_type=r[key_index["defect_type"]],
                         defect_mode=r[key_index["defect_mode"]],
                         category=r[key_index["category"]],
+                        target_by_piece=r[key_index["target_by_piece"]],
                         master_defect_index=r[key_index["master_defect_index"]],
                     )
                 )
@@ -70,6 +71,7 @@ class Settings_Defect_Mode_Manager:
                         part_name="",
                         defect_type="",
                         category=[],
+                        target_by_piece=None,
                         master_defect_index=0,
                     )
                 )
@@ -85,6 +87,7 @@ class Settings_Defect_Mode_Manager:
                     part_name="",
                     defect_type="",
                     category=[],
+                    target_by_piece=None,
                     master_defect_index=0,
                 )
             )
@@ -94,7 +97,8 @@ class Settings_Defect_Mode_Manager:
 
         list_line = []
         list_line_id = []
-
+        data = text_data.dict()
+        part_no = data["part_no"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -147,9 +151,11 @@ class Settings_Defect_Mode_Manager:
                         list_parts.append(
                             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                         )
-
-                    index_select = list_part_no.index(r[key_index["part_no"]])
-                    select_part_name = list_part_name[index_select]
+                    if part_no:
+                        index_select = list_part_no.index(r[key_index["part_no"]])
+                        select_part_name = list_part_name[index_select]
+                    else:
+                        select_part_name = ""
 
                 except Exception as e:
                     raise HTTPException(
@@ -340,6 +346,7 @@ class Settings_Defect_Mode_Manager:
                     part_name=res["part_name"],
                     defect_type=res["defect_type"],
                     defect_mode=res["defect_mode"],
+                    target_by_piece=res["target_by_piece"],
                     category=res["category"],
                     creator=res["creator"],
                     id=res["id"],
