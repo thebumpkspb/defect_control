@@ -135,7 +135,7 @@ export default function PChartHeader() {
   };
 
   const fetchParts = async () => {
-    if (selectedLineId === null) {
+    if (selectedLineId == null) {
       return;
     }
     setIsLoading(true);
@@ -152,11 +152,12 @@ export default function PChartHeader() {
     setIsLoading(false);
   };
   const fetchSubLines = async () => {
-    if (selectedLineId === null && selectedPartNo === null) {
+    if (selectedLineId == null || selectedPartNo == null) {
       return;
     }
     setIsLoading(true);
     try {
+      // if (selectedLineCodeRx && selectedLineCodeRx) {
       const response = await pChartCtlSubLinesByPartLine(
         selectedLineCodeRx,
         selectedPartNo
@@ -166,6 +167,7 @@ export default function PChartHeader() {
       if (response.sub_lines.length == 1) {
         setSelectedSubLine(response.sub_lines[0].rxno_part);
       }
+      // }
     } catch (error) {
       setSubLines([]);
       setSelectedSubLine(null);
@@ -205,20 +207,20 @@ export default function PChartHeader() {
   };
 
   const fetchGeneralInformation = async () => {
-    const selectedMonth = month || "";
-    const currentSelectedLineId = selectedLineId || "";
-    const currentSelectedPartNo = selectedPartNo || "";
-    const currentSelectedSubLine = selectedSubLine || "";
-    const currentShift = shift || "";
-    const currentProcess = process || "";
+    const selectedMonth = month;
+    const currentSelectedLineId = selectedLineId;
+    const currentSelectedPartNo = selectedPartNo;
+    const currentSelectedSubLine = selectedSubLine;
+    const currentShift = shift;
+    const currentProcess = process;
 
     if (
       !selectedMonth ||
       !currentSelectedLineId ||
-      !currentSelectedPartNo ||
+      // !currentSelectedPartNo ||
       !currentShift ||
-      !currentProcess ||
-      !currentSelectedSubLine
+      !currentProcess
+      // !currentSelectedSubLine
     ) {
       console.log("ข้อมูลไม่ครบ ไม่สามารถยิง API ได้");
       // console.log("Selected section Line:", selectedSectionLine);
@@ -552,6 +554,7 @@ export default function PChartHeader() {
                 <Text style={{ color: "gray" }}>Part No.</Text>
               </div>
               <Select
+                allowClear
                 placeholder="Select Part No."
                 style={{
                   border: "none",
@@ -605,6 +608,7 @@ export default function PChartHeader() {
                 <Text style={{ color: "gray" }}>Sub Line</Text>
               </div>
               <Select
+                allowClear
                 placeholder="Select Sub Line"
                 style={{
                   border: "none",

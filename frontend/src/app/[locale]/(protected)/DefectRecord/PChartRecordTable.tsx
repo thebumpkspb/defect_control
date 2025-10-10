@@ -343,6 +343,7 @@ const mapToDeflectTypeRepeatNgTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -380,6 +381,7 @@ const mapToDeflectTypeRepeatNgTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -394,6 +396,7 @@ const mapToDeflectTypeRepeatNgTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -416,12 +419,14 @@ const mapToDeflectTypeScrapTableData = (
   if (expanded) {
     // Map the filtered items to children objects
     const children: DataType[] = filteredItems.map((item, index) => {
+      // console.log("item:", item);
       const baseObject = {
         key: `6_${index + 1}`,
         defectType: item.defect_type,
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -459,6 +464,7 @@ const mapToDeflectTypeScrapTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -473,6 +479,7 @@ const mapToDeflectTypeScrapTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -501,6 +508,7 @@ const mapToDeflectTypeAppearanceTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -538,6 +546,7 @@ const mapToDeflectTypeAppearanceTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -552,6 +561,7 @@ const mapToDeflectTypeAppearanceTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -580,6 +590,7 @@ const mapToDeflectTypeDimensionTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -617,6 +628,7 @@ const mapToDeflectTypeDimensionTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -631,6 +643,7 @@ const mapToDeflectTypeDimensionTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -659,6 +672,7 @@ const mapToDeflectTypePerformanceTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -696,6 +710,7 @@ const mapToDeflectTypePerformanceTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -710,6 +725,7 @@ const mapToDeflectTypePerformanceTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -738,6 +754,7 @@ const mapToDeflectTypeOtherTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -775,6 +792,7 @@ const mapToDeflectTypeOtherTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -789,6 +807,7 @@ const mapToDeflectTypeOtherTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -817,6 +836,7 @@ const mapToDeflectTypeMCSetupTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -854,6 +874,7 @@ const mapToDeflectTypeMCSetupTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -868,6 +889,7 @@ const mapToDeflectTypeMCSetupTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -896,6 +918,7 @@ const mapToDeflectTypeQualityTestTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -933,6 +956,7 @@ const mapToDeflectTypeQualityTestTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -947,6 +971,7 @@ const mapToDeflectTypeQualityTestTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -977,6 +1002,7 @@ const mapToDeflectTypeToTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -1014,6 +1040,7 @@ const mapToDeflectTypeToTableData = (
         number: item.id.toString(),
         mainDefectType: defectType,
         defectiveItems: item.defect_item,
+        target_by_piece: item.target_by_piece,
         category: item.category,
         isChild: true,
       };
@@ -1028,6 +1055,7 @@ const mapToDeflectTypeToTableData = (
       defectType,
       number: firstItem.id.toString(),
       defectiveItems: firstItem.defect_item,
+      target_by_piece: firstItem.target_by_piece,
       category: firstItem.category,
       isChild: false,
       children,
@@ -1234,6 +1262,7 @@ const pChartRecordTableResultDefault = {
   review_by_mgr: [],
   review_by_gm: [],
   ucl_target: [],
+  over_target_by_piece: [],
 };
 
 interface PChartTableProps {
@@ -1685,6 +1714,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
     data: PChartRecordTableResult,
     expandDefectType: string[]
   ): DataType[] => {
+    // console.log("Data::", data);
     const deflectTypeRepeatTableData = mapToDeflectTypeRepeatTableData(
       data,
       expandDefectType.includes("Repeat")
@@ -1986,20 +2016,43 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         fixed: "left" as FixedType,
         render: (text: string, record: DataType, index: number) => {
           const isChild = record.key.includes("_");
-
+          console.log("record:", record);
+          console.log("record.target_by_piece:", record.target_by_piece);
           if (isChild) {
-            return (
-              <div style={{ textAlign: "left", textIndent: "15px" }}>
-                {" "}
-                {text}{" "}
-              </div>
-            );
+            if (record.target_by_piece != null) {
+              return (
+                <div
+                  style={{
+                    textAlign: "left",
+                    textIndent: "15px",
+                    display: "flex",
+                  }}
+                >
+                  {text}
+                  <div
+                    style={{
+                      paddingLeft: "0",
+                      color: "red",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {"[N ≤ " + String(record.target_by_piece) + " Pcs.]"}
+                  </div>
+                </div>
+              );
+            } else {
+              return (
+                <div style={{ textAlign: "left", textIndent: "15px" }}>
+                  {text}
+                </div>
+              );
+            }
           }
 
           if (record.children?.length || 0 > 0) {
-            return <div style={{ textAlign: "left" }}> {text} </div>;
+            return <div style={{ textAlign: "left" }}>{text}</div>;
           } else {
-            return <div style={{ textAlign: "right" }}> {text} </div>;
+            return <div style={{ textAlign: "right" }}>{text}</div>;
           }
         },
         // filterDropdown: ({
@@ -2252,10 +2305,50 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
                 backgroundColor = "#f3a3a1";
               }
           }
+          if (data.over_target_by_piece) {
+            if (record.defectType == "Defect Q'ty (np)")
+              if (data.over_target_by_piece[Number(day) - 1]) {
+                // backgroundColor = "#f5574b";
+                backgroundColor = "#F49052";
+              }
+          }
+          if (
+            [
+              "Repeat",
+              "Repeat NG",
+              "Scrap",
+              "Appearance",
+              "Dimension",
+              "Performance",
+              "Other",
+              "M/C Set up",
+              "Quality Test",
+              "B-2",
+              "Local",
+              "CKD",
+              "Sub Assy Line",
+              "Store / Warehouse",
+            ].includes(record.mainDefectType || "")
+          ) {
+            if (
+              record["target_by_piece"] &&
+              record[`day${day}`] > record["target_by_piece"]
+            ) {
+              backgroundColor = "#F49052";
+            }
+          }
           if (record[`day${day}`] == 0) {
             fontColor = "#7b8486";
           }
-          // console.log("record:", record);
+          // console.log(
+          //   "record:",
+          //   record,
+          //   "# index:",
+          //   index,
+          //   "# dayIndex:",
+          //   dayIndex
+          // );
+          // console.log("data:", data);
           return {
             onClick: () => {
               if (index && data.ucl_target) {
@@ -2454,10 +2547,10 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
     if (
       !input.line_name ||
       !input.month ||
-      !input.part_no ||
+      // !input.part_no ||
       !input.process ||
       !input.shift ||
-      !input.sub_line ||
+      // !input.sub_line ||
       isModalVisible == true
     ) {
       // console.log("input:", input);
@@ -2488,7 +2581,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
     input.sub_line,
     isModalVisible,
   ]);
-
+  console.log("filteredData:", filteredData);
   useEffect(() => {
     tableSourceDataRef.current =
       tableSourceData || pChartRecordTableResultDefault;

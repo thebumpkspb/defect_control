@@ -10,6 +10,9 @@ import time
 import os
 import pandas as pd
 import ast
+from app.functions import (
+    convert_month_year_to_date,
+)
 
 load_dotenv()
 
@@ -31,7 +34,11 @@ from app.schemas.p_chart_record import (
     History_Records_Edit,
     Add_New_Record_View_By_Part_Result,
 )
-from app.functions import get_last_day_from_month_year, parse_defect_string
+from app.functions import (
+    get_last_day_from_month_year,
+    parse_defect_string,
+    get_first_and_last_date_of_month,
+)
 from app.crud.p_chart_record import P_Chart_Record_CRUD
 from app.utils.logger import get_logger
 
@@ -55,10 +62,70 @@ class P_Chart_Record_Manager:
         res, select_target_control, data = await self.crud.general_information(
             db=db, where_stmt=text_data
         )
-        ## get data p_chart_record_table_p_bar_last_month from db
-        list_p_last_month = await self.crud.p_chart_record_table_p_bar_last_month(
-            db=db, where_stmt=text_data
+        #!
+        list_line = []
+        list_line_id = []
+        try:
+            ## get line, line_id from api
+            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            response_json = requests.get(endpoint, headers=headers).json()
+
+            for i in range(0, len(response_json["lines"])):
+                list_line.append(response_json["lines"][i]["section_line"])
+                list_line_id.append(response_json["lines"][i]["line_id"])
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"because {e}",
+            )
+
+        index_select = list_line.index(data["line_name"])
+        select_line_id = list_line_id[index_select]
+        #!
+        #!-> get prod_actul
+        #!-> get defect_qty
+        #!-> calculation
+        #!
+        date_p_bar = convert_month_year_to_date(data["month"])
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date_p_bar, previous_month=True
         )
+        res_p_bar_last_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_last_month:", res_p_bar_last_month)
+        list_p_last_month = round(res_p_bar_last_month["p_bar"], 2)
+        print("list_p_last_month:", list_p_last_month)
+
+        first_date, last_date = get_first_and_last_date_of_month(date=date_p_bar)
+        res_p_bar_now_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_now_month:", res_p_bar_now_month)
+        p_bar_now_month = round(res_p_bar_now_month["p_bar"], 2)
+        n_bar_now_month = round(res_p_bar_now_month["n_bar"], 2)
+        k_now_month = round(res_p_bar_now_month["k"], 2)
+        uclp_now_month = round(res_p_bar_now_month["ucl"], 2)
+        lclp_now_month = round(res_p_bar_now_month["lcl"], 2)
+        # print("list_p_last_month:", list_p_last_month)
+        # list_p_bar_a = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        # print("list_p_bar_a:", list_p_bar_a)
+        #!
+        ## get data p_chart_record_table_p_bar_last_month from db
+
+        # list_p_last_month = await self.crud.p_chart_record_table_p_bar_last_month(
+        #     db=db, where_stmt=text_data
+        # )
 
         return_list = []
 
@@ -66,6 +133,24 @@ class P_Chart_Record_Manager:
             for r in res:
                 key_index = r._key_to_index
 
+                # return_list.append(
+                #     General_Information_Result(
+                #         id=r[key_index["id"]],
+                #         month=r[key_index["month"]],
+                #         line_name=data["line_name"],
+                #         part_no=r[key_index["part_no"]],
+                #         part_name=r[key_index["part_name"]],
+                #         process=r[key_index["process"]],
+                #         shift=r[key_index["shift"]],
+                #         target_control=select_target_control,
+                #         p_last_month=list_p_last_month,
+                #         n_bar=r[key_index["n_bar"]],
+                #         p_bar=r[key_index["p_bar"]],
+                #         k=r[key_index["k"]],
+                #         uclp=r[key_index["uclp"]],
+                #         lclp=r[key_index["lclp"]],
+                #     )
+                # )
                 return_list.append(
                     General_Information_Result(
                         id=r[key_index["id"]],
@@ -77,11 +162,11 @@ class P_Chart_Record_Manager:
                         shift=r[key_index["shift"]],
                         target_control=select_target_control,
                         p_last_month=list_p_last_month,
-                        n_bar=r[key_index["n_bar"]],
-                        p_bar=r[key_index["p_bar"]],
-                        k=r[key_index["k"]],
-                        uclp=r[key_index["uclp"]],
-                        lclp=r[key_index["lclp"]],
+                        n_bar=n_bar_now_month,
+                        p_bar=p_bar_now_month,
+                        k=k_now_month,
+                        uclp=uclp_now_month,
+                        lclp=lclp_now_month,
                     )
                 )
             if len(return_list) == 0:
@@ -319,6 +404,7 @@ class P_Chart_Record_Manager:
         data = text_data.dict()
         sub_line = data["sub_line"]
         data_process = data["process"]
+        data_part_no = data["part_no"]
         list_line = []
         list_line_id = []
         # # print("1")
@@ -462,7 +548,7 @@ class P_Chart_Record_Manager:
         try:
             ## get prod_qty shift=All from api
             if data["shift"] == "All":
-                if data_process == "Outline":
+                if (not data_part_no) or data_process == "Outline":
                     endpoint = (
                         self.BACKEND_URL_SERVICE
                         + "/api/prods/prod_qty?line_id="
@@ -573,6 +659,7 @@ class P_Chart_Record_Manager:
         list_defect_type = []
         list_defective_items = []
         list_defect_category = []
+        list_target_by_piece = []
         # # print("7")
         for r in res:
             key_index = r._key_to_index
@@ -580,11 +667,13 @@ class P_Chart_Record_Manager:
             list_defect_type.append(r[key_index["defect_type"]]),
             list_defective_items.append(r[key_index["defect_mode"]]),
             list_defect_category.append(r[key_index["category"]]),
+            list_target_by_piece.append(r[key_index["target_by_piece"]]),
 
             if r[key_index["defect_type"]] == "Repeat":
                 list_defect_type.append("Repeat NG"),
                 list_defective_items.append(r[key_index["defect_mode"]]),
                 list_defect_category.append(r[key_index["category"]]),
+                list_target_by_piece.append(r[key_index["target_by_piece"]]),
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -618,6 +707,7 @@ class P_Chart_Record_Manager:
         )
         # TODO New
         # print("df_qty:", df_qty)
+        list_over_target_by_piece = [False] * (day_in_month + 1)
         for defect in list_defect_type:
 
             del list_value_all[:]
@@ -672,7 +762,9 @@ class P_Chart_Record_Manager:
                 d = int(str(r["date"])[8:10])  # Get day as int
                 list_value_all[d - 1] = r["qty_shift_all"]
                 list_value_graph_all[d - 1] = r["qty_shift_all"]
-
+                if list_target_by_piece[c] != None:
+                    if r["qty_shift_all"] > list_target_by_piece[c]:
+                        list_over_target_by_piece[d - 1] = True
                 if defect != "Repeat":
                     defect_qty_all[d - 1] += r["qty_shift_all"]
 
@@ -691,6 +783,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id,
                         defect_item=list_defective_items[c],
+                        target_by_piece=None,
                         category=list_defect_category[c],
                         value=list_value_all,
                     )
@@ -702,6 +795,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
+                        target_by_piece=list_target_by_piece[c],
                         category=list_defect_category[c],
                         value=list_value_all,
                     )
@@ -721,6 +815,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
+                        target_by_piece=list_target_by_piece[c],
                         category=list_defect_category[c],
                         value=list_value_all,
                     )
@@ -755,6 +850,7 @@ class P_Chart_Record_Manager:
                         defect_type="",
                         id=0,
                         defect_item="",
+                        target_by_piece=None,
                         category=[],
                         value=list_value_all,
                     )
@@ -800,13 +896,14 @@ class P_Chart_Record_Manager:
         ucl_target_graph_all = [0] * day_in_month_graph
 
         ###
-        list_p_bar_all = None
+        # list_p_bar_all = None
 
-        res_p_bar_last_month = (
-            await self.crud.p_chart_record_table_p_bar_last_month_All(
-                db=db, where_stmt=text_data
-            )
-        )
+        # res_p_bar_last_month = (
+        #     await self.crud.p_chart_record_table_p_bar_last_month_All(
+        #         db=db, where_stmt=text_data
+        #     )
+        # )
+
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -816,10 +913,12 @@ class P_Chart_Record_Manager:
         # print(f"Duration9: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
-        for r in res_p_bar_last_month:
-            key_index = r._key_to_index
 
-            list_p_bar_all = [r[key_index["p_bar"]]] * day_in_month_graph
+        # for r in res_p_bar_last_month:
+        #     key_index = r._key_to_index
+
+        #     list_p_bar_all = [r[key_index["p_bar"]]] * day_in_month_graph
+
         # # print("day_in_month_graph:", day_in_month_graph)
         end_time = time.time()
         # print("End:", end_time)
@@ -830,6 +929,22 @@ class P_Chart_Record_Manager:
         # print(f"Duration10: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
+        #!
+        date_p_bar = convert_month_year_to_date(data["month"])
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date_p_bar, previous_month=True
+        )
+        res_p_bar_last_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_last_month:", res_p_bar_last_month)
+        list_p_bar_all = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        print("list_p_bar_all:", list_p_bar_all)
+        #!
         n_amount = 0
         for i in range(0, day_in_month_graph):
             list_x_axis_label.append(str(i + 1))
@@ -1025,6 +1140,7 @@ class P_Chart_Record_Manager:
                     p_bar=list_p_bar_all,
                     percent_defect=defect_ratio_all,
                     ucl_target=ucl_target_graph_all,
+                    over_target_by_piece=list_over_target_by_piece,
                     x_axis_label=list_x_axis_label,
                     x_axis_value=list_x_axis_value,
                     x_axis_maxmin=[min(list_x_axis_value), max(list_x_axis_value)],
@@ -1067,6 +1183,7 @@ class P_Chart_Record_Manager:
         data = text_data.dict()
         sub_line = data["sub_line"]
         data_process = data["process"]
+        data_part_no = data["part_no"]
         list_line = []
         list_line_id = []
         try:
@@ -1168,7 +1285,7 @@ class P_Chart_Record_Manager:
             list_review_by_gm[c - 1] = res_review_by_gm[i]["review_by_gm"]
         try:
             ## get prod_qty shift=A from api\
-            if data_process == "Outline":
+            if (not data_part_no) or data_process == "Outline":
                 endpoint = (
                     self.BACKEND_URL_SERVICE
                     + "/api/prods/prod_qty?line_id="
@@ -1259,17 +1376,20 @@ class P_Chart_Record_Manager:
         list_defect_type = []
         list_defective_items = []
         list_defect_category = []
+        list_target_by_piece = []
         for r in res:
             key_index = r._key_to_index
 
             list_defect_type.append(r[key_index["defect_type"]]),
             list_defective_items.append(r[key_index["defect_mode"]]),
             list_defect_category.append(r[key_index["category"]]),
+            list_target_by_piece.append(r[key_index["target_by_piece"]]),
 
             if r[key_index["defect_type"]] == "Repeat":
                 list_defect_type.append("Repeat NG"),
                 list_defective_items.append(r[key_index["defect_mode"]]),
                 list_defect_category.append(r[key_index["category"]]),
+                list_target_by_piece.append(r[key_index["target_by_piece"]]),
 
         defect_table_a = []
         defect_table_graph_a = []
@@ -1294,6 +1414,7 @@ class P_Chart_Record_Manager:
         )
         # df_qty.to_excel("test.xlsx")
         # TODO New
+        list_over_target_by_piece = [False] * (day_in_month + 1)
         for defect in list_defect_type:
 
             del list_value_a[:]
@@ -1329,7 +1450,9 @@ class P_Chart_Record_Manager:
                 d = int(str(r["date"])[8:10])  # Get day as int
                 list_value_a[d - 1] = r["qty_shift_a"]
                 list_value_graph_a[d - 1] = r["qty_shift_a"]
-
+                if list_target_by_piece[c] != None:
+                    if r["qty_shift_a"] > list_target_by_piece[c]:
+                        list_over_target_by_piece[d - 1] = True
                 if defect != "Repeat":
                     defect_qty_a[d - 1] += r["qty_shift_a"]
 
@@ -1355,6 +1478,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id,
                         defect_item=list_defective_items[c],
+                        target_by_piece=None,
                         category=list_defect_category[c],
                         value=list_value_a,
                     )
@@ -1367,6 +1491,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
+                        target_by_piece=list_target_by_piece[c],
                         category=list_defect_category[c],
                         value=list_value_a,
                     )
@@ -1386,6 +1511,7 @@ class P_Chart_Record_Manager:
                         defect_type=defect,
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
+                        target_by_piece=list_target_by_piece[c],
                         category=list_defect_category[c],
                         value=list_value_a,
                     )
@@ -1419,6 +1545,7 @@ class P_Chart_Record_Manager:
                         defect_type="",
                         id=0,
                         defect_item="",
+                        target_by_piece=None,
                         category=[],
                         value=list_value_a,
                     )
@@ -1456,16 +1583,32 @@ class P_Chart_Record_Manager:
         ###
         list_p_bar_a = None
 
-        res_p_bar_last_month = (
-            await self.crud.p_chart_record_table_p_bar_last_month_All(
-                db=db, where_stmt=text_data
-            )
-        )
-        for r in res_p_bar_last_month:
-            key_index = r._key_to_index
+        # res_p_bar_last_month = (
+        #     await self.crud.p_chart_record_table_p_bar_last_month_All(
+        #         db=db, where_stmt=text_data
+        #     )
+        # )
+        # for r in res_p_bar_last_month:
+        #     key_index = r._key_to_index
 
-            list_p_bar_a = [r[key_index["p_bar"]]] * day_in_month_graph
-        # # print("list_p_bar_a:", list_p_bar_a)
+        #     list_p_bar_a = [r[key_index["p_bar"]]] * day_in_month_graph
+        # # # print("list_p_bar_a:", list_p_bar_a)
+        #!
+        date_p_bar = convert_month_year_to_date(data["month"])
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date_p_bar, previous_month=True
+        )
+        res_p_bar_last_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_last_month:", res_p_bar_last_month)
+        list_p_bar_a = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        print("list_p_bar_a:", list_p_bar_a)
+        #!
         n_amount = 0
 
         # # print("list_record_by:", list_record_by)
@@ -1642,6 +1785,7 @@ class P_Chart_Record_Manager:
                     p_bar=list_p_bar_a,
                     percent_defect=defect_ratio_a,
                     ucl_target=ucl_target_graph_a,
+                    over_target_by_piece=list_over_target_by_piece,
                     x_axis_label=list_x_axis_label,
                     x_axis_value=list_x_axis_value,
                     x_axis_maxmin=[min(list_x_axis_value), max(list_x_axis_value)],
@@ -1675,6 +1819,7 @@ class P_Chart_Record_Manager:
         data = text_data.dict()
         sub_line = data["sub_line"]
         data_process = data["process"]
+        data_part_no = data["part_no"]
         list_line = []
         list_line_id = []
 
@@ -1699,7 +1844,8 @@ class P_Chart_Record_Manager:
 
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
-
+        # a = await self.get_calculation_data(text_data, select_line_id, db)
+        # print("AAAAA:", a)
         current_year = datetime.now().strftime("%Y")
         current_month = datetime.now().strftime("%B-%Y")
         current_month_no = datetime.now().strftime("%m")
@@ -1780,7 +1926,7 @@ class P_Chart_Record_Manager:
 
         try:
             ## get prod_qty shift=B from api
-            if data_process == "Outline":
+            if (not data_part_no) or data_process == "Outline":
                 endpoint = (
                     self.BACKEND_URL_SERVICE
                     + "/api/prods/prod_qty?line_id="
@@ -1871,18 +2017,20 @@ class P_Chart_Record_Manager:
         list_defect_type = []
         list_defective_items = []
         list_defect_category = []
-
+        list_target_by_piece = []
         for r in res:
             key_index = r._key_to_index
 
             list_defect_type.append(r[key_index["defect_type"]]),
             list_defective_items.append(r[key_index["defect_mode"]]),
             list_defect_category.append(r[key_index["category"]]),
+            list_target_by_piece.append(r[key_index["target_by_piece"]]),
 
             if r[key_index["defect_type"]] == "Repeat":
                 list_defect_type.append("Repeat NG"),
                 list_defective_items.append(r[key_index["defect_mode"]]),
                 list_defect_category.append(r[key_index["category"]]),
+                list_target_by_piece.append(r[key_index["target_by_piece"]]),
 
         defect_table_b = []
         defect_table_graph_b = []
@@ -1907,7 +2055,7 @@ class P_Chart_Record_Manager:
             data_search={"start_date": s_date, "end_date": e_date},
         )
         # TODO New
-
+        list_over_target_by_piece = [False] * (day_in_month + 1)
         for defect in list_defect_type:
 
             del list_value_b[:]
@@ -1944,10 +2092,14 @@ class P_Chart_Record_Manager:
                 d = int(str(r["date"])[8:10])  # Get day as int
                 list_value_b[d - 1] = r["qty_shift_b"]
                 list_value_graph_b[d - 1] = r["qty_shift_b"]
-
+                if list_target_by_piece[c] != None:
+                    if r["qty_shift_b"] > list_target_by_piece[c]:
+                        list_over_target_by_piece[d - 1] = True
                 if defect != "Repeat":
                     defect_qty_b[d - 1] += r["qty_shift_b"]
-
+            # d = int(str(r["date"])[8:10])
+            # if list_value_b[d - 1] > list_target_by_piece[c]:
+            #     list_over_target_by_piece[d - 1] = True
             # for r in res_qty:
             #     key_index = r._key_to_index
 
@@ -1971,6 +2123,7 @@ class P_Chart_Record_Manager:
                         id=c_id,
                         defect_item=list_defective_items[c],
                         category=list_defect_category[c],
+                        target_by_piece=None,
                         value=list_value_b,
                     )
                 )
@@ -1983,6 +2136,7 @@ class P_Chart_Record_Manager:
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
                         category=list_defect_category[c],
+                        target_by_piece=list_target_by_piece[c],
                         value=list_value_b,
                     )
                 )
@@ -2002,6 +2156,7 @@ class P_Chart_Record_Manager:
                         id=c_id + c_repeat,
                         defect_item=list_defective_items[c],
                         category=list_defect_category[c],
+                        target_by_piece=list_target_by_piece[c],
                         value=list_value_b,
                     )
                 )
@@ -2034,6 +2189,7 @@ class P_Chart_Record_Manager:
                         id=0,
                         defect_item="",
                         category=[],
+                        target_by_piece=None,
                         value=list_value_b,
                     )
                 )
@@ -2070,16 +2226,30 @@ class P_Chart_Record_Manager:
         ###
         list_p_bar_b = None
 
-        res_p_bar_last_month = (
-            await self.crud.p_chart_record_table_p_bar_last_month_All(
-                db=db, where_stmt=text_data
-            )
+        # res_p_bar_last_month = (
+        #     await self.crud.p_chart_record_table_p_bar_last_month_All(
+        #         db=db, where_stmt=text_data
+        #     )
+        # )
+        date_p_bar = convert_month_year_to_date(data["month"])
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date_p_bar, previous_month=True
         )
-        for r in res_p_bar_last_month:
-            key_index = r._key_to_index
+        res_p_bar_last_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_last_month:", res_p_bar_last_month)
+        # print("list_over_target_by_piece:", list_over_target_by_piece)
+        # for r in res_p_bar_last_month:
+        #     key_index = r._key_to_index
 
-            list_p_bar_b = [r[key_index["p_bar"]]] * day_in_month_graph
-
+        #     list_p_bar_b = [r[key_index["p_bar"]]] * day_in_month_graph
+        list_p_bar_b = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        print("list_p_bar_b:", list_p_bar_b)
         n_amount = 0
         for i in range(0, day_in_month_graph):
             list_x_axis_label.append(str(i + 1))
@@ -2253,6 +2423,7 @@ class P_Chart_Record_Manager:
                     p_bar=list_p_bar_b,
                     percent_defect=defect_ratio_b,
                     ucl_target=ucl_target_graph_b,
+                    over_target_by_piece=list_over_target_by_piece,
                     x_axis_label=list_x_axis_label,
                     x_axis_value=list_x_axis_value,
                     x_axis_maxmin=[min(list_x_axis_value), max(list_x_axis_value)],
@@ -2307,6 +2478,7 @@ class P_Chart_Record_Manager:
         list_line_id = []
         data = text_data.dict()
         data_process = data["process"]
+        data_part_no = data["part_no"]
         try:
             ## get line, line_id from api
             endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
@@ -2368,122 +2540,128 @@ class P_Chart_Record_Manager:
 
         return_list = []
 
-        try:
-            if status_check == True:
-                ## case new record
-                index_select = list_line.index(data["line_name"])
-                select_line_id = list_line_id[index_select]
-                list_part_no = []
-                if data_process and data_process == "Outline":
-                    sub_part_result = await self.crud.get_sub_part(
-                        db=db, where_stmt=text_data
-                    )
-                    for r in sub_part_result:
-                        key_index = r._key_to_index
-
-                        list_part_no.append(r[key_index["sub_part_no"]])
-                else:
-                    try:
-                        ## get part_no from api
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/settings/parts_by_line?line_id="
-                            + str(select_line_id)
-                        )
-                        response_json = requests.get(endpoint, headers=headers).json()
-
-                        # list_part_no = []
-
-                        for i in range(0, len(response_json["parts"])):
-                            list_part_no.append(response_json["parts"][i]["part_no"])
-
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
-
-                return_list.append(
-                    Add_New_Record_View_Result(
-                        date=str(data["date"]),
-                        line_name=list(dict.fromkeys([data["line_name"]] + list_line)),
-                        defect_type=data["defect_type"],
-                        process=list(
-                            dict.fromkeys(
-                                [data["process"]] + ["Inline", "Outline", "Inspection"]
-                            )
-                        ),
-                        part_no=list(dict.fromkeys([data["part_no"]] + list_part_no)),
-                        defect_mode=defect_mode_master,
-                        defect_qty_A=0,
-                        defect_qty_B=0,
-                        comment_shift_A="",
-                        comment_shift_B="",
-                    )
+        # try:
+        if status_check == True:
+            ## case new record
+            index_select = list_line.index(data["line_name"])
+            select_line_id = list_line_id[index_select]
+            list_part_no = []
+            if data_process and data_process == "Outline":
+                sub_part_result = await self.crud.get_sub_part(
+                    db=db, where_stmt=text_data
                 )
+                for r in sub_part_result:
+                    key_index = r._key_to_index
+
+                    list_part_no.append(r[key_index["sub_part_no"]])
             else:
-                ## case old record
-                index_select = list_line.index(data["line_name"])
-                select_line_id = list_line_id[index_select]
-                list_part_no = []
-                if data_process and data_process == "Outline":
-                    sub_part_result = await self.crud.get_sub_part(
-                        db=db, where_stmt=text_data
+                try:
+                    ## get part_no from api
+                    endpoint = (
+                        self.BACKEND_URL_SERVICE
+                        + "/api/settings/parts_by_line?line_id="
+                        + str(select_line_id)
                     )
-                    for r in sub_part_result:
-                        key_index = r._key_to_index
+                    response_json = requests.get(endpoint, headers=headers).json()
 
-                        list_part_no.append(r[key_index["sub_part_no"]])
-                else:
-                    try:
-                        ## get part_no from api
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/settings/parts_by_line?line_id="
-                            + str(select_line_id)
-                        )
-                        response_json = requests.get(endpoint, headers=headers).json()
+                    # list_part_no = []
 
-                        for i in range(0, len(response_json["parts"])):
-                            list_part_no.append(response_json["parts"][i]["part_no"])
+                    for i in range(0, len(response_json["parts"])):
+                        list_part_no.append(response_json["parts"][i]["part_no"])
 
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
-
-                return_list.append(
-                    Add_New_Record_View_Result(
-                        date=date,
-                        line_name=list(dict.fromkeys([line_name] + list_line)),
-                        defect_type=defect_type,
-                        process=list(
-                            dict.fromkeys(
-                                [process] + ["Inline", "Outline", "Inspection"]
-                            )
-                        ),
-                        part_no=list(dict.fromkeys([part_no] + list_part_no)),
-                        defect_mode=defect_mode_master,
-                        defect_qty_A=defect_qty_A,
-                        defect_qty_B=defect_qty_B,
-                        comment_shift_A=comment_shift_a,
-                        comment_shift_B=comment_shift_b,
-                        id=id,
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"because {e}",
                     )
-                )
-            if len(return_list) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Add_New_Record_View_Result not found",
-                )
-            return return_list
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unable to post_add_new_record_view because {e}",
+            # print(
+            #     'list(dict.fromkeys([data["part_no"]] + list_part_no)):',
+            #     list(dict.fromkeys([data["part_no"]] + list_part_no)),
+            # )
+            return_list.append(
+                Add_New_Record_View_Result(
+                    date=str(data["date"]),
+                    line_name=list(dict.fromkeys([data["line_name"]] + list_line)),
+                    defect_type=data["defect_type"],
+                    process=list(
+                        dict.fromkeys(
+                            [data["process"]] + ["Inline", "Outline", "Inspection"]
+                        )
+                    ),
+                    part_no=(
+                        list(dict.fromkeys([data["part_no"]] + list_part_no))
+                        if data_part_no
+                        else list(dict.fromkeys(list_part_no))
+                    ),
+                    defect_mode=defect_mode_master,
+                    defect_qty_A=0,
+                    defect_qty_B=0,
+                    comment_shift_A="",
+                    comment_shift_B="",
+                )
             )
+        else:
+            ## case old record
+            index_select = list_line.index(data["line_name"])
+            select_line_id = list_line_id[index_select]
+            list_part_no = []
+            if data_process and data_process == "Outline":
+                sub_part_result = await self.crud.get_sub_part(
+                    db=db, where_stmt=text_data
+                )
+                for r in sub_part_result:
+                    key_index = r._key_to_index
+
+                    list_part_no.append(r[key_index["sub_part_no"]])
+            else:
+                try:
+                    ## get part_no from api
+                    endpoint = (
+                        self.BACKEND_URL_SERVICE
+                        + "/api/settings/parts_by_line?line_id="
+                        + str(select_line_id)
+                    )
+                    response_json = requests.get(endpoint, headers=headers).json()
+
+                    for i in range(0, len(response_json["parts"])):
+                        list_part_no.append(response_json["parts"][i]["part_no"])
+
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"because {e}",
+                    )
+
+            return_list.append(
+                Add_New_Record_View_Result(
+                    date=date,
+                    line_name=list(dict.fromkeys([line_name] + list_line)),
+                    defect_type=defect_type,
+                    process=list(
+                        dict.fromkeys([process] + ["Inline", "Outline", "Inspection"])
+                    ),
+                    part_no=list(dict.fromkeys([part_no] + list_part_no)),
+                    defect_mode=defect_mode_master,
+                    defect_qty_A=defect_qty_A,
+                    defect_qty_B=defect_qty_B,
+                    comment_shift_A=comment_shift_a,
+                    comment_shift_B=comment_shift_b,
+                    id=id,
+                )
+            )
+        if len(return_list) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Add_New_Record_View_Result not found",
+            )
+        return return_list
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"Unable to post_add_new_record_view because {e}",
+        #     )
 
     async def post_add_new_record_view_defect_by_part(
         self, text_data: str, db: AsyncSession = None
@@ -3678,3 +3856,105 @@ class P_Chart_Record_Manager:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unable to get_amount_action_record because {e}",
             )
+
+    async def get_calculation_data(
+        self,
+        text_data: str,
+        select_line_id: int,
+        first_date: str,
+        last_date: str,
+        db: AsyncSession = None,
+    ):
+        if not text_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
+            )
+        # res = await self.crud.get_amount_action_record(db=db, where_stmt=text_data)
+        # try:
+        data = text_data.dict()
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        # date_prod_qty = convert_month_year_to_date(data["month"])
+        # first_date, last_date = get_first_and_last_date_of_month(date)
+        defect_qty = await self.crud.get_defect_qty(
+            db=db, first_date=first_date, last_date=last_date, where_stmt=text_data
+        )
+        if not defect_qty:
+            defect_qty = 0
+        if not data["part_no"]:
+            endpoint = (
+                self.BACKEND_URL_SERVICE
+                + "/api/prods/prod_qty?line_id="
+                + str(select_line_id)
+                + f"&shift={data['shift']}&date="
+                + first_date
+            )
+        else:
+            endpoint = (
+                self.BACKEND_URL_SERVICE
+                + "/api/prods/prod_qty?part_line_id="
+                + str(data["sub_line"])
+                + f"&shift={data['shift']}&date="
+                + first_date
+            )
+        response_json = requests.get(endpoint, headers=headers).json()
+        #!response_json["prod_qty"]
+
+        prod_actual = 0
+        amount_prod_date = 0
+        for entry in response_json["prod_qty"]:
+            # Parse the date
+            # prod_date = datetime.strptime(
+            #     entry["production_date"], "%Y-%m-%d %H:%M:%S"
+            # )
+            # # Check if it matches the target month
+            # if prod_date.year == target_year and prod_date.month == target_month:
+            prod_actual += entry["actual_val"]
+            if entry["actual_val"] != 0:
+                amount_prod_date += 1
+        if prod_actual == 0:
+            p_bar = 0
+        else:
+            p_bar = round((defect_qty / prod_actual * 100), 2)
+
+        if amount_prod_date == 0:
+            n_bar = 0
+        else:
+            n_bar = round(prod_actual / amount_prod_date, 2)
+
+        if n_bar == 0:
+            k = 0
+        else:
+            k = round(3 * math.sqrt((p_bar * (100 - p_bar)) / n_bar), 2)
+        ucl = round(p_bar + k, 2)
+        lcl = round(p_bar - k, 2) if (p_bar - k) > 0 else 0
+        # print("defect_qty:", defect_qty)
+        # print("prod_actual:", prod_actual)
+        # print("amount_prod_date:", amount_prod_date)
+        # print("p_bar:", p_bar)
+        # print("n_bar:", n_bar)
+        # print("k:", k)
+        # print("ucl:", ucl)
+        # print("lcl:", lcl)
+        return_data = {
+            "p_bar": p_bar,
+            "n_bar": n_bar,
+            "k": k,
+            "ucl": ucl,
+            "lcl": lcl,
+        }
+        # return_list = Get_Calculation_Data(
+        #     month=res["month"],
+        #     line_name=res["line_name"],
+        #     part_no=res["part_no"],
+        #     process=res["process"],
+        #     date=res["date"],
+        #     shift=res["shift"],
+        #     amount_action_record=res["amount_action_record"],
+        # )
+        # return return_list
+        return return_data
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"Unable to get_calculation_data because {e}",
+        #     )

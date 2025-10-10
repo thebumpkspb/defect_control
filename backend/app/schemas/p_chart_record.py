@@ -54,6 +54,7 @@ class Defect_table(BaseModel):
     defect_type: str | None = None
     defect_item: str | None = None
     category: List[str] | None = None
+    target_by_piece: int | None = None
     value: List[int] | None = None
 
 
@@ -88,6 +89,7 @@ class P_Chart_Record_Table_Result(General_Information):
     percent_defect: List[float] | None = None
     p_bar: List[float] | None = None
     ucl_target: List[float] | None = None
+    over_target_by_piece: List[bool] | None = None
     x_axis_label: List[str] | None = None
     x_axis_value: List[int] | None = None
     x_axis_maxmin: List[int] | None = None

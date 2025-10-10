@@ -68,16 +68,24 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
 
         stmt = f"SELECT * FROM  pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
@@ -88,16 +96,24 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND target_type = 'Monthly' AND month_year = '"
             + month
             + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
 
         stmt = f"SELECT target_control FROM master_target_line WHERE  {where_stmt if where_stmt is not None else ''} "
         rs_target_control = await db.execute(text(stmt))
@@ -130,17 +146,24 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
         stmt = f"SELECT * FROM pchart_report_graph WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         # print("stmt:", stmt)
         rs = await db.execute(text(stmt))
@@ -163,16 +186,22 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             # + "' AND sub_line = '"
             # + sub_line
             + "' AND active = 'active' "
+            # + " AND part_no is null"
         )
-
-        stmt = f"SELECT defect_type, defect_mode, category FROM  master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY CASE defect_type WHEN 'Repeat' THEN 0 WHEN 'Scrap' THEN 1 WHEN 'Appearance' THEN 2  WHEN 'Dimension' THEN 3  WHEN 'Performance' THEN 4  WHEN 'Other' THEN 5  WHEN 'M/C Set up' THEN 6  WHEN 'Quality Test' THEN 7 END, master_defect_index ASC;"
+        if part_no:
+            where_stmt = where_stmt + " AND (part_no is null"
+            where_stmt = where_stmt + " OR part_no = '" + part_no + "')"
+            # where_stmt = where_stmt + " AND sub_line = '" + sub_line + "')"
+        # else:
+        #     where_stmt = where_stmt + " AND part_no is null"
+        stmt = f"SELECT defect_type, defect_mode, category, target_by_piece FROM  master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY CASE defect_type WHEN 'Repeat' THEN 0 WHEN 'Scrap' THEN 1 WHEN 'Appearance' THEN 2  WHEN 'Dimension' THEN 3  WHEN 'Performance' THEN 4  WHEN 'Other' THEN 5  WHEN 'M/C Set up' THEN 6  WHEN 'Quality Test' THEN 7 END, master_defect_index ASC;"
         rs = await db.execute(text(stmt))
 
         return rs, data
@@ -221,17 +250,24 @@ class P_Chart_Record_CRUD:
             + last_month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
         ## query db
         stmt = f"SELECT p_bar FROM  pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         row = await db.execute(text(stmt))
@@ -247,17 +283,24 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
         stmt = f"SELECT id FROM pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
 
@@ -291,21 +334,24 @@ class P_Chart_Record_CRUD:
             ## query db
             part_name = None
 
-            where_stmt = (
-                "line_id = '" + str(line_id) + "' AND part_no = '" + part_no + "' "
-            )
-
+            where_stmt = "line_id = '" + str(line_id) + "' "
+            if part_no:
+                where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+            else:
+                where_stmt = where_stmt + " AND part_no is null"
             stmt = f"SELECT part_name FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id DESC LIMIT 1"
             rs = await db.execute(text(stmt))
             for r in rs:
                 part_name = r[0]
 
-            if part_name != None:
+            # if part_name != None:
+            part_no = "'" + part_no + "'" if part_no else "NULL"
+            part_name = "'" + part_name + "'" if part_name else "NULL"
+            sub_line = "'" + sub_line + "'" if sub_line else "NULL"
+            stmt = f"""INSERT INTO pchart_report ( month, line_id, part_no, part_name, shift, process, sub_line, n_bar, p_bar, k, uclp, lclp, p_bar_last, updated_at) VALUES ('{month}', '{line_id}',{part_no},{part_name},'{shift}','{process}',{sub_line},'{n_bar}','{p_bar}','{k}','{uclp}','{lclp}','{p_bar_last}',current_timestamp AT TIME ZONE 'Etc/GMT-7') """
 
-                stmt = f"""INSERT INTO pchart_report ( month, line_id, part_no, part_name, shift, process, sub_line, n_bar, p_bar, k, uclp, lclp, p_bar_last, updated_at) VALUES ('{month}', '{line_id}','{part_no}','{part_name}','{shift}','{process}','{sub_line}','{n_bar}','{p_bar}','{k}','{uclp}','{lclp}','{p_bar_last}',current_timestamp AT TIME ZONE 'Etc/GMT-7') """
-
-                await db.execute(text(stmt))
-                await db.commit()
+            await db.execute(text(stmt))
+            await db.commit()
 
     async def p_chart_record_table_qty_defective_items(
         self,
@@ -409,12 +455,12 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "t1.line_id = '"
             + str(line_id)
-            + "' AND t1.part_no = '"
-            + part_no
+            # + "' AND t1.part_no = '"
+            # + part_no
             + "' AND t1.process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND t1.date >= '"
             + start_date
             + "' AND t1.date <= '"
@@ -423,9 +469,18 @@ class P_Chart_Record_CRUD:
             # + defect_type
             # + "' AND defective_items = '"
             # + defective_items
-            + "'AND t2.active='active' ORDER BY t1.date ASC"
+            + "'AND t2.active='active' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND t1.part_no = '" + part_no + "'"
+        # else:
+        # where_stmt = where_stmt + " AND t1.part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        # else:
+        #     where_stmt = where_stmt + " AND sub_line is null"
+        where_stmt = where_stmt + " group by date,t1.defect_type,t2.defect_mode"
+        where_stmt = where_stmt + " ORDER BY t1.date ASC"
         # print("where_stmt: ", where_stmt)
         # stmt = f"SELECT qty_shift_all, qty_shift_a, qty_shift_b FROM  pchart_defect_record WHERE {where_stmt if where_stmt is not None else ''} "
         # stmt = f"""SELECT date,qty_shift_all, qty_shift_a, qty_shift_b,defect_type,defective_items
@@ -441,16 +496,17 @@ class P_Chart_Record_CRUD:
         # """
 
         stmt = f"""
-        select date, qty_shift_all, qty_shift_a, qty_shift_b,t1.defect_type,t2.defect_mode as defective_items        
+        select date, sum(qty_shift_all) as qty_shift_all, sum(qty_shift_a) as qty_shift_a, sum(qty_shift_b) as qty_shift_b,t1.defect_type,t2.defect_mode as defective_items        
             FROM  pchart_defect_record  t1
             left join master_defect t2 --using(part_no,process,line_id,defect_type)
-			on t1.part_no=t2.part_no and
+			on (t1.part_no=t2.part_no or t2.part_no is null) and
                 t1.process=t2.process 
                 and t1.line_id=t2.line_id 
                 -- and t1.defect_type=t2.defect_type 
                 and t1.id_defective_items=t2.ref 
                 -- and t1.defective_items=t2.defect_mode
              WHERE {where_stmt if where_stmt is not None else ''}
+             
         """
         # print("stmt:", stmt)
         rs = await db.execute(text(stmt))
@@ -462,7 +518,8 @@ class P_Chart_Record_CRUD:
     ):
         data = where_stmt.dict()
 
-        month = data["month"]
+        month = data["month"]  #!-> previous month
+        print("month -> ", month)
         line_name = data["line_name"]
         part_no = data["part_no"]
         shift = data["shift"]
@@ -549,16 +606,25 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND shift = '"
             + shift
             + "' "
         )
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
+
         stmt = f"SELECT p_bar FROM  pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         # print("stmt:", stmt)
         rs = await db.execute(text(stmt))
@@ -593,16 +659,24 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
 
         stmt = f"SELECT id FROM pchart_report_graph WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
@@ -619,7 +693,9 @@ class P_Chart_Record_CRUD:
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO pchart_report_graph ( month, line_id, part_no, shift, process, sub_line, pchart_graph, updated_at) VALUES ('{month}', '{line_id}','{part_no}','{shift}','{process}','{sub_line}','{str_graph_json}', current_timestamp AT TIME ZONE 'Etc/GMT-7' )"""
+            part_no = "'" + part_no + "'" if part_no else "NULL"
+            sub_line = "'" + sub_line + "'" if sub_line else "NULL"
+            stmt = f"""INSERT INTO pchart_report_graph ( month, line_id, part_no, shift, process, sub_line, pchart_graph, updated_at) VALUES ('{month}', '{line_id}',{part_no},'{shift}','{process}',{sub_line},'{str_graph_json}', current_timestamp AT TIME ZONE 'Etc/GMT-7' )"""
 
             await db.execute(text(stmt))
             await db.commit()
@@ -654,17 +730,24 @@ class P_Chart_Record_CRUD:
             + month
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift = '"
             + shift
             + "' AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
         stmt = f"SELECT id FROM pchart_report_table WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
         for r in rs:
@@ -679,7 +762,9 @@ class P_Chart_Record_CRUD:
         if status == True:
             ## case new record
             ## query db
-            stmt = f"""INSERT INTO pchart_report_table ( month, line_id, part_no, shift, process, sub_line, pchart_table, updated_at) VALUES ('{month}', '{line_id}','{part_no}','{shift}','{process}','{sub_line}','{str_table_json}', current_timestamp AT TIME ZONE 'Etc/GMT-7' )"""
+            part_no = "'" + part_no + "'" if part_no else "NULL"
+            sub_line = "'" + sub_line + "'" if sub_line else "NULL"
+            stmt = f"""INSERT INTO pchart_report_table ( month, line_id, part_no, shift, process, sub_line, pchart_table, updated_at) VALUES ('{month}', '{line_id}',{part_no},'{shift}','{process}',{sub_line},'{str_table_json}', current_timestamp AT TIME ZONE 'Etc/GMT-7' )"""
 
             await db.execute(text(stmt))
             await db.commit()
@@ -720,8 +805,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             + "' AND defect_type = '"
@@ -730,6 +815,13 @@ class P_Chart_Record_CRUD:
             + defective_items
             + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = (
+                where_stmt + " AND (part_no is null OR part_no = '" + part_no + "')"
+            )
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
+        # else:
+        #     where_stmt = where_stmt + " AND part_no is null"
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         res = await db.execute(text(stmt))
         for r in res:
@@ -745,8 +837,8 @@ class P_Chart_Record_CRUD:
             + date
             + "' AND line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             + "' AND defect_type = '"
@@ -755,7 +847,10 @@ class P_Chart_Record_CRUD:
             + str(id_defective_items)
             + "' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
         stmt = f"SELECT * FROM pchart_defect_record WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
 
@@ -806,14 +901,20 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             + "' AND defect_type = '"
             + defect_type
             + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = (
+                where_stmt + " AND (part_no is null OR part_no = '" + part_no + "')"
+            )
+        # else:
+        #     where_stmt = where_stmt + " AND part_no is null"
 
         stmt = f"SELECT * FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
@@ -878,8 +979,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             + "' AND defect_type = '"
@@ -888,6 +989,13 @@ class P_Chart_Record_CRUD:
             + defective_items
             + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = (
+                where_stmt + " AND (part_no is null OR part_no = '" + part_no + "')"
+            )
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
+        # else:
+        #     where_stmt = where_stmt + " AND part_no is null"
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         res = await db.execute(text(stmt))
         for r in res:
@@ -1017,8 +1125,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             # + "' AND sub_line = '"
@@ -1029,6 +1137,9 @@ class P_Chart_Record_CRUD:
             + defective_items
             + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = where_stmt + f" AND (part_no is null OR part_no = '{part_no}')"
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         res = await db.execute(text(stmt))
         for r in res:
@@ -1648,8 +1759,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             # + "' AND sub_line = '"
@@ -1661,6 +1772,9 @@ class P_Chart_Record_CRUD:
             + "'"
             # + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = where_stmt + f" AND (part_no is null OR part_no = '{part_no}')"
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         # print("stmt:", stmt)
         res = await db.execute(text(stmt))
@@ -1764,8 +1878,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             # + "' AND sub_line = '"
@@ -1777,6 +1891,9 @@ class P_Chart_Record_CRUD:
             + "'"
             # + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = where_stmt + f" AND (part_no is null OR part_no = '{part_no}')"
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         res = await db.execute(text(stmt))
         for r in res:
@@ -2209,8 +2326,8 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND process = '"
             + process
             # + "' AND sub_line = '"
@@ -2222,6 +2339,9 @@ class P_Chart_Record_CRUD:
             + "'"
             # + "' AND active = 'active' "
         )
+        if part_no:
+            where_stmt = where_stmt + f" AND (part_no is null OR part_no = '{part_no}')"
+        where_stmt = where_stmt + "ORDER BY part_no NULLS LAST; "
         stmt = f"SELECT ref FROM master_defect WHERE {where_stmt if where_stmt is not None else ''}"
         res = await db.execute(text(stmt))
         for r in res:
@@ -2416,6 +2536,11 @@ class P_Chart_Record_CRUD:
         #     shift = f"'{shift}'"
 
         line_id = self.get_line_id(line)
+        where_stmt = ""
+        if part_no:
+            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+        if sub_line:
+            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
         stmt = f"""WITH RankedRecords AS (  
                         SELECT  
                             date,  
@@ -2424,7 +2549,12 @@ class P_Chart_Record_CRUD:
                             ROW_NUMBER() OVER (PARTITION BY date ORDER BY created_at ASC) AS rn  
                         FROM  
                             public.pchart_defect_record
-                        where  line_id='{line_id}' and part_no='{part_no}' and process='{process}' and sub_line='{sub_line}' and qty_shift_{shift}>0 and date >='{first_date}' and date <='{last_date}'
+                        where  line_id='{line_id}'
+                            and process='{process}' 
+                            and qty_shift_{shift}>0 
+                            and date >='{first_date}' 
+                            and date <='{last_date}' 
+                            {where_stmt} 
                     )  
                     SELECT  
                         date,  
@@ -2464,6 +2594,11 @@ class P_Chart_Record_CRUD:
             shift = f"'{shift}'"
 
         line_id = self.get_line_id(line)
+        where_stmt = ""
+        if part_no:
+            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+        if sub_line:
+            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
         stmt = f"""
                     SELECT  
                         date::text,  
@@ -2472,12 +2607,12 @@ class P_Chart_Record_CRUD:
                         ) AS review_by_tl  
                     FROM  
                         public.approval_daily 
-                    WHERE   line_id='{line_id}' and 
-                            part_no='{part_no}' and 
-                            process='{process}' and 
-                            sub_line='{sub_line}' and 
-                            shift in ({shift}) and 
-                            date >='{first_date}' and date <='{last_date}'
+                    WHERE   line_id='{line_id}' 
+                        and process='{process}'  
+                        and shift in ({shift}) 
+                        and date >='{first_date}' 
+                        and date <='{last_date}'
+                        {where_stmt}
                             group by date
                 """
         # print("stmt:", stmt)
@@ -2517,6 +2652,11 @@ class P_Chart_Record_CRUD:
             shift = f"'{shift}'"
 
         line_id = self.get_line_id(line)
+        where_stmt = ""
+        if part_no:
+            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+        if sub_line:
+            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
         stmt = f"""
                     SELECT  
                         week_number::text,
@@ -2526,12 +2666,11 @@ class P_Chart_Record_CRUD:
                         ) AS review_by_mgr
                     FROM  
                         public.approval_weekly
-                    WHERE   line_id='{line_id}' and 
-                            part_no='{part_no}' and 
-                            process='{process}' and 
-                            sub_line='{sub_line}' and 
-                            shift in ({shift}) and 
-                            year_month='{first_date}' 
+                    WHERE   line_id='{line_id}' 
+                    and process='{process}' 
+                    and shift in ({shift}) 
+                    and year_month='{first_date}' 
+                    {where_stmt}
                             group by week_number,year_month
                 """
         # print("stmt:", stmt)
@@ -2585,6 +2724,11 @@ class P_Chart_Record_CRUD:
             shift = f"'{shift}'"
 
         line_id = self.get_line_id(line)
+        where_stmt = ""
+        if part_no:
+            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+        if sub_line:
+            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
         stmt = f"""
                     SELECT  
                         half_month::text,
@@ -2594,12 +2738,11 @@ class P_Chart_Record_CRUD:
                         ) AS review_by_gm
                     FROM  
                         public.approval_bi_weekly
-                    WHERE   line_id='{line_id}' and 
-                            part_no='{part_no}' and 
-                            process='{process}' and 
-                            sub_line='{sub_line}' and 
-                            shift in ({shift}) and 
-                            year_month='{first_date}' 
+                    WHERE   line_id='{line_id}' 
+                    and process='{process}' 
+                    and shift in ({shift}) 
+                    and year_month='{first_date}' 
+                    {where_stmt}
                             group by half_month,year_month
                 """
         # print("stmt:", stmt)
@@ -2635,4 +2778,55 @@ class P_Chart_Record_CRUD:
                 }
             )
         # print("return_list:", return_list)
+        return return_list
+
+    async def get_defect_qty(
+        self,
+        db: AsyncSession,
+        first_date: str,
+        last_date: str,
+        where_stmt: str | None = None,
+    ):
+        data = where_stmt.dict()
+        # date = data["date"]
+        month = data["month"]
+        date = convert_month_year_to_date(month)
+        line = data["line_name"]
+        part_no = data["part_no"]
+        process = data["process"]
+        sub_line = data["sub_line"]
+        shift = data["shift"].lower()
+        # first_date, last_date = get_first_and_last_date_of_month(date)
+        # if shift == "All":
+        #     shift = "'A','B'"
+        # else:
+        #     shift = f"'{shift}'"
+
+        line_id = self.get_line_id(line)
+        stmt = f"""
+        SELECT sum(qty_shift_{shift}) as defect_qty FROM public.pchart_defect_record
+        where line_id={str(line_id)} 
+        and process='Inline' 
+        and date>='{first_date}' 
+        and date <='{last_date}' 
+        """
+        if part_no:
+            stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"
+        if sub_line:
+            stmt = stmt + f" and sub_line ='{sub_line}'"
+
+        res = await db.execute(text(stmt))
+        # return_list = []
+        return_list = None
+        for r in res:
+            key_index = r._key_to_index
+            return_list = r[key_index["defect_qty"]]
+        #     key_index = r._key_to_index
+        #     return_list.append(
+        #         {
+        #             "date": r[key_index["date"]],
+        #             "record_by": get_initials(r[key_index["record_by"]]),
+        #         }
+        #     )
+        # amount_action_record = r[key_index["amount_action_record"]]
         return return_list

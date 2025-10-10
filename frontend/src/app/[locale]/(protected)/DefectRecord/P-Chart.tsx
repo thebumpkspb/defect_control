@@ -432,6 +432,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
             data: graphData.p_bar,
             symbol: "none",
             showSymbol: false,
+            yAxisIndex: 1,
             itemStyle: {
               color: "#2ECC71", // เปลี่ยนสีเส้น
             },

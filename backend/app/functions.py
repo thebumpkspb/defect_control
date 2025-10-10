@@ -14,6 +14,7 @@ from typing import Any, List, Dict, get_origin, get_args, Union
 from dotenv import load_dotenv
 import re
 from collections import defaultdict
+from dateutil.relativedelta import relativedelta
 
 load_dotenv()
 X_API_KEY = APIKeyHeader(name="X-API-Key")
@@ -173,7 +174,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-def get_first_and_last_date_of_month(date):
+def get_first_and_last_date_of_month(date, previous_month: bool = False):
     # Ensure the input date is a datetime object
     if isinstance(date, str):
         date = datetime.strptime(date, "%Y-%m-%d")
@@ -184,13 +185,15 @@ def get_first_and_last_date_of_month(date):
 
     # Get the first date of the month
     first_date = datetime(year, month, 1)
-
+    if previous_month:
+        first_date = first_date - relativedelta(months=1)
     # Get the last date of the month using calendar module
     last_day = calendar.monthrange(year, month)[
         1
     ]  # monthrange returns a tuple (weekday of first day, number of days in month)
     last_date = datetime(year, month, last_day)
-
+    if previous_month:
+        last_date = last_date - relativedelta(months=1)
     return first_date.strftime("%Y-%m-%d"), last_date.strftime("%Y-%m-%d")
 
 

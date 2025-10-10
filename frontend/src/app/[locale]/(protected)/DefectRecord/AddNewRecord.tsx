@@ -566,8 +566,8 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         line_name: input.line_name || "",
         defect_type: pChartPageSelectedDefectType || "",
         process: input.process || "",
-        sub_line: input.sub_line || "",
-        part_no: input.part_no || "",
+        sub_line: input.sub_line,
+        part_no: input.part_no,
       }).then((res: any) => {
         // const resData = res.add_new_record_view_result[0];
         setDefectData(res.add_new_record_view_defect_by_part_result);
@@ -589,8 +589,8 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         line_name: input.line_name || "",
         defect_type: pChartPageSelectedDefectType || "",
         process: input.process || "",
-        sub_line: input.sub_line || "",
-        part_no: input.part_no || "",
+        sub_line: input.sub_line,
+        part_no: input.part_no,
       }).then((res) => {
         // const resData = res.add_new_record_view_result[0];
         setAddNewRecordViewResult(res.add_new_record_view_result[0]);
@@ -957,7 +957,9 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
           ...new Set(
             defectData
               .filter((item) => {
-                return item.part_no === createForm.part_no;
+                return (
+                  item.part_no === createForm.part_no || item.part_no == null
+                );
               })
               .map((item: any) => item.defect_type)
           ),
@@ -967,7 +969,8 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
             defectData
               .filter(
                 (item) =>
-                  item.part_no === createForm.part_no &&
+                  (item.part_no === createForm.part_no ||
+                    item.part_no == null) &&
                   item.defect_type === createForm.defect_type
               )
               .map((item: any) => item.defect_mode)
@@ -1030,7 +1033,8 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
             defectData
               .filter(
                 (item) =>
-                  item.part_no === createForm.part_no &&
+                  (item.part_no === createForm.part_no ||
+                    item.part_no == null) &&
                   item.defect_type === createForm.defect_type
               )
               .map((item: any) => item.defect_mode)

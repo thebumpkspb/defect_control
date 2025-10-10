@@ -226,12 +226,12 @@ class Settings_Defect_Mode_CRUD:
             await db.commit()
 
             new_id = None
-
+            print("category:", category)
             where_stmt = (
                 f"line_id = '{str(line_id)}' AND process = '{process}'  AND defect_type = '{defect_type}' AND defect_mode = '{defect_mode}' "
                 + (
                     f" AND category = {category}"
-                    if category
+                    if category != "NULL"
                     else " AND category is NULL"
                 )
                 + (

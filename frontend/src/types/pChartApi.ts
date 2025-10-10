@@ -92,10 +92,10 @@ export interface PChartAbnormalOccurrenceResponse {
 export interface PChartGenaralInformationRequest {
   month: string;
   line_name: string;
-  part_no: string;
+  part_no: string | null;
   shift: string;
   process: string;
-  sub_line: string;
+  sub_line: string | null;
 }
 
 export interface PChartGeneralInformation {
@@ -364,12 +364,14 @@ export interface PChartRecordTableResult {
   review_by_mgr: any;
   review_by_gm: any;
   ucl_target: number[];
+  over_target_by_piece: boolean[];
 }
 
 export interface DefectTable {
   id: number;
   defect_type: string;
   defect_item: string;
+  target_by_piece: number;
   category: string[];
   value: number[];
 }
@@ -383,8 +385,8 @@ export interface AddNewRecordViewRequest {
   line_name: string;
   defect_type: string;
   process: string;
-  sub_line: string;
-  part_no: string;
+  sub_line: string | null;
+  part_no: string | null;
 }
 
 export interface AddNewRecordViewResult {
