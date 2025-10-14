@@ -17,6 +17,7 @@ import { delay } from "@/functions";
 import {
   DefectQty,
   DefectSummaryResult,
+  GraphDailyDefectProcessSummary,
   GraphDailyDefectSummary,
 } from "@/types/inlineOutlineDefectSumApi";
 
@@ -164,7 +165,8 @@ const mockGrapData = {
 };
 
 interface DailyDefectSummaryProps {
-  defectDataSource: DefectSummaryResult;
+  defectDataSource: GraphDailyDefectSummary;
+  addtionalLabel: string;
   username: string;
 }
 
@@ -176,308 +178,314 @@ export interface DailyDefectSummaryRef {
 const DailyDefectSummary = forwardRef<
   DailyDefectSummaryRef,
   DailyDefectSummaryProps
->(({ defectDataSource: defectDataSource, username }, ref) => {
-  const setChartToDefault = () => {
-    console.log("Chart reset to default");
-    setChartOption(toChartOption(defaultGrapData));
-  };
-  const chartRef = useRef<any>();
-  const refreshChart = () => {
-    console.log("Refresh Daily Chart");
-    // console.log(
-    //   "allDataSource.graph_daily_defect_summary:",
-    //   defectDataSource.graph_daily_defect_summary
-    // );
-    setChartOption(toChartOption(defectDataSource.graph_daily_defect_summary));
-  };
-
-  useImperativeHandle(ref, () => ({
-    setChartToDefault,
-    refreshChart,
-  }));
-
-  const generateUniqueColors = (count: number): string[] => {
-    const colors = new Set<string>();
-    let i = 0;
-    while (colors.size < count) {
-      const hue = (i * 331) % 360;
-      const saturation = 50 + ((i * 29) % 50);
-      const lightness = 30 + ((i * 37) % 40);
-
-      // Introduce tone variations by alternating between warm, cool, and neutral colors
-      let color;
-      if (i % 3 === 0) {
-        color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-      } else if (i % 3 === 1) {
-        color = `hsl(${(hue + 180) % 360}, ${saturation - 10}%, ${
-          lightness + 10
-        }%)`;
-      } else {
-        color = `hsl(${(hue + 90) % 360}, ${saturation + 10}%, ${
-          lightness - 10
-        }%)`;
-      }
-
-      if (!colors.has(color)) {
-        colors.add(color);
-      }
-      i++;
-    }
-    return Array.from(colors);
-  };
-
-  const toDeflectStackBarGraph = (defect: DefectQty[]): PChartDefectBar[] => {
-    if (defect.length === 0) {
-      return [];
-    }
-
-    const colors: string[] = generateUniqueColors(defect.length);
-
-    return defect.map((defectItem: DefectQty, index: number) => ({
-      name: defectItem.name ? defectItem.name : "",
-      type: "bar",
-      stack: "defect",
-      data: defectItem.qty,
-      itemStyle: {
-        color: colors[index % colors.length],
-      },
-    }));
-  };
-
-  const toChartOption = (graphData: GraphDailyDefectSummary) => {
-    return {
-      backgroundColor: "#ffffff",
-      // legend: {
-      //   top: 10,
-      //   left: "center",
-      //   textStyle: { color: "#000000", fontSize: 12 },
-      // },
-      legend: {
-        type: "scroll",
-        orient: "horizontal",
-        left: "5%", // ย้าย legend ไปทางซ้าย
-        textStyle: {
-          color: "#000000", // ตัวหนังสือสีดำ
-          fontSize: 12,
-        },
-        data: graphData.defect_qty.map((a) => a.name),
-      },
-      grid: { left: 50, right: 50, bottom: 50, top: 120, containLabel: true },
-      tooltip: {
-        trigger: "axis",
-        formatter: function (params: any) {
-          // params is an array when trigger='axis'
-          // console.log("params:", params);
-          const filtered = params.filter(
-            (item: any) => item.data !== 0 || item.componentSubType == "line"
-          );
-          if (filtered.length === 0) {
-            return ""; // No tooltip if all zero
-          }
-          // Build tooltip lines
-          return filtered
-            .map(
-              (item: any) => `${item.marker}${item.seriesName}: ${item.data}`
-            )
-            .join("<br/>");
-        },
-        axisPointer: {
-          type: "shadow",
-        },
-      },
-      xAxis: {
-        type: "category",
-        data: graphData.axis_x,
-        name: "Date",
-        nameLocation: "center",
-        nameGap: 30,
-      },
-      yAxis: [
-        {
-          type: "value",
-          name: "Q'ty (pcs.)",
-          position: "left",
-          axisLabel: { formatter: "{value} pcs.", color: "#000000" },
-          min: graphData.axis_y_lift,
-          max: graphData.axis_y_lift,
-        },
-        {
-          type: "value",
-          name: "% Defect",
-          position: "right",
-          axisLabel: { formatter: "{value} %", color: "#000000" },
-          min: graphData.axis_y_right,
-          max: graphData.axis_y_right,
-        },
-      ],
-      series: [
-        {
-          name: "%Defect(Actual)",
-          type: "line",
-          smooth: true,
-          symbol: "circle",
-          yAxisIndex: 1,
-          data: graphData.defect_percent_actual,
-          itemStyle: {
-            color: "#73C0DE",
-          },
-          lineStyle: {
-            width: 2,
-          },
-          symbolSize: 8,
-        },
-        // {
-        //   name: "UCL Target",
-        //   type: "line",
-        //   step: "middle",
-        //   symbol: "none",
-        //   yAxisIndex: 1,
-        //   showSymbol: false,
-        //   // data: graphData.target_percent,
-        //   data: [0],
-        //   lineStyle: {
-        //     type: "solid",
-        //     color: "red",
-        //     width: 1.5,
-        //   },
-        // },
-        // {
-        //   name: "P-bar",
-        //   type: "line",
-        //   // data: graphData.target_percent,
-        //   data: [0],
-        //   symbol: "none",
-        //   showSymbol: false,
-        //   lineStyle: {
-        //     type: "dotted",
-        //     color: "#2ECC71",
-        //     width: 1.5,
-        //   },
-        // },
-        ...toDeflectStackBarGraph(graphData.defect_qty),
-      ],
+>(
+  (
+    {
+      defectDataSource: defectDataSource,
+      addtionalLabel: addtionalLabel,
+      username,
+    },
+    ref
+  ) => {
+    console.log("defectDataSource:", defectDataSource);
+    const setChartToDefault = () => {
+      console.log("Chart reset to default");
+      setChartOption(toChartOption(defaultGrapData));
     };
-  };
+    const chartRef = useRef<any>();
+    const refreshChart = () => {
+      console.log("Refresh Daily Chart");
+      // console.log(
+      //   "allDataSource.graph_daily_defect_summary:",
+      //   defectDataSource.graph_daily_defect_summary
+      // );
+      setChartOption(toChartOption(defectDataSource));
+    };
 
-  const [chartOption, setChartOption] = useState<EChartsOption>(
-    toChartOption(defaultGrapData)
-  );
-  const handleSelectAll = () => {
-    const allNames = chartOption.series.map((series: any) => series.name);
-    allNames.forEach((name: any) => {
-      chartRef.current.getEchartsInstance().dispatchAction({
-        type: "legendSelect",
-        name,
-      });
-    });
-  };
+    useImperativeHandle(ref, () => ({
+      setChartToDefault,
+      refreshChart,
+    }));
 
-  // Function to deselect all legend items
-  const handleDeselectAll = () => {
-    const allNames = chartOption.series.map((series: any) => series.name);
-    allNames.forEach((name: any) => {
-      if (
-        !["%Defect", "UCL Target", "P-bar", "%Defect(Actual)"].includes(name)
-      ) {
+    const generateUniqueColors = (count: number): string[] => {
+      const colors = new Set<string>();
+      let i = 0;
+      while (colors.size < count) {
+        const hue = (i * 331) % 360;
+        const saturation = 50 + ((i * 29) % 50);
+        const lightness = 30 + ((i * 37) % 40);
+
+        // Introduce tone variations by alternating between warm, cool, and neutral colors
+        let color;
+        if (i % 3 === 0) {
+          color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        } else if (i % 3 === 1) {
+          color = `hsl(${(hue + 180) % 360}, ${saturation - 10}%, ${
+            lightness + 10
+          }%)`;
+        } else {
+          color = `hsl(${(hue + 90) % 360}, ${saturation + 10}%, ${
+            lightness - 10
+          }%)`;
+        }
+
+        if (!colors.has(color)) {
+          colors.add(color);
+        }
+        i++;
+      }
+      return Array.from(colors);
+    };
+
+    const toDeflectStackBarGraph = (defect: DefectQty[]): PChartDefectBar[] => {
+      if (defect.length === 0) {
+        return [];
+      }
+
+      const colors: string[] = generateUniqueColors(defect.length);
+
+      return defect.map((defectItem: DefectQty, index: number) => ({
+        name: defectItem.name ? defectItem.name : "",
+        type: "bar",
+        stack: "defect",
+        data: defectItem.qty,
+        itemStyle: {
+          color: colors[index % colors.length],
+        },
+      }));
+    };
+
+    const toChartOption = (graphData: GraphDailyDefectSummary) => {
+      console.log("graphData:", graphData);
+      return {
+        backgroundColor: "#ffffff",
+        // legend: {
+        //   top: 10,
+        //   left: "center",
+        //   textStyle: { color: "#000000", fontSize: 12 },
+        // },
+        legend: {
+          type: "scroll",
+          orient: "horizontal",
+          left: "5%", // ย้าย legend ไปทางซ้าย
+          textStyle: {
+            color: "#000000", // ตัวหนังสือสีดำ
+            fontSize: 12,
+          },
+          data: graphData.defect_qty.map((a) => a.name),
+        },
+        grid: { left: 50, right: 50, bottom: 50, top: 120, containLabel: true },
+        tooltip: {
+          trigger: "axis",
+          formatter: function (params: any) {
+            // params is an array when trigger='axis'
+            // console.log("params:", params);
+            const filtered = params.filter(
+              (item: any) => item.data !== 0 || item.componentSubType == "line"
+            );
+            if (filtered.length === 0) {
+              return ""; // No tooltip if all zero
+            }
+            // Build tooltip lines
+            return filtered
+              .map(
+                (item: any) => `${item.marker}${item.seriesName}: ${item.data}`
+              )
+              .join("<br/>");
+          },
+          axisPointer: {
+            type: "shadow",
+          },
+        },
+        xAxis: {
+          type: "category",
+          data: graphData.axis_x,
+          name: "Date",
+          nameLocation: "center",
+          nameGap: 30,
+        },
+        yAxis: [
+          {
+            type: "value",
+            name: "Q'ty (pcs.)",
+            position: "left",
+            axisLabel: { formatter: "{value} pcs.", color: "#000000" },
+            min: graphData.axis_y_lift,
+            max: graphData.axis_y_lift,
+          },
+          {
+            type: "value",
+            name: "% Defect",
+            position: "right",
+            axisLabel: { formatter: "{value} %", color: "#000000" },
+            min: graphData.axis_y_right,
+            max: graphData.axis_y_right,
+          },
+        ],
+        series: [
+          {
+            name: "%Defect(Actual)",
+            type: "line",
+            smooth: true,
+            symbol: "circle",
+            yAxisIndex: 1,
+            data: graphData.defect_percent_actual,
+            itemStyle: {
+              color: "#73C0DE",
+            },
+            lineStyle: {
+              width: 2,
+            },
+            symbolSize: 8,
+          },
+          // {
+          //   name: "UCL Target",
+          //   type: "line",
+          //   step: "middle",
+          //   symbol: "none",
+          //   yAxisIndex: 1,
+          //   showSymbol: false,
+          //   // data: graphData.target_percent,
+          //   data: [0],
+          //   lineStyle: {
+          //     type: "solid",
+          //     color: "red",
+          //     width: 1.5,
+          //   },
+          // },
+          // {
+          //   name: "P-bar",
+          //   type: "line",
+          //   // data: graphData.target_percent,
+          //   data: [0],
+          //   symbol: "none",
+          //   showSymbol: false,
+          //   lineStyle: {
+          //     type: "dotted",
+          //     color: "#2ECC71",
+          //     width: 1.5,
+          //   },
+          // },
+          ...toDeflectStackBarGraph(graphData.defect_qty),
+        ],
+      };
+    };
+
+    const [chartOption, setChartOption] = useState<EChartsOption>(
+      toChartOption(defaultGrapData)
+    );
+    // console.log("chartOption:", chartOption);
+    const handleSelectAll = () => {
+      const allNames = chartOption.series.map((series: any) => series.name);
+      allNames.forEach((name: any) => {
         chartRef.current.getEchartsInstance().dispatchAction({
-          type: "legendUnSelect",
+          type: "legendSelect",
           name,
         });
-      }
-    });
-  };
-  return (
-    <Layout
-      style={{
-        display: "flex",
-        padding: "0px",
-        flexDirection: "column",
-        // backgroundColor: "#ffffff",
-        maxWidth: "100%",
-        margin: "15px 0 15px 0",
-        // borderRadius: "7px",
-        alignItems: "stretch",
-      }}
-    >
-      <Row
-        align="middle"
+      });
+    };
+
+    // Function to deselect all legend items
+    const handleDeselectAll = () => {
+      const allNames = chartOption.series.map((series: any) => series.name);
+      allNames.forEach((name: any) => {
+        if (
+          !["%Defect", "UCL Target", "P-bar", "%Defect(Actual)"].includes(name)
+        ) {
+          chartRef.current.getEchartsInstance().dispatchAction({
+            type: "legendUnSelect",
+            name,
+          });
+        }
+      });
+    };
+    return (
+      <Layout
         style={{
-          backgroundColor: "#ffffff",
-          padding: "10px 10px 10px 10px",
-          borderRadius: "7px 7px 0 0",
+          display: "flex",
+          padding: "0px",
+          flexDirection: "column",
+          // backgroundColor: "#ffffff",
+          maxWidth: "100%",
+          margin: "15px 0 15px 0",
+          // borderRadius: "7px",
+          alignItems: "stretch",
         }}
       >
-        <Col>
-          <h3 style={{ textAlign: "left", fontSize: "18px" }}>
-            Daily Defect Summary
-          </h3>
-          <div>
-            <Button size="small" type="link" onClick={handleSelectAll}>
-              Select All
-            </Button>
-            <Button size="small" type="link" onClick={handleDeselectAll}>
-              Deselect All
-            </Button>
-          </div>
-        </Col>
-        <Col span={10}></Col>
-        <Col span={8} style={{ textAlign: "right" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <strong>Prod. Vol.</strong>
-              <strong>Defect</strong>
-              <strong>%Defect</strong>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-                marginTop: "5px",
-              }}
-            >
-              <span>
-                {defectDataSource.graph_daily_defect_summary.prod_vol} pcs.
-              </span>
-              <span>
-                {defectDataSource.graph_daily_defect_summary.defect} pcs.
-              </span>
-              <span>
-                {defectDataSource.graph_daily_defect_summary.defect_percent}%
-              </span>
-            </div>
-          </div>
-        </Col>
-      </Row>
-      <div style={{ borderRadius: "7px 7px", backgroundColor: "#fff" }}>
-        <ReactECharts
-          ref={chartRef}
-          // option={option}
-          option={chartOption}
-          notMerge={true}
+        <Row
+          align="middle"
           style={{
-            height: "500px",
-            width: "100%",
-            margin: "0 0 7px 0",
-            borderRadius: "0 0 7px 7px",
+            backgroundColor: "#ffffff",
+            padding: "10px 10px 10px 10px",
+            borderRadius: "7px 7px 0 0",
           }}
-        />
-      </div>
-    </Layout>
-  );
-});
+        >
+          <Col>
+            <h3 style={{ textAlign: "left", fontSize: "18px" }}>
+              Daily Defect Summary - {addtionalLabel}
+            </h3>
+            <div>
+              <Button size="small" type="link" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button size="small" type="link" onClick={handleDeselectAll}>
+                Deselect All
+              </Button>
+            </div>
+          </Col>
+          <Col span={10}></Col>
+          <Col span={8} style={{ textAlign: "right" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <strong>Prod. Vol.</strong>
+                <strong>Defect</strong>
+                <strong>%Defect</strong>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  marginTop: "5px",
+                }}
+              >
+                <span>{defectDataSource?.prod_vol} pcs.</span>
+                <span>{defectDataSource?.defect} pcs.</span>
+                <span>{defectDataSource?.defect_percent}%</span>
+              </div>
+            </div>
+          </Col>
+        </Row>
+        <div style={{ borderRadius: "7px 7px", backgroundColor: "#fff" }}>
+          <ReactECharts
+            ref={chartRef}
+            // option={option}
+            option={chartOption}
+            notMerge={true}
+            style={{
+              height: "500px",
+              width: "100%",
+              margin: "0 0 7px 0",
+              borderRadius: "0 0 7px 7px",
+            }}
+          />
+        </div>
+      </Layout>
+    );
+  }
+);
 
 DailyDefectSummary.displayName = "DailyDefectSummary";
 

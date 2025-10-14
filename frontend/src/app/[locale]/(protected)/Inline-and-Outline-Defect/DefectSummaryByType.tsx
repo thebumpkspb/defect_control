@@ -70,7 +70,8 @@ interface TableDataSource {
 }
 
 interface DefectSummaryByTypeProps {
-  defectDataSource: DefectSummaryResult;
+  defectDataSource: GraphDefectSummaryByType;
+  addtionalLabel: string;
   username: string;
 }
 
@@ -82,7 +83,7 @@ export interface DefectSummaryByTypeRef {
 }
 
 const DefectSummaryByType = forwardRef(
-  ({ defectDataSource }: DefectSummaryByTypeProps, ref) => {
+  ({ defectDataSource, addtionalLabel }: DefectSummaryByTypeProps, ref) => {
     const [selectedDefects, setSelectedDefects] = useState<string[]>([]);
     const [chartOption, setChartOption] = useState<EChartsOption>({});
     const [totalPercent, setTotalPercent] = useState<number>(0.0);
@@ -102,20 +103,17 @@ const DefectSummaryByType = forwardRef(
       console.log("Refresh By Type Pie Chart");
       console.log(
         "allDataSource.graph_daily_defect_summary:",
-        defectDataSource.graph_daily_defect_summary
+        defectDataSource
       );
-      setChartOption(
-        toChartOption(
-          defectDataSource.graph_defect_summary_by_type,
-          selectedDefects
-        )
-      );
+      setChartOption(toChartOption(defectDataSource, selectedDefects));
       setTotalPercent(
         Math.round(
-          defectDataSource.graph_defect_summary_by_type.defect
-            .reduce((sum, defect) => sum + defect.percent, 0) * 100
+          defectDataSource.defect.reduce(
+            (sum, defect) => sum + defect.percent,
+            0
+          ) * 100
         ) / 100
-      );      
+      );
     };
 
     const setChartToDefault = () => {
@@ -129,9 +127,7 @@ const DefectSummaryByType = forwardRef(
 
     const refreshTable = () => {
       console.log("Refresh By Type Table");
-      setTableDataSource(
-        toTableDataSource(defectDataSource.graph_defect_summary_by_type)
-      );
+      setTableDataSource(toTableDataSource(defectDataSource));
     };
 
     useImperativeHandle(ref, () => ({
@@ -171,7 +167,7 @@ const DefectSummaryByType = forwardRef(
       chartData: GraphDefectSummaryByType,
       selectedDefects: string[]
     ): EChartsOption => {
-      const filteredData = chartData.defect.filter(
+      const filteredData = chartData?.defect?.filter(
         (item) => !selectedDefects.includes(item.name)
       );
 
@@ -204,7 +200,7 @@ const DefectSummaryByType = forwardRef(
             labelLine: {
               show: false,
             },
-            data: filteredData.map((item) => ({
+            data: filteredData?.map((item) => ({
               value: item.qty,
               name: item.name,
               itemStyle: { color: colorMap[item.name] || "#CCCCCC" },
@@ -226,11 +222,11 @@ const DefectSummaryByType = forwardRef(
     };
 
     const updateChart = (selectedDefects: string[]) => {
-      const chartData = defectDataSource.graph_defect_summary_by_type;
+      const chartData = defectDataSource;
       setChartOption(toChartOption(chartData, selectedDefects));
 
       const updatedTotalPercent = parseFloat(
-        chartData.defect
+        chartData?.defect
           .filter((item) => !selectedDefects.includes(item.name))
           .reduce((sum, defect) => sum + defect.percent, 0)
           .toFixed(2)
@@ -329,15 +325,14 @@ const DefectSummaryByType = forwardRef(
     );
 
     const updateTable = (selectedDefects: string[]) => {
-      const tableData =
-        defectDataSource.graph_defect_summary_by_type.defect.map((item) => ({
-          label: item.name,
-          value: item.qty,
-          percent: parseFloat(item.percent.toFixed(2)),
-          color: selectedDefects.includes(item.name)
-            ? "gray"
-            : colorMap[item.name] || "#CCCCCC",
-        }));
+      const tableData = defectDataSource?.defect?.map((item) => ({
+        label: item.name,
+        value: item.qty,
+        percent: parseFloat(item.percent.toFixed(2)),
+        color: selectedDefects.includes(item.name)
+          ? "gray"
+          : colorMap[item.name] || "#CCCCCC",
+      }));
 
       setTableDataSource(tableData);
     };
@@ -368,7 +363,7 @@ const DefectSummaryByType = forwardRef(
         >
           <Col>
             <Title level={3} style={{ textAlign: "center", fontSize: "18px" }}>
-              %Defect Summary by Type
+              %Defect Summary by Type - {addtionalLabel}
             </Title>
           </Col>
         </Row>

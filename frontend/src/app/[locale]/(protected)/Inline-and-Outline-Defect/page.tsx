@@ -68,6 +68,7 @@ import { delay, formatNumberWithCommas } from "@/functions";
 
 import {
   CauseOfAbnormalResult,
+  DefectParetoChartProcess,
   DefectParetoChartResult,
   DefectSummaryResult,
   DepartmentSectionResult,
@@ -131,51 +132,153 @@ const defaultDefectSummaryResult: DefectSummaryResult = {
   repeat_qty: 0,
   repeat_percent: 0,
   graph_yearly_defect_summary: {
-    axis_x: ["string"],
-    target_percent: [0],
-    defect_percent: [0],
-    defect_qty: [
-      {
-        name: "string",
-        qty: [0],
-      },
-    ],
+    inline: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    outline: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    inspection: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
   },
   graph_monthly_defect_summary: {
-    axis_x: ["string"],
-    target_percent: [0],
-    defect_percent: [0],
-    defect_qty: [
-      {
-        name: "string",
-        qty: [0],
-      },
-    ],
+    inline: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    outline: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    inspection: {
+      axis_x: ["string"],
+      target_percent: [0],
+      defect_percent: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
   },
   graph_daily_defect_summary: {
-    prod_vol: 0,
-    defect: 0,
-    defect_percent: 0,
-    axis_x: ["string"],
-    axis_y_lift: ["string"],
-    axis_y_right: ["string"],
-    defect_percent_actual: [0],
-    defect_qty: [
-      {
-        name: "string",
-        qty: [0],
-      },
-    ],
+    inline: {
+      prod_vol: 0,
+      defect: 0,
+      defect_percent: 0,
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      defect_percent_actual: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    outline: {
+      prod_vol: 0,
+      defect: 0,
+      defect_percent: 0,
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      defect_percent_actual: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
+    inspection: {
+      prod_vol: 0,
+      defect: 0,
+      defect_percent: 0,
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      defect_percent_actual: [0],
+      defect_qty: [
+        {
+          name: "string",
+          qty: [0],
+        },
+      ],
+    },
   },
   graph_defect_summary_by_type: {
-    total: 0,
-    defect: [
-      {
-        name: "string",
-        qty: 0,
-        percent: 0,
-      },
-    ],
+    inline: {
+      total: 0,
+      defect: [
+        {
+          name: "string",
+          qty: 0,
+          percent: 0,
+        },
+      ],
+    },
+    outline: {
+      total: 0,
+      defect: [
+        {
+          name: "string",
+          qty: 0,
+          percent: 0,
+        },
+      ],
+    },
+    inspection: {
+      total: 0,
+      defect: [
+        {
+          name: "string",
+          qty: 0,
+          percent: 0,
+        },
+      ],
+    },
   },
 };
 
@@ -210,11 +313,27 @@ const defaultParetoChart: DefectParetoChartResult = {
   section: "",
   line: ["string"],
   defect_pareto_chart: {
-    axis_x: ["string"],
-    axis_y_lift: ["string"],
-    axis_y_right: ["string"],
-    pareto: [0],
-    defect_qty: [0],
+    inline: {
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      pareto: [0],
+      defect_qty: [0],
+    },
+    outline: {
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      pareto: [0],
+      defect_qty: [0],
+    },
+    inspection: {
+      axis_x: ["string"],
+      axis_y_lift: ["string"],
+      axis_y_right: ["string"],
+      pareto: [0],
+      defect_qty: [0],
+    },
   },
   description_of_defect: [
     {
@@ -272,14 +391,21 @@ export default function PChartHeader() {
     monthlyDefectChartRef.current?.refreshChart();
   };
 
-  const dailyDefectSummaryRef = useRef<DailyDefectSummaryRef>(null);
+  const dailyDefectSummaryRefInline = useRef<DailyDefectSummaryRef>(null);
+  const dailyDefectSummaryRefOutline = useRef<DailyDefectSummaryRef>(null);
+  const dailyDefectSummaryRefInspection = useRef<DailyDefectSummaryRef>(null);
 
   const handleResetDailyDefectChart = () => {
-    dailyDefectSummaryRef.current?.setChartToDefault();
+    dailyDefectSummaryRefInline.current?.setChartToDefault();
+    dailyDefectSummaryRefOutline.current?.setChartToDefault();
+    dailyDefectSummaryRefInspection.current?.setChartToDefault();
   };
 
   const handleRefreshDailyDefectChart = () => {
-    dailyDefectSummaryRef.current?.refreshChart();
+    console.log("test_refresh");
+    dailyDefectSummaryRefInline.current?.refreshChart();
+    dailyDefectSummaryRefOutline.current?.refreshChart();
+    dailyDefectSummaryRefInspection.current?.refreshChart();
   };
 
   const defectSummaryByTypeRef = useRef<DefectSummaryByTypeRef>(null);
@@ -311,14 +437,20 @@ export default function PChartHeader() {
     abnormalOccurrenceAndActionRef.current?.refreshTable();
   };
 
-  const defectParetoChartRef = useRef<DefectParetoChartRef>(null);
+  const defectParetoChartRefInline = useRef<DefectParetoChartRef>(null);
+  const defectParetoChartRefOutline = useRef<DefectParetoChartRef>(null);
+  const defectParetoChartRefInspection = useRef<DefectParetoChartRef>(null);
 
   const handleResetdefectParetoChart = () => {
-    defectParetoChartRef.current?.setChartToDefault();
+    defectParetoChartRefInline.current?.setChartToDefault();
+    defectParetoChartRefOutline.current?.setChartToDefault();
+    defectParetoChartRefInspection.current?.setChartToDefault();
   };
 
   const handleRefreshdefectParetoChart = () => {
-    defectParetoChartRef.current?.refreshChart();
+    defectParetoChartRefInline.current?.refreshChart();
+    defectParetoChartRefOutline.current?.refreshChart();
+    defectParetoChartRefInspection.current?.refreshChart();
   };
 
   const descriptionOfDefectRef = useRef<DescriptionOfDefectRef>(null);
@@ -998,7 +1130,7 @@ export default function PChartHeader() {
         {/* กราฟ Yearly และ Monthly */}
         <Row gutter={[8, 8]} style={{ alignItems: "stretch" }}>
           {/* Yearly Defect Summary */}
-          <Col span={6}>
+          <Col span={8}>
             <Card
               style={{
                 height: "100%",
@@ -1010,14 +1142,14 @@ export default function PChartHeader() {
             >
               <YearlyDefectSummary
                 ref={yearlyDefectChartRef}
-                DefectDataSource={defectDataSource}
+                DefectDataSource={defectDataSource.graph_yearly_defect_summary}
                 username={username()}
               />
             </Card>
           </Col>
 
           {/* Monthly Defect Summary */}
-          <Col span={14}>
+          <Col span={12}>
             <Card
               style={{
                 height: "100%", // ความสูงเท่ากัน
@@ -1029,7 +1161,7 @@ export default function PChartHeader() {
             >
               <MonthlyDefectSummary
                 ref={monthlyDefectChartRef}
-                defectDataSource={defectDataSource}
+                defectDataSource={defectDataSource.graph_monthly_defect_summary}
                 username={username()}
               />
             </Card>
@@ -1246,6 +1378,9 @@ export default function PChartHeader() {
         </Row>
 
         {/* ส่วน Daily Defect Summary และ Defect Summary By Type */}
+        {/* <Card>
+          <h2>Inline</h2>
+        </Card> */}
         <Row
           gutter={[8, 8]}
           style={{ marginTop: "20px", alignItems: "stretch" }}
@@ -1262,8 +1397,11 @@ export default function PChartHeader() {
               }}
             >
               <DailyDefectSummary
-                ref={dailyDefectSummaryRef}
-                defectDataSource={defectDataSource}
+                ref={dailyDefectSummaryRefInline}
+                addtionalLabel={"Inline"}
+                defectDataSource={
+                  defectDataSource.graph_daily_defect_summary.inline
+                }
                 username={username()}
               />
             </Card>
@@ -1281,7 +1419,108 @@ export default function PChartHeader() {
             >
               <DefectSummaryByType
                 ref={defectSummaryByTypeRef}
-                defectDataSource={defectDataSource}
+                defectDataSource={
+                  defectDataSource.graph_defect_summary_by_type.inline
+                }
+                addtionalLabel={"Inline"}
+                username={username()}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* ส่วน Daily Defect Summary และ Defect Summary By Type */}
+        <Row
+          gutter={[8, 8]}
+          style={{ marginTop: "20px", alignItems: "stretch" }}
+        >
+          <Col span={16}>
+            <Card
+              bordered={false}
+              style={{
+                height: "100%",
+                padding: "0px",
+                margin: "0px",
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <DailyDefectSummary
+                ref={dailyDefectSummaryRefOutline}
+                addtionalLabel={"Outline"}
+                defectDataSource={
+                  defectDataSource.graph_daily_defect_summary.inline
+                }
+                username={username()}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card
+              bordered={false}
+              style={{
+                height: "100%",
+                padding: "0px",
+                margin: "0px",
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <DefectSummaryByType
+                ref={defectSummaryByTypeRef}
+                defectDataSource={
+                  defectDataSource.graph_defect_summary_by_type.outline
+                }
+                addtionalLabel={"Outline"}
+                username={username()}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* ส่วน Daily Defect Summary และ Defect Summary By Type */}
+        <Row
+          gutter={[8, 8]}
+          style={{ marginTop: "20px", alignItems: "stretch" }}
+        >
+          <Col span={16}>
+            <Card
+              bordered={false}
+              style={{
+                height: "100%",
+                padding: "0px",
+                margin: "0px",
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <DailyDefectSummary
+                ref={dailyDefectSummaryRefInspection}
+                addtionalLabel={"Inspection"}
+                defectDataSource={
+                  defectDataSource.graph_daily_defect_summary.inline
+                }
+                username={username()}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card
+              bordered={false}
+              style={{
+                height: "100%",
+                padding: "0px",
+                margin: "0px",
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <DefectSummaryByType
+                ref={defectSummaryByTypeRef}
+                defectDataSource={
+                  defectDataSource.graph_defect_summary_by_type.inspection
+                }
+                addtionalLabel={"Inspection"}
                 username={username()}
               />
             </Card>
@@ -1335,13 +1574,58 @@ export default function PChartHeader() {
               style={{
                 borderRadius: "8px",
                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                // display: "flex",
+                // justifyContent: "space-between",
               }}
             >
-              <DefectParetoChart
-                dataSource={defectParetoDataSource}
-                username={username()}
-                ref={defectParetoChartRef}
-              />
+              <div style={{ display: "flex" }}>
+                <DefectParetoChart
+                  dataSource={defectParetoDataSource.defect_pareto_chart.inline}
+                  additionalLabel={"Inline"}
+                  username={username()}
+                  ref={defectParetoChartRefInline}
+                />
+                {/* </Card> */}
+                {/* </Col> */}
+                {/* </Row>
+        <Row style={{ marginTop: "20px" }}> */}
+                {/* <Col span={24}> */}
+                {/* <Card
+              bordered={false}
+              style={{
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            > */}
+                <DefectParetoChart
+                  dataSource={
+                    defectParetoDataSource.defect_pareto_chart.outline
+                  }
+                  additionalLabel={"Outline"}
+                  username={username()}
+                  ref={defectParetoChartRefOutline}
+                />
+                {/* </Card> */}
+                {/* </Col> */}
+                {/* </Row>
+        <Row style={{ marginTop: "20px" }}> */}
+                {/* <Col span={24}> */}
+                {/* <Card
+              bordered={false}
+              style={{
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            > */}
+                <DefectParetoChart
+                  dataSource={
+                    defectParetoDataSource.defect_pareto_chart.inspection
+                  }
+                  additionalLabel={"Inspection"}
+                  username={username()}
+                  ref={defectParetoChartRefInspection}
+                />
+              </div>
             </Card>
           </Col>
         </Row>

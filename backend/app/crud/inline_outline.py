@@ -437,9 +437,9 @@ class Inline_Outline_CRUD:
         line = data["line"]
 
         list_target_percent_yearly = [0] * 3
-
+        list_target_percent_yearly_process = {}
         c = 0
-
+        list_process = ["Inline", "Outline", "Inspection"]
         if len(line) > 1:
             if section != "-":  # check filter = 'section'
                 where_stmt = (
@@ -463,53 +463,58 @@ class Inline_Outline_CRUD:
             # print("stmt GG1:", stmt)
             rs = await db.execute(text(stmt))  #!
             df_master_target_org = pd.DataFrame(rs.all(), columns=rs.keys())
-            for year in list_year:
-                target_percent = 0.0
+            for process in list_process:
+                c = 0
+                for year in list_year:
+                    target_percent = 0.0
 
-                # ## query db
-                # if section != "-":  # check filter = 'section'
-                #     where_stmt = (
-                #         "month_year = '"
-                #         + year
-                #         + "' AND target_level = 'Section' AND target_name = '"
-                #         + section
-                #         + "'AND target_type = 'Fiscal Year' AND active = 'active' "
-                #     )
+                    # ## query db
+                    # if section != "-":  # check filter = 'section'
+                    #     where_stmt = (
+                    #         "month_year = '"
+                    #         + year
+                    #         + "' AND target_level = 'Section' AND target_name = '"
+                    #         + section
+                    #         + "'AND target_type = 'Fiscal Year' AND active = 'active' "
+                    #     )
 
-                # else:  # check filter = 'department'
-                #     where_stmt = (
-                #         "month_year = '"
-                #         + year
-                #         + "' AND target_level = 'Department' AND target_name = '"
-                #         + department
-                #         + "'AND target_type = 'Fiscal Year' AND active = 'active' "
-                #     )
+                    # else:  # check filter = 'department'
+                    #     where_stmt = (
+                    #         "month_year = '"
+                    #         + year
+                    #         + "' AND target_level = 'Department' AND target_name = '"
+                    #         + department
+                    #         + "'AND target_type = 'Fiscal Year' AND active = 'active' "
+                    #     )
 
-                # stmt = f"SELECT target_control FROM master_target_org WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
-                # print("stmt GG1:", stmt)
-                # rs = await db.execute(text(stmt))  #!
-                # rows = rs.all()
-                # columns = rs.keys()
-                # print("rows:", rows)
-                # for r in rs:
-                #     key_index = r._key_to_index
+                    # stmt = f"SELECT target_control FROM master_target_org WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+                    # print("stmt GG1:", stmt)
+                    # rs = await db.execute(text(stmt))  #!
+                    # rows = rs.all()
+                    # columns = rs.keys()
+                    # print("rows:", rows)
+                    # for r in rs:
+                    #     key_index = r._key_to_index
 
-                #     ## get data from db
-                #     target_percent = r[key_index["target_control"]]
-                #     break
-                if not df_master_target_org.empty:
-                    # target_percent = (
-                    #     df_master_target_org[
-                    #         str(df_master_target_org["month_year"]) == str(year)
-                    #     ]
-                    # )["target_control"][0]
-                    mask = df_master_target_org["month_year"].astype(str) == str(year)
-                    filtered = df_master_target_org[mask]
-                    if not filtered.empty:
-                        target_percent = filtered["target_control"].iloc[0]
-                list_target_percent_yearly[c] = target_percent
-                # print("list_target_percent_yearly:", list_target_percent_yearly)
-                c += 1
+                    #     ## get data from db
+                    #     target_percent = r[key_index["target_control"]]
+                    #     break
+                    if not df_master_target_org.empty:
+                        # target_percent = (
+                        #     df_master_target_org[
+                        #         str(df_master_target_org["month_year"]) == str(year)
+                        #     ]
+                        # )["target_control"][0]
+                        mask = df_master_target_org["month_year"].astype(str) == str(
+                            year
+                        )
+                        filtered = df_master_target_org[mask]
+                        if not filtered.empty:
+                            target_percent = filtered["target_control"].iloc[0]
+                    list_target_percent_yearly[c] = target_percent
+                    # print("list_target_percent_yearly:", list_target_percent_yearly)
+                    c += 1
+                list_target_percent_yearly_process[process] = list_target_percent_yearly
         else:  # check filter = 'line'
             line_id = self.get_line_id(line[0])
             where_stmt = (
@@ -519,74 +524,87 @@ class Inline_Outline_CRUD:
                 + str(line_id)
                 + "' AND process IN ('Inline','Outline','Inspection') AND active = 'active' "
             )
-
-            stmt = f"SELECT month_year,target_control FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY array_position(ARRAY['Inline','Outline','Inspection']::varchar[], process);"
+            # TODO:
+            stmt = f"SELECT process,month_year,target_control FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY array_position(ARRAY['Inline','Outline','Inspection']::varchar[], process);"
             # print("stmt GG2:", stmt)
             rs = await db.execute(text(stmt))  #!
             df_master_target_line = pd.DataFrame(rs.all(), columns=rs.keys())
+            for process in list_process:
+                c = 0
+                for year in list_year:
+                    target_percent = 0.0
 
-            for year in list_year:
-                target_percent = 0.0
+                    ## query db
+                    # where_stmt = (
+                    #     "month_year = '"
+                    #     + year
+                    #     + "' AND target_type = 'Fiscal Year' AND line_id = '"
+                    #     + str(line_id)
+                    #     + "' AND process IN ('Inline','Outline','Inspection') AND active = 'active' "
+                    # )
 
-                ## query db
-                # where_stmt = (
-                #     "month_year = '"
-                #     + year
-                #     + "' AND target_type = 'Fiscal Year' AND line_id = '"
-                #     + str(line_id)
-                #     + "' AND process IN ('Inline','Outline','Inspection') AND active = 'active' "
-                # )
+                    # stmt = f"SELECT target_control FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY array_position(ARRAY['Inline','Outline','Inspection']::varchar[], process);"
+                    # print("stmt GG2:", stmt)
+                    # rs = await db.execute(text(stmt))  #!
 
-                # stmt = f"SELECT target_control FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY array_position(ARRAY['Inline','Outline','Inspection']::varchar[], process);"
-                # print("stmt GG2:", stmt)
-                # rs = await db.execute(text(stmt))  #!
+                    # for r in rs:
+                    #     key_index = r._key_to_index
 
-                # for r in rs:
-                #     key_index = r._key_to_index
-
-                #     ## get data from db
-                #     target_percent = r[key_index["target_control"]]
-                #     break
-                if not df_master_target_line.empty:
-                    # target_percent = (
-                    #     df_master_target_line[
-                    #         str(df_master_target_line["month_year"]) == str(year)
-                    #     ]
-                    # )["target_control"][0]
-                    mask = df_master_target_line["month_year"].astype(str) == str(year)
-                    filtered = df_master_target_line[mask]
-                    if not filtered.empty:
-                        target_percent = filtered["target_control"].iloc[0]
-                list_target_percent_yearly[c] = target_percent
-                c += 1
+                    #     ## get data from db
+                    #     target_percent = r[key_index["target_control"]]
+                    #     break
+                    if not df_master_target_line.empty:
+                        # target_percent = (
+                        #     df_master_target_line[
+                        #         str(df_master_target_line["month_year"]) == str(year)
+                        #     ]
+                        # )["target_control"][0]
+                        mask = (
+                            df_master_target_line["month_year"].astype(str) == str(year)
+                        ) and (
+                            df_master_target_line["process"].astype(str) == str(process)
+                        )
+                        filtered = df_master_target_line[mask]
+                        if not filtered.empty:
+                            target_percent = filtered["target_control"].iloc[0]
+                    list_target_percent_yearly[c] = target_percent
+                    c += 1
+                list_target_percent_yearly_process[process] = list_target_percent_yearly
 
         line = str(data["line"]).replace("[", "").replace("]", "")
         defect_type = []
-
+        # print("list_target_percent_process_yearly:", list_target_percent_process_yearly)
         ## query db
+
         stmt = (
-            f"SELECT defect_type, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+            f"SELECT process,defect_type, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
             + f") AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
             + s_year
             + "-04-01' AND date <= '"
             + e_year
-            + "-03-31' AND defect_type NOT IN ('Repeat') GROUP BY defect_type ORDER BY array_position(ARRAY['Repeat NG', 'Scrap', 'M/C Set up', 'Quality Test', 'Appearance', 'Dimension', 'Performance', 'Other']::varchar[], defect_type);"
+            + "-03-31' AND defect_type NOT IN ('Repeat') GROUP BY process,defect_type ORDER BY array_position(ARRAY['Repeat NG', 'Scrap', 'M/C Set up', 'Quality Test', 'Appearance', 'Dimension', 'Performance', 'Other']::varchar[], defect_type);"
         )
 
         rs = await db.execute(text(stmt))
         # df = pd.DataFrame(rs.all(), columns=rs.keys())
         # print("df:", df)
+        defect_process = []
         for r in rs:
             key_index = r._key_to_index
 
             ## get data from db
+            defect_process.append(r[key_index["process"]])
             defect_type.append(r[key_index["defect_type"]])
 
         list_qty = [0] * 3
+        list_qty_process = {}
         list_defect_percent_yearly = [0] * 3
+        list_defect_percent_yearly_process = {}
+        list_defect_qty_yearly_process = {}
+        # TODO:
         stmt = (
-            f"SELECT date,defect_type, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+            f"SELECT process,date,defect_type, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
             + ") "
             # +
@@ -599,127 +617,160 @@ class Inline_Outline_CRUD:
             # + "' AND date <= '"
             # + str(d_end)[:10]
             # + "'"
-            + " GROUP BY date,defect_type ;"
+            + " GROUP BY process,date,defect_type ;"
         )
 
         rs = await db.execute(text(stmt))  #!
         df_defect_qty = pd.DataFrame(rs.all(), columns=rs.keys())
         df_defect_qty["date"] = pd.to_datetime(df_defect_qty["date"])
-        for defect in defect_type:
-
-            del list_qty[:]
+        for process in list_process:
+            df_defect_qty_process = df_defect_qty[(df_defect_qty["process"] == process)]
+            # df_defect_qty_process.to_excel(f"test_df_defect_qty_process_{process}.xlsx")
+            list_defect_percent_yearly = [0] * 3
             list_qty = [0] * 3
-            c = 0
+            list_defect_qty_yearly = []
+            for idx, defect in enumerate(defect_type):
+                if defect_process[idx] == process:
+                    del list_qty[:]
+                    list_qty = [0] * 3
+                    c = 0
 
-            for year in list_year:
-                ## check last year
-                if c == len(list_year) - 1:
+                    for year in list_year:
+                        ## check last year
+                        if c == len(list_year) - 1:
 
-                    datetime_object = datetime.strptime(
-                        data["month"] + "-01", "%B-%Y-%d"
-                    )
-                    month_number = int(str(datetime_object)[5:7])
-                    year_now = int(str(datetime_object)[:4])
+                            datetime_object = datetime.strptime(
+                                data["month"] + "-01", "%B-%Y-%d"
+                            )
+                            month_number = int(str(datetime_object)[5:7])
+                            year_now = int(str(datetime_object)[:4])
 
-                    if month_number != 12:
-                        day_in_month = (
-                            date(year_now, month_number + 1, 1)
-                            - date(year_now, month_number, 1)
-                        ).days
-                    else:
-                        day_in_month = (
-                            date(year_now + 1, 1, 1) - date(year_now, month_number, 1)
-                        ).days
+                            if month_number != 12:
+                                day_in_month = (
+                                    date(year_now, month_number + 1, 1)
+                                    - date(year_now, month_number, 1)
+                                ).days
+                            else:
+                                day_in_month = (
+                                    date(year_now + 1, 1, 1)
+                                    - date(year_now, month_number, 1)
+                                ).days
 
-                    d_start = datetime.strptime("April-" + year + "-01", "%B-%Y-%d")
-                    d_end = datetime.strptime(
-                        data["month"] + "-" + str(day_in_month), "%B-%Y-%d"
-                    )
+                            d_start = datetime.strptime(
+                                "April-" + year + "-01", "%B-%Y-%d"
+                            )
+                            d_end = datetime.strptime(
+                                data["month"] + "-" + str(day_in_month), "%B-%Y-%d"
+                            )
 
-                    ## query db
-                    # stmt = (
-                    #     "SELECT defect_type, SUM(qty_shift_all) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
-                    #     + str_list_line_id
-                    #     + ") AND defect_type = '"
-                    #     + defect
-                    #     + "' AND qty_shift_all NOT IN (0) AND date >= '"
-                    #     + str(d_start)[:10]
-                    #     + "' AND date <= '"
-                    #     + str(d_end)[:10]
-                    #     + "' GROUP BY defect_type ;"
-                    # )
+                            ## query db
+                            # stmt = (
+                            #     "SELECT defect_type, SUM(qty_shift_all) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+                            #     + str_list_line_id
+                            #     + ") AND defect_type = '"
+                            #     + defect
+                            #     + "' AND qty_shift_all NOT IN (0) AND date >= '"
+                            #     + str(d_start)[:10]
+                            #     + "' AND date <= '"
+                            #     + str(d_end)[:10]
+                            #     + "' GROUP BY defect_type ;"
+                            # )
 
-                    # rs = await db.execute(text(stmt))  #!
+                            # rs = await db.execute(text(stmt))  #!
 
-                    # for r in rs:
-                    #     key_index = r._key_to_index
+                            # for r in rs:
+                            #     key_index = r._key_to_index
 
-                    #     ## get data from db
-                    #     list_qty[c] = r[key_index["defect_qty"]]
-                    #     list_defect_percent_yearly[c] = (
-                    #         list_defect_percent_yearly[c] + r[key_index["defect_qty"]]
-                    #     )
-                    df = df_defect_qty[
-                        (df_defect_qty["defect_type"] == defect)
-                        & (df_defect_qty["date"] >= pd.to_datetime(str(d_start)[:10]))
-                        & (df_defect_qty["date"] <= pd.to_datetime(str(d_end)[:10]))
-                    ]
-                    df = df[["defect_type", "defect_qty"]]
-                    df = df.groupby("defect_type")["defect_qty"].sum().reset_index()
+                            #     ## get data from db
+                            #     list_qty[c] = r[key_index["defect_qty"]]
+                            #     list_defect_percent_yearly[c] = (
+                            #         list_defect_percent_yearly[c] + r[key_index["defect_qty"]]
+                            #     )
+                            df = df_defect_qty_process[
+                                (df_defect_qty_process["defect_type"] == defect)
+                                & (
+                                    df_defect_qty_process["date"]
+                                    >= pd.to_datetime(str(d_start)[:10])
+                                )
+                                & (
+                                    df_defect_qty_process["date"]
+                                    <= pd.to_datetime(str(d_end)[:10])
+                                )
+                            ]
+                            df = df[["defect_type", "defect_qty"]]
+                            df = (
+                                df.groupby("defect_type")["defect_qty"]
+                                .sum()
+                                .reset_index()
+                            )
 
-                    for index, row in df.iterrows():
-                        list_qty[c] = row["defect_qty"]
-                        list_defect_percent_yearly[c] = (
-                            list_defect_percent_yearly[c] + row["defect_qty"]
-                        )
+                            for index, row in df.iterrows():
+                                list_qty[c] = row["defect_qty"]
+                                list_defect_percent_yearly[c] = (
+                                    list_defect_percent_yearly[c] + row["defect_qty"]
+                                )
 
-                else:
-                    d_start = datetime.strptime("April-" + year + "-01", "%B-%Y-%d")
-                    d_end = datetime.strptime(
-                        "March-" + str(int(year) + 1) + "-31", "%B-%Y-%d"
-                    )
+                        else:
+                            d_start = datetime.strptime(
+                                "April-" + year + "-01", "%B-%Y-%d"
+                            )
+                            d_end = datetime.strptime(
+                                "March-" + str(int(year) + 1) + "-31", "%B-%Y-%d"
+                            )
 
-                    ## query db
-                    # stmt = (
-                    #     "SELECT defect_type, SUM(qty_shift_all) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
-                    #     + str_list_line_id
-                    #     + ") AND defect_type = '"
-                    #     + defect
-                    #     + "' AND qty_shift_all NOT IN (0) AND date >= '"
-                    #     + str(d_start)[:10]
-                    #     + "' AND date <= '"
-                    #     + str(d_end)[:10]
-                    #     + "' GROUP BY defect_type ;"
-                    # )
+                            ## query db
+                            # stmt = (
+                            #     "SELECT defect_type, SUM(qty_shift_all) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+                            #     + str_list_line_id
+                            #     + ") AND defect_type = '"
+                            #     + defect
+                            #     + "' AND qty_shift_all NOT IN (0) AND date >= '"
+                            #     + str(d_start)[:10]
+                            #     + "' AND date <= '"
+                            #     + str(d_end)[:10]
+                            #     + "' GROUP BY defect_type ;"
+                            # )
 
-                    # rs = await db.execute(text(stmt))  #!
-                    df = df_defect_qty[
-                        (df_defect_qty["defect_type"] == defect)
-                        & (df_defect_qty["date"] >= pd.to_datetime(str(d_start)[:10]))
-                        & (df_defect_qty["date"] <= pd.to_datetime(str(d_end)[:10]))
-                    ]
-                    df = df[["defect_type", "defect_qty"]]
-                    df = df.groupby("defect_type")["defect_qty"].sum().reset_index()
+                            # rs = await db.execute(text(stmt))  #!
+                            df = df_defect_qty_process[
+                                (df_defect_qty_process["defect_type"] == defect)
+                                & (
+                                    df_defect_qty_process["date"]
+                                    >= pd.to_datetime(str(d_start)[:10])
+                                )
+                                & (
+                                    df_defect_qty_process["date"]
+                                    <= pd.to_datetime(str(d_end)[:10])
+                                )
+                            ]
+                            df = df[["defect_type", "defect_qty"]]
+                            df = (
+                                df.groupby("defect_type")["defect_qty"]
+                                .sum()
+                                .reset_index()
+                            )
 
-                    # for r in rs:
-                    #     key_index = r._key_to_index
+                            # for r in rs:
+                            #     key_index = r._key_to_index
 
-                    #     ## get data from db
-                    #     list_qty[c] = r[key_index["defect_qty"]]
-                    #     list_defect_percent_yearly[c] = (
-                    #         list_defect_percent_yearly[c] + r[key_index["defect_qty"]]
-                    #     )
-                    for index, row in df.iterrows():
-                        list_qty[c] = row["defect_qty"]
-                        list_defect_percent_yearly[c] = (
-                            list_defect_percent_yearly[c] + row["defect_qty"]
-                        )
+                            #     ## get data from db
+                            #     list_qty[c] = r[key_index["defect_qty"]]
+                            #     list_defect_percent_yearly[c] = (
+                            #         list_defect_percent_yearly[c] + r[key_index["defect_qty"]]
+                            #     )
+                            for index, row in df.iterrows():
+                                list_qty[c] = row["defect_qty"]
+                                list_defect_percent_yearly[c] = (
+                                    list_defect_percent_yearly[c] + row["defect_qty"]
+                                )
 
-                c += 1
+                        c += 1
 
-            copied_list = list_qty.copy()
+                    copied_list = list_qty.copy()
 
-            list_defect_qty_yearly.append([defect, copied_list])
+                    list_defect_qty_yearly.append([defect, copied_list])
+            list_defect_percent_yearly_process[process] = list_defect_percent_yearly
+            list_defect_qty_yearly_process[process] = list_defect_qty_yearly
 
         list_line = []
         list_line_id = []
@@ -850,19 +901,25 @@ class Inline_Outline_CRUD:
                 c += 1
 
         ## calculate defect_percent_yearly
-        for i in range(0, len(list_prod_qty)):
-            if list_prod_qty[i] == 0:
-                list_defect_percent_yearly[i] = 0.0
-            else:
-                list_defect_percent_yearly[i] = round(
-                    (list_defect_percent_yearly[i] / list_prod_qty[i]) * 100, 2
-                )
+        for process in list_process:
+            for i in range(0, len(list_prod_qty)):
+                if list_prod_qty[i] == 0:
+                    list_defect_percent_yearly_process[process][i] = 0.0
+                else:
+                    list_defect_percent_yearly_process[process][i] = round(
+                        (
+                            list_defect_percent_yearly_process[process][i]
+                            / list_prod_qty[i]
+                        )
+                        * 100,
+                        2,
+                    )
 
         return (
             list_axis_x_yearly,
-            list_target_percent_yearly,
-            list_defect_percent_yearly,
-            list_defect_qty_yearly,
+            list_target_percent_yearly_process,
+            list_defect_percent_yearly_process,
+            list_defect_qty_yearly_process,
         )
 
     async def get_graph_monthly_defect_summary(  #! need to revise for performance -> 5
@@ -1036,7 +1093,7 @@ class Inline_Outline_CRUD:
                 + str(line_id)
                 + "' AND process IN ('Inline','Outline','Inspection') AND active = 'active' "
             )
-
+            # TODO:
             stmt = f"SELECT month_year,target_control FROM master_target_line WHERE {where_stmt if where_stmt is not None else ''} ORDER BY array_position(ARRAY['Inline','Outline','Inspection']::varchar[], process );"
             rs = await db.execute(text(stmt))
             df_master_target_line = pd.DataFrame(rs.all(), columns=rs.keys())
@@ -1148,7 +1205,7 @@ class Inline_Outline_CRUD:
 
         list_qty = [0] * 12
         list_defect_percent_monthly = [0] * 12
-
+        # TODO:
         stmt = (
             f"SELECT date,defect_type,defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
@@ -1541,6 +1598,7 @@ class Inline_Outline_CRUD:
         d_end = datetime.strptime(month + "-" + str(day_in_month), "%B-%Y-%d")
 
         # query db
+        # TODO:
         stmt = (
             f"SELECT defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
@@ -1655,19 +1713,19 @@ class Inline_Outline_CRUD:
         d_end = datetime.strptime(month + "-" + str(day_in_month), "%B-%Y-%d")
         # query db
         stmt = (
-            f"SELECT defect_type AS defective_items, SUM(qty_shift_{shift}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+            f"SELECT process,defect_type AS defective_items, SUM(qty_shift_{shift}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
             + f") AND defect_type IN ('M/C Set up','Quality Test') AND qty_shift_{shift} NOT IN (0) AND date >= '"
             + str(d_start)
             + "' AND date <= '"
             + str(d_end)
-            + f"' GROUP BY defect_type UNION SELECT defective_items, SUM(qty_shift_{shift}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+            + f"' GROUP BY defect_type,process UNION SELECT process,defective_items, SUM(qty_shift_{shift}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
             + f") AND defect_type NOT IN ('Repeat') AND defective_items NOT IN ('') AND qty_shift_{shift} NOT IN (0) AND date >= '"
             + str(d_start)
             + "' AND date <= '"
             + str(d_end)
-            + "' GROUP BY defective_items ORDER BY defect_qty DESC;"
+            + "' GROUP BY process,defective_items ORDER BY defect_qty DESC;"
         )
         rs = await db.execute(text(stmt))
         return rs

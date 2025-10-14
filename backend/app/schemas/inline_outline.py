@@ -45,11 +45,23 @@ class Yearly_Defect_Summary(BaseModel):
     defect_qty: List[Defect_Qty_Detail] | None = None
 
 
+class Yearly_Defect_Process_Summary(BaseModel):
+    inline: Yearly_Defect_Summary
+    outline: Yearly_Defect_Summary
+    inspection: Yearly_Defect_Summary
+
+
 class Monthly_Defect_Summary(BaseModel):
     axis_x: List[str] | None = None
     target_percent: List[float] | None = None
     defect_percent: List[float] | None = None
     defect_qty: List[Defect_Qty_Detail] | None = None
+
+
+class Monthly_Defect_Process_Summary(BaseModel):
+    inline: Monthly_Defect_Summary
+    outline: Monthly_Defect_Summary
+    inspection: Monthly_Defect_Summary
 
 
 class Daily_Defect_Summary(BaseModel):
@@ -63,6 +75,12 @@ class Daily_Defect_Summary(BaseModel):
     defect_qty: List[Defect_Qty_Detail] | None = None
 
 
+class Daily_Defect_Process_Summary(BaseModel):
+    inline: Daily_Defect_Summary
+    outline: Daily_Defect_Summary
+    inspection: Daily_Defect_Summary
+
+
 class Defect_By_Type(BaseModel):
     name: str | None = None
     qty: int | None = None
@@ -72,6 +90,12 @@ class Defect_By_Type(BaseModel):
 class Defect_Summary_By_Type(BaseModel):
     total: float | None = None
     defect: List[Defect_By_Type] | None = None
+
+
+class Defect_Summary_Process_By_Type(BaseModel):
+    inline: Defect_Summary_By_Type
+    outline: Defect_Summary_By_Type
+    inspection: Defect_Summary_By_Type
 
 
 class Abnormal_Occurrence_Table(BaseModel):
@@ -99,6 +123,12 @@ class Defect_Pareto_Chart(BaseModel):
     defect_qty: List[int] | None = None
 
 
+class Defect_Pareto_Chart_Process(BaseModel):
+    inline: Defect_Pareto_Chart
+    outline: Defect_Pareto_Chart
+    inspection: Defect_Pareto_Chart
+
+
 class Description_Of_Defect(BaseModel):
     date: str | None = None
     line_name: str | None = None
@@ -121,10 +151,10 @@ class Defect_Summary_Result(Defect_Summary):
     scrap_percent: float | None = None
     repeat_qty: int | None = None
     repeat_percent: float | None = None
-    graph_yearly_defect_summary: Yearly_Defect_Summary | None = None
-    graph_monthly_defect_summary: Monthly_Defect_Summary | None = None
-    graph_daily_defect_summary: Daily_Defect_Summary | None = None
-    graph_defect_summary_by_type: Defect_Summary_By_Type | None = None
+    graph_yearly_defect_summary: Yearly_Defect_Process_Summary | None = None
+    graph_monthly_defect_summary: Monthly_Defect_Process_Summary | None = None
+    graph_daily_defect_summary: Daily_Defect_Process_Summary | None = None
+    graph_defect_summary_by_type: Defect_Summary_Process_By_Type | None = None
 
 
 class Defect_Summary_Result_Response(BaseModel):
@@ -140,7 +170,7 @@ class Cause_Of_Abnormal_Result_Response(BaseModel):
 
 
 class Defect_Pareto_Chart_Result(Defect_Summary):
-    defect_pareto_chart: Defect_Pareto_Chart | None = None
+    defect_pareto_chart: Defect_Pareto_Chart_Process | None = None
     description_of_defect: List[Description_Of_Defect] | None = None
 
 

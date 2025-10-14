@@ -18,7 +18,7 @@ export interface DefaultDefectSummaryResult {
   graph_daily_defect_summary: GraphDailyDefectSummary;
   graph_defect_summary_by_type: GraphDefectSummaryByType;
   abnormal_occurrence_table: AbnormalOccurrenceTable[];
-  defect_pareto_chart: DefectParetoChart;
+  defect_pareto_chart: DefectParetoChartType;
   description_of_defect: DescriptionOfDefect[];
 }
 
@@ -28,7 +28,11 @@ export interface GraphYearlyDefectSummary {
   defect_percent: number[];
   defect_qty: DefectQty[];
 }
-
+export interface GraphYearlyDefectProcessSummary {
+  inline: GraphYearlyDefectSummary;
+  outline: GraphYearlyDefectSummary;
+  inspection: GraphYearlyDefectSummary;
+}
 export interface DefectQty {
   name: string;
   qty: number[];
@@ -89,7 +93,7 @@ export interface AbnormalOccurrenceTable {
   new_re_occur: string;
 }
 
-export interface DefectParetoChart {
+export interface DefectParetoChartType {
   axis_x: string[];
   axis_y_lift: string[];
   axis_y_right: string[];
@@ -148,10 +152,10 @@ export interface DefectSummaryResult {
   scrap_percent: number;
   repeat_qty: number;
   repeat_percent: number;
-  graph_yearly_defect_summary: GraphYearlyDefectSummary;
-  graph_monthly_defect_summary: GraphMonthlyDefectSummary;
-  graph_daily_defect_summary: GraphDailyDefectSummary;
-  graph_defect_summary_by_type: GraphDefectSummaryByType;
+  graph_yearly_defect_summary: GraphYearlyDefectProcessSummary;
+  graph_monthly_defect_summary: GraphMonthlyDefectProcessSummary;
+  graph_daily_defect_summary: GraphDailyDefectProcessSummary;
+  graph_defect_summary_by_type: GraphDefectSummaryProcessByType;
 }
 
 //   export interface GraphYearlyDefectSummary {
@@ -167,7 +171,11 @@ export interface GraphMonthlyDefectSummary {
   defect_percent: number[];
   defect_qty: DefectQty[];
 }
-
+export interface GraphMonthlyDefectProcessSummary {
+  inline: GraphMonthlyDefectSummary;
+  outline: GraphMonthlyDefectSummary;
+  inspection: GraphMonthlyDefectSummary;
+}
 export interface GraphDailyDefectSummary {
   prod_vol: number;
   defect: number;
@@ -178,6 +186,11 @@ export interface GraphDailyDefectSummary {
   defect_percent_actual: number[];
   defect_qty: DefectQty[];
 }
+export interface GraphDailyDefectProcessSummary {
+  inline: GraphDailyDefectSummary;
+  outline: GraphDailyDefectSummary;
+  inspection: GraphDailyDefectSummary;
+}
 
 //   export interface DefectQty3 {
 //     name: string
@@ -187,6 +200,11 @@ export interface GraphDailyDefectSummary {
 export interface GraphDefectSummaryByType {
   total: number;
   defect: Defect[];
+}
+export interface GraphDefectSummaryProcessByType {
+  inline: GraphDefectSummaryByType;
+  outline: GraphDefectSummaryByType;
+  inspection: GraphDefectSummaryByType;
 }
 
 export interface Defect {
@@ -211,13 +229,13 @@ export interface Defect {
 //     new_re_occur: string
 //   }
 
-export interface DefectParetoChart {
-  axis_x: string[];
-  axis_y_lift: string[];
-  axis_y_right: string[];
-  pareto: number[];
-  defect_qty: number[];
-}
+// export interface DefectParetoChart {
+//   axis_x: string[];
+//   axis_y_lift: string[];
+//   axis_y_right: string[];
+//   pareto: number[];
+//   defect_qty: number[];
+// }
 
 // export interface DescriptionOfDefect {
 //     date: string
@@ -341,8 +359,13 @@ export interface DefectParetoChartResult {
   department: string;
   section: string;
   line: string[];
-  defect_pareto_chart: DefectParetoChart;
+  defect_pareto_chart: DefectParetoChartProcess;
   description_of_defect: DescriptionOfDefect2[];
+}
+export interface DefectParetoChartProcess {
+  inline: DefectParetoChartType;
+  outline: DefectParetoChartType;
+  inspection: DefectParetoChartType;
 }
 
 // export interface DefectParetoChart {

@@ -6,7 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import ReactECharts, { EChartsOption } from "echarts-for-react";
-import { Layout, Typography, Button, Row, Col, Space, Grid } from "antd";
+import { Layout, Typography, Button, Row, Col, Space, Grid, Radio } from "antd";
 import { PChartDefectBar, PChartInput } from "@/types/pChart";
 import {
   PChartRecordDefect,
@@ -17,6 +17,7 @@ import { delay } from "@/functions";
 import {
   DefectQty,
   DefectSummaryResult,
+  GraphMonthlyDefectProcessSummary,
   GraphMonthlyDefectSummary,
 } from "@/types/inlineOutlineDefectSumApi";
 
@@ -46,7 +47,7 @@ const mockGrapData = {
 };
 
 interface MonthlyDefectSummaryProps {
-  defectDataSource: DefectSummaryResult;
+  defectDataSource: GraphMonthlyDefectProcessSummary;
   username: string;
 }
 
@@ -59,6 +60,7 @@ const MonthlyDefectSummary = forwardRef<
   MonthlyDefectSummaryRef,
   MonthlyDefectSummaryProps
 >(({ defectDataSource: defectDataSource, username }, ref) => {
+  const [process, setProcess] = useState<string>("inline");
   // const [isModalVisible, setIsModalVisible] = useState(false);
   // const [graphData, setGraphData] =
   //   useState<PChartRecordGraphResult>(defaultGrapData);
@@ -70,15 +72,28 @@ const MonthlyDefectSummary = forwardRef<
 
   const refreshChart = () => {
     console.log("Refresh monthly Chart");
-    setChartOption(
-      toChartOption(defectDataSource.graph_monthly_defect_summary)
-    );
+    if (process == "inline") {
+      setChartOption(toChartOption(defectDataSource.inline));
+    } else if (process == "outline") {
+      setChartOption(toChartOption(defectDataSource.outline));
+    } else if (process == "inspection") {
+      setChartOption(toChartOption(defectDataSource.inspection));
+    }
   };
 
   useImperativeHandle(ref, () => ({
     setChartToDefault,
     refreshChart,
   }));
+  useEffect(() => {
+    if (process == "inline") {
+      setChartOption(toChartOption(defectDataSource.inline));
+    } else if (process == "outline") {
+      setChartOption(toChartOption(defectDataSource.outline));
+    } else if (process == "inspection") {
+      setChartOption(toChartOption(defectDataSource.inspection));
+    }
+  }, [process]);
   console.log("defectDataSource:", defectDataSource);
   const generateUniqueColors = (count: number): string[] => {
     const colors = new Set<string>();
@@ -111,21 +126,23 @@ const MonthlyDefectSummary = forwardRef<
   };
 
   const toDeflectStackBarGraph = (defect: DefectQty[]): PChartDefectBar[] => {
-    if (defect.length === 0) {
+    if (defect?.length === 0) {
       return [];
     }
 
-    const colors: string[] = generateUniqueColors(defect.length);
+    const colors: string[] = generateUniqueColors(defect?.length);
 
-    return defect.map((defectItem: DefectQty, index: number) => ({
-      name: defectItem.name ? defectItem.name : "",
-      type: "bar",
-      stack: "defect",
-      data: defectItem.qty,
-      itemStyle: {
-        color: colors[index % colors.length],
-      },
-    }));
+    return (
+      defect?.map((defectItem: DefectQty, index: number) => ({
+        name: defectItem.name ? defectItem.name : "",
+        type: "bar",
+        stack: "defect",
+        data: defectItem.qty,
+        itemStyle: {
+          color: colors[index % colors.length],
+        },
+      })) || []
+    );
   };
 
   const toChartOption = (graphData: GraphMonthlyDefectSummary) => {
@@ -147,7 +164,7 @@ const MonthlyDefectSummary = forwardRef<
           color: "#000000", // ตัวหนังสือสีดำ
           fontSize: 12,
         },
-        data: graphData.defect_qty.map((a) => a.name),
+        data: graphData?.defect_qty.map((a) => a.name),
       },
       grid: {
         left: 30,
@@ -181,7 +198,7 @@ const MonthlyDefectSummary = forwardRef<
       xAxis: [
         {
           type: "category",
-          data: graphData.axis_x,
+          data: graphData?.axis_x,
           name: "Month",
           nameLocation: "center",
           nameGap: 40,
@@ -217,7 +234,7 @@ const MonthlyDefectSummary = forwardRef<
           symbol: "none",
           yAxisIndex: 1,
           showSymbol: false,
-          data: graphData.target_percent,
+          data: graphData?.target_percent,
           lineStyle: {
             type: "solid",
             color: "red",
@@ -230,7 +247,7 @@ const MonthlyDefectSummary = forwardRef<
           smooth: true,
           symbol: "circle",
           yAxisIndex: 1,
-          data: graphData.defect_percent,
+          data: graphData?.defect_percent,
           itemStyle: {
             color: "#73C0DE",
           },
@@ -251,7 +268,7 @@ const MonthlyDefectSummary = forwardRef<
         //     width: 1.5,
         //   },
         // },
-        ...toDeflectStackBarGraph(graphData.defect_qty),
+        ...toDeflectStackBarGraph(graphData?.defect_qty),
       ],
     };
   };
@@ -308,6 +325,8 @@ const MonthlyDefectSummary = forwardRef<
           backgroundColor: "#ffffff",
           padding: "10px 10px 10px 10px",
           borderRadius: "7px 7px 0 0",
+          display: "flex",
+          justifyContent: "space-between",
         }}
       >
         <Col>
@@ -322,6 +341,18 @@ const MonthlyDefectSummary = forwardRef<
               Deselect All
             </Button>
           </div>
+        </Col>
+        <Col>
+          <Radio.Group
+            size="small"
+            buttonStyle="solid"
+            value={process}
+            onChange={(e) => setProcess(e.target.value)}
+          >
+            <Radio.Button value="inline">Inline</Radio.Button>
+            <Radio.Button value="outline">Outline</Radio.Button>
+            <Radio.Button value="inspection">Inspection</Radio.Button>
+          </Radio.Group>
         </Col>
       </Row>
       <div style={{ borderRadius: "7px 7px", backgroundColor: "#fff" }}>

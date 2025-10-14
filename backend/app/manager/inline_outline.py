@@ -27,13 +27,18 @@ from app.schemas.inline_outline import (
     Defect_Pareto_Chart_Result,
     Export_Description_Result,
     Yearly_Defect_Summary,
+    Yearly_Defect_Process_Summary,
     Defect_Qty_Detail,
     Monthly_Defect_Summary,
+    Monthly_Defect_Process_Summary,
     Daily_Defect_Summary,
+    Daily_Defect_Process_Summary,
     Defect_Summary_By_Type,
+    Defect_Summary_Process_By_Type,
     Defect_By_Type,
     Abnormal_Occurrence_Table,
     Defect_Pareto_Chart,
+    Defect_Pareto_Chart_Process,
     Description_Of_Defect,
 )
 
@@ -436,8 +441,9 @@ class Inline_Outline_Manager:
         list_target_percent_yearly = []
         list_defect_percent_yearly = []
         list_defect_qty_yearly = []
-        result_list_defect_qty_yearly = []
 
+        result_list_defect_qty_yearly_process = {}
+        list_process = ["Inline", "Outline", "Inspection"]
         ##get graph_yearly_defect_summary from db
         (
             list_axis_x_yearly,
@@ -445,9 +451,17 @@ class Inline_Outline_Manager:
             list_defect_percent_yearly,
             list_defect_qty_yearly,
         ) = await self.crud.get_graph_yearly_defect_summary(db=db, where_stmt=text_data)
-        for defect_qty in list_defect_qty_yearly:
-            result_list_defect_qty_yearly.append(
-                Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
+        print("list_target_percent_yearly:", list_target_percent_yearly)
+        print("list_defect_percent_yearly:", list_defect_percent_yearly)
+        print("list_defect_qty_yearly:", list_defect_qty_yearly)
+        for process in list_process:
+            result_list_defect_qty_yearly = []
+            for defect_qty in list_defect_qty_yearly[process]:
+                result_list_defect_qty_yearly.append(
+                    Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
+                )
+            result_list_defect_qty_yearly_process[process] = (
+                result_list_defect_qty_yearly
             )
         end_time = time.time()
         # print("End:", end_time)
@@ -586,6 +600,85 @@ class Inline_Outline_Manager:
         start_time = time.time()
         # print("Start:", start_time)
         return_list = []
+        yearly_defect_inline_summary = Yearly_Defect_Summary(
+            axis_x=list_axis_x_yearly,
+            target_percent=list_target_percent_yearly["Inline"],
+            defect_percent=list_defect_percent_yearly["Inline"],
+            defect_qty=result_list_defect_qty_yearly_process["Inline"],
+        )
+        yearly_defect_outline_summary = Yearly_Defect_Summary(
+            axis_x=list_axis_x_yearly,
+            target_percent=list_target_percent_yearly["Outline"],
+            defect_percent=list_defect_percent_yearly["Outline"],
+            defect_qty=result_list_defect_qty_yearly_process["Outline"],
+        )
+        yearly_defect_inspection_summary = Yearly_Defect_Summary(
+            axis_x=list_axis_x_yearly,
+            target_percent=list_target_percent_yearly["Inspection"],
+            defect_percent=list_defect_percent_yearly["Inspection"],
+            defect_qty=result_list_defect_qty_yearly_process["Inspection"],
+        )
+
+        monthly_defect_inline_summary = Monthly_Defect_Summary(
+            axis_x=list_axis_x_monthly,
+            target_percent=list_target_percent_monthly,
+            defect_percent=list_defect_percent_monthly,
+            defect_qty=result_list_defect_qty_monthly,
+        )
+        monthly_defect_outline_summary = Monthly_Defect_Summary(
+            axis_x=list_axis_x_monthly,
+            target_percent=list_target_percent_monthly,
+            defect_percent=list_defect_percent_monthly,
+            defect_qty=result_list_defect_qty_monthly,
+        )
+        monthly_defect_inspection_summary = Monthly_Defect_Summary(
+            axis_x=list_axis_x_monthly,
+            target_percent=list_target_percent_monthly,
+            defect_percent=list_defect_percent_monthly,
+            defect_qty=result_list_defect_qty_monthly,
+        )
+
+        daily_defect_inline_summary = Daily_Defect_Summary(
+            prod_vol=prod_vol + defect,
+            defect=defect,
+            defect_percent=defect_percent_daily,
+            axis_x=list_axis_x_daily,
+            axis_y_lift=list_axis_y_lift,
+            axis_y_right=list_axis_y_right,
+            defect_percent_actual=list_defect_percent_actual,
+            defect_qty=result_list_defect_qty_daily,
+        )
+        daily_defect_outline_summary = Daily_Defect_Summary(
+            prod_vol=prod_vol + defect,
+            defect=defect,
+            defect_percent=defect_percent_daily,
+            axis_x=list_axis_x_daily,
+            axis_y_lift=list_axis_y_lift,
+            axis_y_right=list_axis_y_right,
+            defect_percent_actual=list_defect_percent_actual,
+            defect_qty=result_list_defect_qty_daily,
+        )
+        daily_defect_inspection_summary = Daily_Defect_Summary(
+            prod_vol=prod_vol + defect,
+            defect=defect,
+            defect_percent=defect_percent_daily,
+            axis_x=list_axis_x_daily,
+            axis_y_lift=list_axis_y_lift,
+            axis_y_right=list_axis_y_right,
+            defect_percent_actual=list_defect_percent_actual,
+            defect_qty=result_list_defect_qty_daily,
+        )
+
+        defect_summary_inline_by_type = Defect_Summary_By_Type(
+            total=total, defect=result_list_defect_by_type
+        )
+        defect_summary_outline_by_type = Defect_Summary_By_Type(
+            total=total, defect=result_list_defect_by_type
+        )
+        defect_summary_inspection_by_type = Defect_Summary_By_Type(
+            total=total, defect=result_list_defect_by_type
+        )
+
         try:
             return_list.append(
                 Defect_Summary_Result(
@@ -601,30 +694,25 @@ class Inline_Outline_Manager:
                     scrap_percent=scrap_percent,
                     repeat_qty=repeat_qty,
                     repeat_percent=repeat_percent,
-                    graph_yearly_defect_summary=Yearly_Defect_Summary(
-                        axis_x=list_axis_x_yearly,
-                        target_percent=list_target_percent_yearly,
-                        defect_percent=list_defect_percent_yearly,
-                        defect_qty=result_list_defect_qty_yearly,
+                    graph_yearly_defect_summary=Yearly_Defect_Process_Summary(
+                        inline=yearly_defect_inline_summary,
+                        outline=yearly_defect_outline_summary,
+                        inspection=yearly_defect_inspection_summary,
                     ),
-                    graph_monthly_defect_summary=Monthly_Defect_Summary(
-                        axis_x=list_axis_x_monthly,
-                        target_percent=list_target_percent_monthly,
-                        defect_percent=list_defect_percent_monthly,
-                        defect_qty=result_list_defect_qty_monthly,
+                    graph_monthly_defect_summary=Monthly_Defect_Process_Summary(
+                        inline=monthly_defect_inline_summary,
+                        outline=monthly_defect_outline_summary,
+                        inspection=monthly_defect_inspection_summary,
                     ),
-                    graph_daily_defect_summary=Daily_Defect_Summary(
-                        prod_vol=prod_vol + defect,
-                        defect=defect,
-                        defect_percent=defect_percent_daily,
-                        axis_x=list_axis_x_daily,
-                        axis_y_lift=list_axis_y_lift,
-                        axis_y_right=list_axis_y_right,
-                        defect_percent_actual=list_defect_percent_actual,
-                        defect_qty=result_list_defect_qty_daily,
+                    graph_daily_defect_summary=Daily_Defect_Process_Summary(
+                        inline=daily_defect_inline_summary,
+                        outline=daily_defect_outline_summary,
+                        inspection=daily_defect_inspection_summary,
                     ),
-                    graph_defect_summary_by_type=Defect_Summary_By_Type(
-                        total=total, defect=result_list_defect_by_type
+                    graph_defect_summary_by_type=Defect_Summary_Process_By_Type(
+                        inline=defect_summary_inline_by_type,
+                        outline=defect_summary_outline_by_type,
+                        inspection=defect_summary_inspection_by_type,
                     ),
                 )
             )
@@ -721,9 +809,12 @@ class Inline_Outline_Manager:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
             )
-
-        list_defect = []
-        list_defect_qty = []
+        list_defect_inline = []
+        list_defect_qty_inline = []
+        list_defect_outline = []
+        list_defect_qty_outline = []
+        list_defect_inspection = []
+        list_defect_qty_inspection = []
         ## get_defect_qty_pareto_chart from db
         res_defect_pareto = await self.crud.get_defect_qty_pareto_chart(
             db=db, where_stmt=text_data
@@ -732,16 +823,41 @@ class Inline_Outline_Manager:
             key_index = r._key_to_index
 
             ## get data
-            list_defect.append(r[key_index["defective_items"]])
-            list_defect_qty.append(r[key_index["defect_qty"]])
+            if r[key_index["process"]] == "Inline":
+                list_defect_inline.append(r[key_index["defective_items"]])
+                list_defect_qty_inline.append(r[key_index["defect_qty"]])
+            elif r[key_index["process"]] == "Outline":
+                list_defect_outline.append(r[key_index["defective_items"]])
+                list_defect_qty_outline.append(r[key_index["defect_qty"]])
+            elif r[key_index["process"]] == "Inspection":
+                list_defect_inspection.append(r[key_index["defective_items"]])
+                list_defect_qty_inspection.append(r[key_index["defect_qty"]])
 
-        ## transfrom list to dataframe
-        df = pd.DataFrame(list_defect_qty, columns=["defect_qty"])
-        df["defect_qty_pareto"] = (
-            df["defect_qty"].cumsum() / df["defect_qty"].sum() * 100
+        ##! inline
+        df_inline = pd.DataFrame(list_defect_qty_inline, columns=["defect_qty"])
+        df_inline["defect_qty_pareto"] = (
+            df_inline["defect_qty"].cumsum() / df_inline["defect_qty"].sum() * 100
         )
-        df = df.round(2)
-        list_defect_qty_pareto = df["defect_qty_pareto"].to_list()
+        df_inline = df_inline.round(2)
+        list_defect_qty_pareto_inline = df_inline["defect_qty_pareto"].to_list()
+
+        ##! outline
+        df_outline = pd.DataFrame(list_defect_qty_outline, columns=["defect_qty"])
+        df_outline["defect_qty_pareto"] = (
+            df_outline["defect_qty"].cumsum() / df_outline["defect_qty"].sum() * 100
+        )
+        df_outline = df_outline.round(2)
+        list_defect_qty_pareto_outline = df_outline["defect_qty_pareto"].to_list()
+
+        ##! inspection
+        df_inspection = pd.DataFrame(list_defect_qty_inspection, columns=["defect_qty"])
+        df_inspection["defect_qty_pareto"] = (
+            df_inspection["defect_qty"].cumsum()
+            / df_inspection["defect_qty"].sum()
+            * 100
+        )
+        df_inspection = df_inspection.round(2)
+        list_defect_qty_pareto_inspection = df_inspection["defect_qty_pareto"].to_list()
 
         list_line = []
         list_line_id = []
@@ -880,7 +996,27 @@ class Inline_Outline_Manager:
                         percent_defect=percent_defect,
                     )
                 )
-
+        defect_pareto_chart_inline = Defect_Pareto_Chart(
+            axis_x=list_defect_inline,
+            axis_y_lift=["0", "25", "50", "75", "100", "125"],
+            axis_y_right=["0", "100", "150", "200", "250", "300"],
+            pareto=list_defect_qty_pareto_inline,
+            defect_qty=list_defect_qty_inline,
+        )
+        defect_pareto_chart_outline = Defect_Pareto_Chart(
+            axis_x=list_defect_outline,
+            axis_y_lift=["0", "25", "50", "75", "100", "125"],
+            axis_y_right=["0", "100", "150", "200", "250", "300"],
+            pareto=list_defect_qty_pareto_outline,
+            defect_qty=list_defect_qty_outline,
+        )
+        defect_pareto_chart_inspection = Defect_Pareto_Chart(
+            axis_x=list_defect_inspection,
+            axis_y_lift=["0", "25", "50", "75", "100", "125"],
+            axis_y_right=["0", "100", "150", "200", "250", "300"],
+            pareto=list_defect_qty_pareto_inspection,
+            defect_qty=list_defect_qty_inspection,
+        )
         return_list = []
         try:
             return_list.append(
@@ -889,12 +1025,10 @@ class Inline_Outline_Manager:
                     department=data["department"],
                     section=data["section"],
                     line=data["line"],
-                    defect_pareto_chart=Defect_Pareto_Chart(
-                        axis_x=list_defect,
-                        axis_y_lift=["0", "25", "50", "75", "100", "125"],
-                        axis_y_right=["0", "100", "150", "200", "250", "300"],
-                        pareto=list_defect_qty_pareto,
-                        defect_qty=list_defect_qty,
+                    defect_pareto_chart=Defect_Pareto_Chart_Process(
+                        inline=defect_pareto_chart_inline,
+                        outline=defect_pareto_chart_outline,
+                        inspection=defect_pareto_chart_inspection,
                     ),
                     description_of_defect=list_description,
                 )

@@ -6,7 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import ReactECharts, { EChartsOption } from "echarts-for-react";
-import { Layout, Typography, Button, Row, Col, Space, Grid } from "antd";
+import { Layout, Typography, Button, Row, Col, Space, Grid, Radio } from "antd";
 import { PChartDefectBar, PChartInput } from "@/types/pChart";
 import {
   PChartRecordDefect,
@@ -17,6 +17,7 @@ import { delay } from "@/functions";
 import {
   DefectQty,
   DefectSummaryResult,
+  GraphYearlyDefectProcessSummary,
   GraphYearlyDefectSummary,
 } from "@/types/inlineOutlineDefectSumApi";
 
@@ -50,7 +51,7 @@ const mockGrapData = {
 };
 
 interface YearlyDefectSummaryProps {
-  DefectDataSource: DefectSummaryResult;
+  DefectDataSource: GraphYearlyDefectProcessSummary;
   // setChartData: (data: GraphYearlyDefectSummary) => void;
   username: string;
 }
@@ -67,7 +68,7 @@ const YearlyDefectSummary = forwardRef<
   // const [isModalVisible, setIsModalVisible] = useState(false);
   // const [graphData, setGraphData] =
   //   useState<GraphYearlyDefectSummary>(defaultGrapData);
-
+  const [process, setProcess] = useState<string>("inline");
   const setChartToDefault = () => {
     console.log("yearly Chart reset to default");
     setChartOption(toChartOption(defaultGrapData));
@@ -75,26 +76,43 @@ const YearlyDefectSummary = forwardRef<
 
   const refreshChart = () => {
     console.log("Refresh yearly Chart");
-    setChartOption(toChartOption(defectDataSource.graph_yearly_defect_summary));
+    // let data
+    if (process == "inline") {
+      setChartOption(toChartOption(defectDataSource.inline));
+    } else if (process == "outline") {
+      setChartOption(toChartOption(defectDataSource.outline));
+    } else if (process == "inspection") {
+      setChartOption(toChartOption(defectDataSource.inspection));
+    }
   };
-
+  useEffect(() => {
+    if (process == "inline") {
+      setChartOption(toChartOption(defectDataSource.inline));
+    } else if (process == "outline") {
+      setChartOption(toChartOption(defectDataSource.outline));
+    } else if (process == "inspection") {
+      setChartOption(toChartOption(defectDataSource.inspection));
+    }
+  }, [process]);
   useImperativeHandle(ref, () => ({
     setChartToDefault,
     refreshChart,
   }));
 
   const toDeflectStackBarGraph = (defect: DefectQty[]): PChartDefectBar[] => {
-    if (defect.length === 0) {
+    if (defect?.length === 0) {
       return [];
     }
 
-    return defect.map((defectItem) => ({
-      name: defectItem.name ? defectItem.name : "",
-      type: "bar",
-      stack: "defect",
-      data: defectItem.qty,
-      itemStyle: null,
-    }));
+    return (
+      defect?.map((defectItem) => ({
+        name: defectItem.name ? defectItem.name : "",
+        type: "bar",
+        stack: "defect",
+        data: defectItem.qty,
+        itemStyle: null,
+      })) || []
+    );
   };
 
   const toChartOption = (
@@ -142,7 +160,7 @@ const YearlyDefectSummary = forwardRef<
       xAxis: [
         {
           type: "category",
-          data: graphData.axis_x,
+          data: graphData?.axis_x,
           // data: ["testja"],
           name: "Year",
           nameLocation: "center",
@@ -185,7 +203,7 @@ const YearlyDefectSummary = forwardRef<
           symbol: "none",
           yAxisIndex: 1,
           showSymbol: false,
-          data: graphData.target_percent,
+          data: graphData?.target_percent,
           lineStyle: {
             type: "solid",
             color: "red",
@@ -199,7 +217,7 @@ const YearlyDefectSummary = forwardRef<
           smooth: true,
           symbol: "circle",
           yAxisIndex: 1,
-          data: graphData.defect_percent,
+          data: graphData?.defect_percent,
           itemStyle: {
             color: "#73C0DE",
           },
@@ -221,7 +239,7 @@ const YearlyDefectSummary = forwardRef<
         //     symbolSize: 0,
         //   },
         // },
-        ...toDeflectStackBarGraph(graphData.defect_qty),
+        ...toDeflectStackBarGraph(graphData?.defect_qty),
       ],
     };
   };
@@ -249,12 +267,29 @@ const YearlyDefectSummary = forwardRef<
           backgroundColor: "#ffffff",
           padding: "10px 10px 10px 10px",
           borderRadius: "7px 7px 0 0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          // flexDirection: "between",
+          // gap: "10px",
         }}
       >
         <Col>
           <Title level={3} style={{ textAlign: "left", fontSize: "18px" }}>
             Yearly Defect Summary
           </Title>
+        </Col>
+        <Col>
+          <Radio.Group
+            size="small"
+            buttonStyle="solid"
+            value={process}
+            onChange={(e) => setProcess(e.target.value)}
+          >
+            <Radio.Button value="inline">Inline</Radio.Button>
+            <Radio.Button value="outline">Outline</Radio.Button>
+            <Radio.Button value="inspection">Inspection</Radio.Button>
+          </Radio.Group>
         </Col>
       </Row>
       <div style={{ borderRadius: "7px 7px", backgroundColor: "#fff" }}>
