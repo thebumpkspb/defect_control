@@ -381,9 +381,9 @@ export interface PChartRecordTableResponse {
 }
 
 export interface AddNewRecordViewRequest {
-  date: string;
+  date: string | null;
   line_name: string;
-  defect_type: string;
+  defect_type: string | null;
   process: string;
   sub_line: string | null;
   part_no: string | null;

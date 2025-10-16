@@ -451,9 +451,6 @@ class Inline_Outline_Manager:
             list_defect_percent_yearly,
             list_defect_qty_yearly,
         ) = await self.crud.get_graph_yearly_defect_summary(db=db, where_stmt=text_data)
-        print("list_target_percent_yearly:", list_target_percent_yearly)
-        print("list_defect_percent_yearly:", list_defect_percent_yearly)
-        print("list_defect_qty_yearly:", list_defect_qty_yearly)
         for process in list_process:
             result_list_defect_qty_yearly = []
             for defect_qty in list_defect_qty_yearly[process]:
@@ -479,7 +476,7 @@ class Inline_Outline_Manager:
         list_defect_percent_monthly = []
         list_defect_qty_monthly = []
         result_list_defect_qty_monthly = []
-
+        result_list_defect_qty_monthly_process = {}
         ##get graph_monthly_defect_summary from db
         (
             list_axis_x_monthly,
@@ -498,16 +495,21 @@ class Inline_Outline_Manager:
         # print(f"Duration5: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
-        for defect_qty in list_defect_qty_monthly:
-            result_list_defect_qty_monthly.append(
-                Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
+        for process in list_process:
+            result_list_defect_qty_monthly = []
+            for defect_qty in list_defect_qty_monthly[process]:
+                result_list_defect_qty_monthly.append(
+                    Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
+                )
+            result_list_defect_qty_monthly_process[process] = (
+                result_list_defect_qty_monthly
             )
-        ##
+            ##
         ##set graph_defect_summary_by_type
         total = 0.0
         list_defect_by_type = []
         result_list_defect_by_type = []
-
+        result_list_defect_by_type_process = {}
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -524,7 +526,9 @@ class Inline_Outline_Manager:
                 db=db, where_stmt=text_data, prod_qty=list_prod_qty
             )
         )
-
+        print("total:", total)
+        print("list_defect_by_type:", list_defect_by_type)
+        print("sum_defect_qty:", sum_defect_qty)
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -534,15 +538,17 @@ class Inline_Outline_Manager:
         # print(f"Duration7: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
-
-        for defect_by_type in list_defect_by_type:
-            result_list_defect_by_type.append(
-                Defect_By_Type(
-                    name=defect_by_type[0],
-                    qty=defect_by_type[1],
-                    percent=defect_by_type[2],
+        for process in list_process:
+            result_list_defect_by_type = []
+            for defect_by_type in list_defect_by_type[process]:
+                result_list_defect_by_type.append(
+                    Defect_By_Type(
+                        name=defect_by_type[0],
+                        qty=defect_by_type[1],
+                        percent=defect_by_type[2],
+                    )
                 )
-            )
+            result_list_defect_by_type_process[process] = result_list_defect_by_type
 
         end_time = time.time()
         # print("End:", end_time)
@@ -564,7 +570,7 @@ class Inline_Outline_Manager:
         list_defect_percent_actual = []
         list_defect_qty_daily = []
         result_list_defect_qty_daily = []  # name: str, qty: list[int]
-
+        result_list_defect_qty_daily_process = {}
         ##get graph_daily_defect_summary from db
         (
             list_axis_x_daily,
@@ -585,11 +591,13 @@ class Inline_Outline_Manager:
         # print(f"Duration9: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
-
-        for defect_qty in list_defect_qty_daily:
-            result_list_defect_qty_daily.append(
-                Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
-            )
+        for process in list_process:
+            if result_list_defect_qty_daily_process.get(process) is None:
+                result_list_defect_qty_daily_process[process] = []
+            for defect_qty in list_defect_qty_daily[process]:
+                result_list_defect_qty_daily_process[process].append(
+                    Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
+                )
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -621,62 +629,63 @@ class Inline_Outline_Manager:
 
         monthly_defect_inline_summary = Monthly_Defect_Summary(
             axis_x=list_axis_x_monthly,
-            target_percent=list_target_percent_monthly,
-            defect_percent=list_defect_percent_monthly,
-            defect_qty=result_list_defect_qty_monthly,
+            target_percent=list_target_percent_monthly["Inline"],
+            defect_percent=list_defect_percent_monthly["Inline"],
+            defect_qty=result_list_defect_qty_monthly_process["Inline"],
         )
         monthly_defect_outline_summary = Monthly_Defect_Summary(
             axis_x=list_axis_x_monthly,
-            target_percent=list_target_percent_monthly,
-            defect_percent=list_defect_percent_monthly,
-            defect_qty=result_list_defect_qty_monthly,
+            target_percent=list_target_percent_monthly["Outline"],
+            defect_percent=list_defect_percent_monthly["Outline"],
+            defect_qty=result_list_defect_qty_monthly_process["Outline"],
         )
         monthly_defect_inspection_summary = Monthly_Defect_Summary(
             axis_x=list_axis_x_monthly,
-            target_percent=list_target_percent_monthly,
-            defect_percent=list_defect_percent_monthly,
-            defect_qty=result_list_defect_qty_monthly,
+            target_percent=list_target_percent_monthly["Inspection"],
+            defect_percent=list_defect_percent_monthly["Inspection"],
+            defect_qty=result_list_defect_qty_monthly_process["Inspection"],
         )
 
         daily_defect_inline_summary = Daily_Defect_Summary(
-            prod_vol=prod_vol + defect,
-            defect=defect,
-            defect_percent=defect_percent_daily,
+            prod_vol=prod_vol + defect["Inline"],
+            defect=defect["Inline"],
+            defect_percent=defect_percent_daily["Inline"],
             axis_x=list_axis_x_daily,
             axis_y_lift=list_axis_y_lift,
             axis_y_right=list_axis_y_right,
-            defect_percent_actual=list_defect_percent_actual,
-            defect_qty=result_list_defect_qty_daily,
+            defect_percent_actual=list_defect_percent_actual["Inline"],
+            defect_qty=result_list_defect_qty_daily_process["Inline"],
         )
         daily_defect_outline_summary = Daily_Defect_Summary(
-            prod_vol=prod_vol + defect,
-            defect=defect,
-            defect_percent=defect_percent_daily,
+            prod_vol=prod_vol + defect["Outline"],
+            defect=defect["Outline"],
+            defect_percent=defect_percent_daily["Outline"],
             axis_x=list_axis_x_daily,
             axis_y_lift=list_axis_y_lift,
             axis_y_right=list_axis_y_right,
-            defect_percent_actual=list_defect_percent_actual,
-            defect_qty=result_list_defect_qty_daily,
+            defect_percent_actual=list_defect_percent_actual["Outline"],
+            defect_qty=result_list_defect_qty_daily_process["Outline"],
         )
         daily_defect_inspection_summary = Daily_Defect_Summary(
-            prod_vol=prod_vol + defect,
-            defect=defect,
-            defect_percent=defect_percent_daily,
+            prod_vol=prod_vol + defect["Inspection"],
+            defect=defect["Inspection"],
+            defect_percent=defect_percent_daily["Inspection"],
             axis_x=list_axis_x_daily,
             axis_y_lift=list_axis_y_lift,
             axis_y_right=list_axis_y_right,
-            defect_percent_actual=list_defect_percent_actual,
-            defect_qty=result_list_defect_qty_daily,
+            defect_percent_actual=list_defect_percent_actual["Inspection"],
+            defect_qty=result_list_defect_qty_daily_process["Inspection"],
         )
 
         defect_summary_inline_by_type = Defect_Summary_By_Type(
-            total=total, defect=result_list_defect_by_type
+            total=total["Inline"], defect=result_list_defect_by_type_process["Inline"]
         )
         defect_summary_outline_by_type = Defect_Summary_By_Type(
-            total=total, defect=result_list_defect_by_type
+            total=total["Outline"], defect=result_list_defect_by_type_process["Outline"]
         )
         defect_summary_inspection_by_type = Defect_Summary_By_Type(
-            total=total, defect=result_list_defect_by_type
+            total=total["Inspection"],
+            defect=result_list_defect_by_type_process["Inspection"],
         )
 
         try:
@@ -962,6 +971,7 @@ class Inline_Outline_Manager:
             sub_line = r[key_index["sub_line"]]
             process = r[key_index["process"]]
             trouble = r[key_index["trouble"]]
+            shift = r[key_index["shift"]]
             ## get get_defect_qty from db
             res_defect = await self.crud.get_defect_qty(
                 db=db,
@@ -970,6 +980,7 @@ class Inline_Outline_Manager:
                 part_no=part_no,
                 sub_line=sub_line,
                 process=process,
+                shift=shift,
             )
             for r in res_defect:
                 key_index = r._key_to_index

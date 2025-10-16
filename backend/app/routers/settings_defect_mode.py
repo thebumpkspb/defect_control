@@ -47,6 +47,25 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         )
 
     @router.post(
+        "/table_view_action_record",
+        response_model=Setting_Table_Result_Response,
+        dependencies=[Depends(api_key_auth)],
+    )
+    async def setting_table_view(
+        text_data: Setting_Table, db: AsyncSession = Depends(db)
+    ):
+        """
+        Example
+        \nexp1: { "line_name": "", "part_no": "", "part_name": "" }
+        \nexp2: { "line_name": "414454 - Starter Assy PA70", "part_no": "TG428000-0630", "part_name": "STARTER ASSY" }
+        """
+        return Setting_Table_Result_Response(
+            setting_table_result=await settings_defect_mode_manager.post_table_view_action_record(
+                text_data=text_data, db=db
+            )
+        )
+
+    @router.post(
         "/table_edit_view",
         response_model=Setting_Table_Edit_Result_Response,
         dependencies=[Depends(api_key_auth)],

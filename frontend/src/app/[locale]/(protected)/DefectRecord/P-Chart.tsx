@@ -21,6 +21,7 @@ import {
 import PreviewPopup from "./PreviewPopup";
 import { PChartDefectBar, PChartInput } from "@/types/pChart";
 import {
+  PChartPart,
   PChartRecordDefect,
   PChartRecordGraphRequest,
   PChartRecordGraphResult,
@@ -74,6 +75,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
     const [chartData, setChartData] = useState<PChartRecordDefect[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
     const chartRef = useRef<any>();
+
     // const chartData = [
     //   { value: 1048, name: "Desktop", category: "Computers" },
     //   { value: 735, name: "Mobile", category: "Phones" },

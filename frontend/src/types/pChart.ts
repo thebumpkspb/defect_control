@@ -1,15 +1,18 @@
 export interface PChartPreviewPopupInput {
   month: string | null;
   line_name: string | null;
+
   part_no: string | null;
   shift: string | null;
   process: string | null;
   sub_line: string | null;
+  line_id?: number | string | null;
 }
 
 export interface PChartInput {
   month: string | null;
   line_name: string | null;
+  line_id: number | string | null;
   part_no: string | null;
   shift: string | null;
   process: string | null;
@@ -30,6 +33,7 @@ export interface PChartPreviewPopupAddRowFormData {
   date?: string; // Assuming the date is in string format (e.g., "2024-12-31"). Use `Date` if it's an actual Date object.
   partNo?: string;
   shift?: string;
+  line_name?: string;
   defect_item?: number[];
   category?: string[];
   trouble?: string;

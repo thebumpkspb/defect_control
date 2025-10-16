@@ -33,6 +33,9 @@ import {
   pChartAbnormalOccurrenceAddRowView,
   pChartAbnormalOccurrenceViewNoErr,
   fetchDefectModes,
+  pChartCtlPartByLineNoErr,
+  fetchDefectModesActionRecord,
+  fetchLines,
 } from "@/lib/api";
 import "./PreviewPopup.css";
 import {
@@ -46,6 +49,8 @@ import {
   PChartAbnormalOccurrenceAddRowView,
   PChartAbnormalOccurrenceDeleteRequest,
   PChartAbnormalOccurrenceEditSaveRequest,
+  PChartLine,
+  PChartPart,
 } from "@/types/pChartApi";
 import dayjs, { Dayjs } from "dayjs";
 import CustomPopover from "@/components/button/custom-popover";
@@ -66,8 +71,9 @@ const { Option } = Select;
 import { AlignType, FixedType } from "rc-table/lib/interface";
 import { isNotEmptyValue } from "@/functions";
 import { categories, pics } from "@/constants";
-import { LayoutStore } from "@/store";
+import { LayoutStore, UserStore } from "@/store";
 import { SettingTableResult } from "@/types/settingApi";
+import useDebounce from "@/hook/use-debounce";
 // import Panel from "antd/es/cascader/Panel";
 
 // Define the row type
@@ -247,7 +253,38 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
   const [editForm, setEditForm] = useState<AbnormalOccurrenceEditSaveRequest>(
     EditSaveRequestDefault
   );
+  const [parts, setParts] = useState<PChartPart[]>([]);
+  const [selectedPartNo, setSelectedPartNo] = useState<string | null>(
+    input.part_no || null
+  );
   const [defectModes, setDefectModes] = useState<SettingTableResult[]>([]);
+  const [lineSettings, setLineSettings] = useState<PChartLine[]>([]);
+  const { user } = UserStore();
+  useEffect(() => {
+    const fetchLineSettings = async () => {
+      setIsLoading(true);
+      try {
+        // const response = await pChartCtlSettingLine(null, false);
+        const response = await fetchLines();
+        // console.log("Line Settings:", response.lines);
+        const user_line = response.lines.filter((item) =>
+          user?.line_id_group?.includes(item.line_id)
+        );
+        // console.log("user_line:", user_line);
+        // setLineSettings(response.lines);
+        setLineSettings(user_line);
+        // if (user_line.length == 1) {
+        //   // setSelectedLineId(String(user_line[0].line_id));
+        //   // setSelectedLineCodeRx(String(user_line[0].line_code_rx));
+        //   setSelectedLine(String(user_line[0].section_line));
+        // }
+      } catch (error) {
+        console.error("Error fetching line settings:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchLineSettings();
+  }, []);
   const mapPChartToDataRow = (
     pChartData: PChartAbnormalOccurrence[]
     // defectModes: SettingTableResult[]
@@ -287,17 +324,20 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
       };
     });
   };
+  console.log("parts:", parts);
   // console.log("defectModes:", defectModes);
+  console.log("input:", input);
+  // console.log("defectModes00:", defectModes);
   useEffect(() => {
     const updateDefectModesTable = async () => {
       // console.log("testja");
-      if (!input.line_name || !input.part_no) return; // ตรวจสอบค่า
+      if (!input.line_name || !selectedPartNo) return; // ตรวจสอบค่า
       setIsLoading(true);
       try {
-        const data = await fetchDefectModes({
+        const data = await fetchDefectModesActionRecord({
           line_name: input.line_name,
-          part_no: input.part_no,
-          part_name: "",
+          part_no: selectedPartNo,
+          part_name: null,
         });
         setDefectModes(data.setting_table_result);
 
@@ -309,7 +349,30 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     };
     updateDefectModesTable();
     // fetchDefectModes;
-  }, [input.line_name, input.part_no]);
+  }, [input.line_name, selectedPartNo]);
+  useEffect(() => {
+    console.log("BMP");
+    const fetchParts = async () => {
+      if (input.line_id == null) {
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const response = await pChartCtlPartByLineNoErr(
+          String(input.line_id),
+          input.process
+        );
+        // console.log("Parts:", response.parts);
+        setParts(response.parts);
+      } catch (error) {
+        setParts([]);
+        // setSelectedPartNo(null);
+        console.error("Error fetching line settings:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchParts();
+  }, [input.line_name]);
   // console.log("editForm:", editForm);
   // console.log(
   //   "editForm.defect_item.map((defect: any) => defect.id):",
@@ -1275,6 +1338,12 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
         defectModes={defectModes}
         username={username}
         date={date}
+        parts={parts}
+        selectedPartNo={selectedPartNo}
+        setSelectedPartNo={setSelectedPartNo}
+        lineSettings={lineSettings}
+        // setDefectModes={setDefectModes}
+        // parts={parts}
 
         // pChartRecordTableSelectedDefectMode={pChartRecordTableSelectedDefectMode}
       />
@@ -1348,6 +1417,11 @@ interface AddRowAbnormalPopupProps {
   defectModes: SettingTableResult[];
   username: string;
   date?: Dayjs | null;
+  parts?: PChartPart[];
+  selectedPartNo: any;
+  setSelectedPartNo: any;
+  lineSettings: any;
+  // setDefectModes: any;
 }
 
 const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
@@ -1359,11 +1433,16 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
   defectModes,
   username,
   date,
+  parts,
+  selectedPartNo,
+  setSelectedPartNo,
+  lineSettings,
+  // setDefectModes,
 }) => {
   const handleOnCloseModal = () => {
     onClose();
   };
-
+  console.log("defectModes:", defectModes);
   const mapToCreateReq = (
     data: PChartPreviewPopupAddRowFormData,
     input: PChartPreviewPopupInput,
@@ -1412,8 +1491,8 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
       new_re_occur: data.newOrReoccur || "",
       id: data.id || 0,
       month: formattedMonth,
-      line_name: input.line_name || "",
-      part_no: input.part_no || "",
+      line_name: data.line_name || "",
+      part_no: data.partNo || "",
       shift: data.shift || "",
       defect_item: data.defect_item || [],
       category: data.category || [],
@@ -1451,6 +1530,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     // console.log("values:", values);
     // validate input
     const missingFields = [];
+    if (!values.line_name) missingFields.push("Line");
     if (!values.date) missingFields.push("Date");
     if (!values.partNo) missingFields.push("Part No");
     if (!values.shift) missingFields.push("Shift");
@@ -1509,6 +1589,22 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     useState<PChartAbnormalOccurrenceAddRowView>(addRowViewDefault);
   const [createRowForm, setCreateRowForm] =
     useState<PChartAbnormalOccurrenceAddRowOkRequest>(addRowOkFormDefault);
+
+  const { setIsLoading } = LayoutStore.getState();
+  const [selectedProcess, setSelectedProcess] = useState<string | null>(
+    input.process
+  );
+  const [selectedLine, setSelectedLine] = useState<string | null>(
+    input.line_name
+  );
+  const [selectedLineId, setSelectedLineId] = useState(input.line_id);
+  console.log("input.line_id:", input.line_id);
+  console.log("compare:", input.line_id == selectedLineId);
+  console.log("selectedLineId:", selectedLineId);
+  console.log("input.line_name:", input.line_name);
+  console.log("selectedLine:", selectedLine);
+  console.log("lineSettings:", lineSettings);
+  // console.log("form:", form);
   // const [shiftAddRow, setShiftAddRow] = useState<string | undefined | null>(
   //   shift
   // );
@@ -1521,7 +1617,28 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     if (!visible) {
       return;
     }
+    // useEffect(() => {
+    //   const updateDefectModesTable = async () => {
+    //     // console.log("testja");
+    //     if (!input.line_name || !selectedPartNo) return; // ตรวจสอบค่า
+    //     setIsLoading(true);
+    //     try {
+    //       const data = await fetchDefectModes({
+    //         line_name: input.line_name,
+    //         part_no: selectedPartNo,
+    //         part_name: "",
+    //       });
+    //       setDefectModes(data.setting_table_result);
 
+    //       console.log("updateDefectModesTable() called");
+    //     } catch (error) {
+    //       console.error("Failed to update table:", error);
+    //     }
+    //     setIsLoading(false);
+    //   };
+    //   updateDefectModesTable();
+    //   // fetchDefectModes;
+    // }, [input.line_name, selectedPartNo]);
     console.log("on open preview pop up modal");
 
     fetchAddRowView(input, shift).then((res) => {
@@ -1609,7 +1726,9 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
       });
     });
   }, [visible, form, input, shift, username]);
-
+  // useEffect(() => {
+  //   setSelectedLineId(input.line_id);
+  // }, [input.line_id]);
   return (
     <Modal
       title="Add Row Abnormal"
@@ -1638,6 +1757,134 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
             }
             key="required"
           >
+            {/*Line*/}
+            <Form.Item
+              label={
+                <p>
+                  Line <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="line_name"
+            >
+              {/* <Input.Group
+            compact
+            style={{
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid #d9d9d9",
+              borderRadius: "5px",
+              overflow: "hidden",
+            }}
+          > */}
+              {/* <Select
+                value={selectedLineId}
+                style={{
+                  border: "none",
+                  flex: 1,
+                  color: "black",
+                }}
+                options={lineSettings?.map((item: any) => ({
+                  value: String(item.line_id),
+                  label: item.section_line,
+                }))}
+                showSearch
+                filterOption={(input, option) => {
+                  const optionLabel = (option?.label as string) || "";
+                  return optionLabel
+                    .toLowerCase()
+                    .includes(input.toLowerCase());
+                }}
+                onChange={(value) => {
+                  const selectedLine = lineSettings.find(
+                    (line: any) => line.line_id.toString() === value
+                  );
+                  setSelectedLineId(String(value)); // อัปเดต line_id
+                  setSelectedLine(selectedLine?.section_line || "");
+                }}
+              /> */}
+              <Select
+                placeholder="Select Line Name"
+                style={{
+                  border: "none",
+                  flex: 1,
+                  height: "32px",
+                  color: "black",
+                }}
+                value={selectedLineId}
+                onChange={(value) => {
+                  const selectedLine = lineSettings.find(
+                    (line: any) => line.line_id.toString() === value
+                  );
+                  setSelectedLineId(value); // อัปเดต line_id
+                  setSelectedLine(selectedLine?.section_line || "");
+                }}
+                showSearch
+                filterOption={(input, option) => {
+                  const optionLabel =
+                    (option?.children as unknown as string) || "";
+                  return optionLabel
+                    .toLowerCase()
+                    .includes(input.toLowerCase());
+                }}
+              >
+                {lineSettings.map((line: any) => (
+                  <Select.Option
+                    key={line.line_id}
+                    // value={line.line_id.toString()}
+                    value={line.line_name}
+                  >
+                    {line.section_line}
+                  </Select.Option>
+                ))}
+              </Select>
+              {/* </Input.Group> */}
+            </Form.Item>
+            {/*process*/}
+            <Form.Item
+              label={
+                <p>
+                  Process <text style={{ color: "red" }}>*</text>
+                </p>
+              }
+              name="process"
+            >
+              {/* <Input.Group
+            compact
+            style={{
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid #d9d9d9",
+              borderRadius: "5px",
+              overflow: "hidden",
+            }}
+          > */}
+              <Select
+                // placeholder=""
+                value={selectedProcess}
+                style={{
+                  border: "none",
+                  flex: 1,
+                  // height: "32px",
+                  // minWidth: "120px",
+                  // width: "100%",
+                  color: "black",
+                }}
+                // mode="multiple"
+                options={["Inline", "Outline", "Inspection"].map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value) => {
+                  setSelectedProcess(value);
+                  // setCreateForm((prev) => ({
+                  //   ...prev,
+                  //   pic: value,
+                  // }));
+                  // closeHistoryRecordTableVisible();
+                }}
+              />
+              {/* </Input.Group> */}
+            </Form.Item>
             {/* Date */}
             <Form.Item
               label={
@@ -1659,9 +1906,34 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               }
               name="partNo"
             >
-              <Input
+              {/* <Input
                 // value={addRowView?.part_no || "[Debugging] No Value Set"}
                 readOnly
+              /> */}
+              <Select
+                placeholder=""
+                value={selectedPartNo}
+                style={{
+                  border: "none",
+                  flex: 1,
+                  // height: "32px",
+                  // minWidth: "120px",
+                  // width: "100%",
+                  color: "black",
+                }}
+                // mode="multiple"
+                options={parts?.map((item) => ({
+                  value: item.part_no,
+                  label: item.part_no,
+                }))}
+                onChange={(value) => {
+                  setSelectedPartNo(value);
+                  // setCreateForm((prev) => ({
+                  //   ...prev,
+                  //   pic: value,
+                  // }));
+                  // closeHistoryRecordTableVisible();
+                }}
               />
             </Form.Item>
             {/* Shift */}

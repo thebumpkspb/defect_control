@@ -80,6 +80,47 @@ class Settings_Defect_Mode_CRUD:
         # print("stmt: ", stmt)
         return rs, data
 
+    async def table_view_action_record(
+        self, db: AsyncSession, where_stmt: str | None = None
+    ):
+        data = where_stmt.dict()
+
+        line_name = data["line_name"]
+        process = data["process"]
+        part_name = data["part_name"]
+        part_no = data["part_no"]
+
+        line_id = self.get_line_id(line_name)
+
+        ## query db
+        ## check filter
+        if line_name == "":
+            where_stmt = " active = 'active' "
+
+        # elif (part_name == "") | (part_no == ""):
+        #     where_stmt = "line_id = '" + str(line_id) + "' AND active = 'active' "
+
+        else:
+            where_stmt = (
+                "line_id = '"
+                + str(line_id)
+                # + "' AND part_name = '"
+                # + part_name
+                + "' AND active = 'active' "
+            )
+
+        if process:
+            where_stmt = where_stmt + " AND process = '" + process + "' "
+
+        if part_no:
+            where_stmt = (
+                where_stmt + " AND (part_no is null or part_no = '" + part_no + "') "
+            )
+        stmt = f"SELECT * FROM master_defect WHERE {where_stmt if where_stmt is not None else ''} ORDER BY ref"
+        rs = await db.execute(text(stmt))
+        # print("stmt: ", stmt)
+        return rs, data
+
     async def table_edit_view(self, db: AsyncSession, where_stmt: str | None = None):
         data = where_stmt.dict()
 

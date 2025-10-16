@@ -98,6 +98,7 @@ class Export_P_Chart_Manager:
             defect_type: str
             defect_item: str
             value: int
+            target_by_piece: int
             category: Optional[List[str]] = None
 
         safe_dict = {"Defect_table": Defect_table}

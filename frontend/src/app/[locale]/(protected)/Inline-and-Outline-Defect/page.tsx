@@ -1449,7 +1449,7 @@ export default function PChartHeader() {
                 ref={dailyDefectSummaryRefOutline}
                 addtionalLabel={"Outline"}
                 defectDataSource={
-                  defectDataSource.graph_daily_defect_summary.inline
+                  defectDataSource.graph_daily_defect_summary.outline
                 }
                 username={username()}
               />
@@ -1498,7 +1498,7 @@ export default function PChartHeader() {
                 ref={dailyDefectSummaryRefInspection}
                 addtionalLabel={"Inspection"}
                 defectDataSource={
-                  defectDataSource.graph_daily_defect_summary.inline
+                  defectDataSource.graph_daily_defect_summary.inspection
                 }
                 username={username()}
               />

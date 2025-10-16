@@ -107,14 +107,18 @@ class P_Chart_Record_CRUD:
             + "' AND active = 'active' "
         )
         if part_no:
-            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+            where_stmt = (
+                where_stmt + " AND (part_no is null or part_no = '" + part_no + "')"
+            )
         else:
             where_stmt = where_stmt + " AND part_no is null"
         if sub_line:
-            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+            where_stmt = (
+                where_stmt + " AND (sub_line is null or sub_line = '" + sub_line + "')"
+            )
         else:
             where_stmt = where_stmt + " AND sub_line is null"
-
+        where_stmt = where_stmt + " ORDER BY part_no NULLS FIRST; "
         stmt = f"SELECT target_control FROM master_target_line WHERE  {where_stmt if where_stmt is not None else ''} "
         rs_target_control = await db.execute(text(stmt))
 
@@ -1418,19 +1422,22 @@ class P_Chart_Record_CRUD:
         where_stmt = (
             "line_id = '"
             + str(line_id)
-            + "' AND part_no = '"
-            + part_no
+            # + "' AND part_no = '"
+            # + part_no
             + "' AND shift in ("
             + shift
             + ") AND process = '"
             + process
-            + "' AND sub_line = '"
-            + sub_line
+            # + "' AND sub_line = '"
+            # + sub_line
             + "' AND to_char(date, 'YYYY-MM') = '"
             + month
             + "' AND status = 'action' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + f"AND part_no = '{part_no}'"
+        if sub_line:
+            where_stmt = where_stmt + f"AND sub_line = '{sub_line}'"
         stmt = f"SELECT * FROM abnormal_occurrence WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         # print("stmt:", stmt)
         rs = await db.execute(text(stmt))

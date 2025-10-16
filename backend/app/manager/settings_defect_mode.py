@@ -93,6 +93,74 @@ class Settings_Defect_Mode_Manager:
             )
             return return_list
 
+    async def post_table_view_action_record(
+        self, text_data: str, db: AsyncSession = None
+    ):
+
+        if not text_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
+            )
+
+        ## get data from db
+        res, data = await self.crud.table_view_action_record(
+            db=db, where_stmt=text_data
+        )
+        return_list = []
+
+        try:
+            c = 0
+            for r in res:
+                c += 1
+                key_index = r._key_to_index
+
+                return_list.append(
+                    Setting_Table_Result(
+                        id=r[key_index["id"]],
+                        # id = c,
+                        line_name=data["line_name"],
+                        process=r[key_index["process"]],
+                        part_no=r[key_index["part_no"]],
+                        part_name=r[key_index["part_name"]],
+                        defect_type=r[key_index["defect_type"]],
+                        defect_mode=r[key_index["defect_mode"]],
+                        category=r[key_index["category"]],
+                        target_by_piece=r[key_index["target_by_piece"]],
+                        master_defect_index=r[key_index["master_defect_index"]],
+                    )
+                )
+            if len(return_list) == 0:
+                return_list.append(
+                    Setting_Table_Result(
+                        id=0,
+                        line_name="",
+                        process="",
+                        part_no="",
+                        part_name="",
+                        defect_type="",
+                        category=[],
+                        target_by_piece=None,
+                        master_defect_index=0,
+                    )
+                )
+            return return_list
+
+        except:
+            return_list.append(
+                Setting_Table_Result(
+                    id=0,
+                    line_name="",
+                    process="",
+                    part_no="",
+                    part_name="",
+                    defect_type="",
+                    category=[],
+                    target_by_piece=None,
+                    master_defect_index=0,
+                )
+            )
+            return return_list
+
     async def post_table_edit_view(self, text_data: str, db: AsyncSession = None):
 
         list_line = []
