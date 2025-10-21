@@ -257,7 +257,8 @@ class Export_P_Chart_Manager:
             key_index = r._key_to_index
             result_graph.append(r[key_index["pchart_graph"]])
         result_graph = "[" + ", ".join(str(item) for item in result_graph) + "]"
-        # print("result_graph:", result_graph)
+
+        print("result_graph:", result_graph)
         if filters["process"] != "Outline":
             pchart_graph = self.combine_json_list_defect_graph(
                 result_graph,
@@ -346,6 +347,7 @@ class Export_P_Chart_Manager:
             table_pchart_table = self.combine_json_list_defect_table(result_table)
             # print("table_pchart_table1:", table_pchart_table)
             data_table = table_pchart_table
+
         # for r in table:
         #     key_index = r._key_to_index
         #     table_pchart_table = r[key_index["pchart_table"]]

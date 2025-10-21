@@ -2332,7 +2332,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
           ) {
             if (
               record["target_by_piece"] &&
-              record[`day${day}`] > record["target_by_piece"]
+              (record[`day${day}`] || 0) > record["target_by_piece"]
             ) {
               backgroundColor = "#F49052";
             }

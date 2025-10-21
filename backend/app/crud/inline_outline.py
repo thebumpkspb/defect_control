@@ -297,7 +297,9 @@ class Inline_Outline_CRUD:
 
             ## get data from db
             # total_defect = total_defect + r[key_index["qty_shift_all"]]
-            total_defect = total_defect + r[key_index[f"qty_shift_{shift.lower()}"]]
+            #! process
+            if r[key_index[f"process"]] == "Inline":
+                total_defect = total_defect + r[key_index[f"qty_shift_{shift.lower()}"]]
 
         ## query db
         #### defect Scrap

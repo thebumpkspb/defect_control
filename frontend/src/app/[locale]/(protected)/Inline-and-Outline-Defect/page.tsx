@@ -51,6 +51,7 @@ import {
   inlineOutineDepartmentSectionChange,
   inlineOutlineCauseOfAbnormal,
   inlineOutlineDefectParetoChart,
+  fetchLines,
 } from "@/lib/api";
 import {
   PChartGeneralInformation,
@@ -368,6 +369,7 @@ export default function PChartHeader() {
       ? user?.shift_name
       : "All"
   );
+  const [lineSetting, setLineSettings] = useState<PChartLine[]>([]);
   const handleShiftChange = (e: RadioChangeEvent) => {
     setShift(e.target.value);
   };
@@ -402,7 +404,7 @@ export default function PChartHeader() {
   };
 
   const handleRefreshDailyDefectChart = () => {
-    console.log("test_refresh");
+    // console.log("test_refresh");
     dailyDefectSummaryRefInline.current?.refreshChart();
     dailyDefectSummaryRefOutline.current?.refreshChart();
     dailyDefectSummaryRefInspection.current?.refreshChart();
@@ -462,7 +464,29 @@ export default function PChartHeader() {
   const handleRefreshDecriptionOfDefect = () => {
     descriptionOfDefectRef.current?.refreshTable();
   };
-
+  // console.log("lineSetting:", lineSetting);
+  const fetchLineSettings = async () => {
+    setIsLoading(true);
+    try {
+      // const response = await pChartCtlSettingLine(null, false);
+      const response = await fetchLines();
+      // console.log("Line Settings:", response.lines);
+      const user_line = response.lines.filter((item) =>
+        user?.line_id_group?.includes(item.line_id)
+      );
+      // console.log("user_line:", user_line);
+      // setLineSettings(response.lines);
+      setLineSettings(user_line);
+      // if (user_line.length == 1) {
+      //   setSelectedLineId(String(user_line[0].line_id));
+      //   setSelectedLineCodeRx(String(user_line[0].line_code_rx));
+      //   setSelectedSectionLine(String(user_line[0].section_line));
+      // }
+    } catch (error) {
+      console.error("Error fetching line settings:", error);
+    }
+    setIsLoading(false);
+  };
   const fetchInlineOutlineDefaultDefectSummary = async () => {
     // setIsLoading(true);
     try {
@@ -604,7 +628,13 @@ export default function PChartHeader() {
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
   const [sectionOptions, setSectionOptions] = useState<string[]>([]);
   const [lineOptions, setLineOptions] = useState<string[]>([]);
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const closeModal = () => {
+    setIsModalVisible(false);
+  };
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
   // const handleSelect
   const [defectDataSource, setDefectDataSource] = useState<DefectSummaryResult>(
     defaultDefectSummaryResult
@@ -613,6 +643,7 @@ export default function PChartHeader() {
     useState<CauseOfAbnormalResult>(defaultDefectCauseOfAbnormal);
   const [defectParetoDataSource, setDefectParetoDataSource] =
     useState<DefectParetoChartResult>(defaultParetoChart);
+  const [actionProcess, setActionProcess] = useState<string>("Inline");
 
   const handleChange = (key: string, value: string | string[]) => {
     setSelectedItems({ ...selectedItems, [key]: value });
@@ -621,7 +652,7 @@ export default function PChartHeader() {
   // trigger at the first time
   useEffect(() => {
     fetchInlineOutlineDefaultDefectSummary();
-
+    fetchLineSettings();
     // set default chart
     handleResetYearlyDefectChart();
     handleResetMonthlyDefectChart();
@@ -637,7 +668,8 @@ export default function PChartHeader() {
 
   // const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // const [isLoading, setIsLoading] = useState(false);
-
+  console.log("lineSetting:", lineSetting);
+  console.log("selectedItems:", selectedItems);
   const handleSearchDefectSummary = async () => {
     if (!selectedItems.date || !selectedItems.department) {
       return;
@@ -811,7 +843,7 @@ export default function PChartHeader() {
   useEffect(() => {
     loadUser();
   }, []);
-
+  console.log("lineOptions:", lineOptions);
   const selectedItemGridStyle: React.CSSProperties = {
     width: "100%",
     textAlign: "left",
@@ -824,6 +856,14 @@ export default function PChartHeader() {
     outline: "1px solid white",
     height: "140px",
   };
+  // console.log("lineSetting:", lineSetting);
+  // console.log(
+  //   "d:",
+  //   lineSetting.find(
+  //     (line) => line.section_line.toString() === selectedItems.line[0]
+  //   )?.line_id
+  // );
+  // console.log("selectedItems:", selectedItems.line[0]);
   return (
     <Layout>
       <Header
@@ -1210,6 +1250,7 @@ export default function PChartHeader() {
                 placeholder="Select Department"
                 style={{ width: "100%", marginBottom: "10px" }}
                 onChange={(value) => handleChange("department", value)}
+                allowClear
               >
                 {departmentOptions.map((department, i) => (
                   <Option key={i} value={department}>
@@ -1218,6 +1259,7 @@ export default function PChartHeader() {
                 ))}
               </Select>
               <Select
+                allowClear
                 showSearch
                 placeholder="Select Section"
                 style={{ width: "100%", marginBottom: "10px" }}
@@ -1396,6 +1438,18 @@ export default function PChartHeader() {
                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
               }}
             >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div></div>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setActionProcess("Inline");
+                    showModal();
+                  }}
+                >
+                  Action record
+                </Button>
+              </div>
               <DailyDefectSummary
                 ref={dailyDefectSummaryRefInline}
                 addtionalLabel={"Inline"}
@@ -1445,6 +1499,18 @@ export default function PChartHeader() {
                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
               }}
             >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div></div>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setActionProcess("Outline");
+                    showModal();
+                  }}
+                >
+                  Action record
+                </Button>
+              </div>
               <DailyDefectSummary
                 ref={dailyDefectSummaryRefOutline}
                 addtionalLabel={"Outline"}
@@ -1494,6 +1560,18 @@ export default function PChartHeader() {
                 boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
               }}
             >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div></div>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setActionProcess("Inspection");
+                    showModal();
+                  }}
+                >
+                  Action record
+                </Button>
+              </div>
               <DailyDefectSummary
                 ref={dailyDefectSummaryRefInspection}
                 addtionalLabel={"Inspection"}
@@ -1671,6 +1749,22 @@ export default function PChartHeader() {
           </Col>
         </Row>
       </Content>
+      <PreviewPopup
+        visible={isModalVisible}
+        onClose={closeModal}
+        input={{
+          month: selectedItems.date,
+          line_name: selectedItems.line[0],
+          part_no: null,
+          shift: shift,
+          process: actionProcess,
+          sub_line: null,
+          line_id: lineSetting.find(
+            (line) => line.section_line.toString() === selectedItems.line[0]
+          )?.line_id,
+        }}
+        username={username()}
+      />
       {/* </Spin> */}
     </Layout>
   );

@@ -94,7 +94,7 @@ const MonthlyDefectSummary = forwardRef<
       setChartOption(toChartOption(defectDataSource.inspection));
     }
   }, [process]);
-  console.log("defectDataSource:", defectDataSource);
+  // console.log("defectDataSource:", defectDataSource);
   const generateUniqueColors = (count: number): string[] => {
     const colors = new Set<string>();
     let i = 0;

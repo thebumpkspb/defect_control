@@ -159,12 +159,12 @@ export default function PChartHeader() {
       missingFields.push("Line Name");
     }
 
-    if (!selectedPartNo && process != "Outline") {
-      missingFields.push("Part No");
-    }
-    if (!selectedSubLine && process != "Outline") {
-      missingFields.push("Sub Line");
-    }
+    // if (!selectedPartNo && process != "Outline") {
+    //   missingFields.push("Part No");
+    // }
+    // if (!selectedSubLine && process != "Outline") {
+    //   missingFields.push("Sub Line");
+    // }
 
     if (!process) {
       missingFields.push("Process");

@@ -187,7 +187,7 @@ const DailyDefectSummary = forwardRef<
     },
     ref
   ) => {
-    console.log("defectDataSource:", defectDataSource);
+    // console.log("defectDataSource:", defectDataSource);
     const setChartToDefault = () => {
       console.log("Chart reset to default");
       setChartOption(toChartOption(defaultGrapData));
@@ -256,7 +256,7 @@ const DailyDefectSummary = forwardRef<
     };
 
     const toChartOption = (graphData: GraphDailyDefectSummary) => {
-      console.log("graphData:", graphData);
+      // console.log("graphData:", graphData);
       return {
         backgroundColor: "#ffffff",
         // legend: {
