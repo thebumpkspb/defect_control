@@ -495,6 +495,59 @@ def transform_defect_data_to_defect_table(data, day_in_month):
     return result
 
 
+def transform_defect_data_to_defect_graph(data, day_in_month):
+    grouped = defaultdict(list)
+
+    # Group only by defect_mode (defect_item)
+    for row in data:
+        defect_mode = row.get("master_defect_mode")
+        grouped[defect_mode].append(row)
+
+    result = []
+    for idx, (defect_mode, rows) in enumerate(grouped.items(), 1):
+        value = [0] * day_in_month
+
+        # Aggregate quantities by date
+        date_qty_map = defaultdict(int)
+        for r in rows:
+            date_str = r.get("date", "")
+            qty_str = r.get("defect_qty", "0")
+
+            if (
+                isinstance(date_str, str)
+                and len(date_str) == 10
+                and date_str[4] == "-"
+                and date_str[7] == "-"
+            ):
+                try:
+                    day = int(date_str[8:10])
+                    qty = int(qty_str) if qty_str.isdigit() else 0
+                    if 1 <= day <= day_in_month:
+                        date_qty_map[day] += qty
+                except Exception:
+                    pass
+
+        # Fill value list with summed quantities
+        for day, qty in date_qty_map.items():
+            value[day - 1] = qty
+
+        # total = sum(value)
+        # value.append(total)
+
+        # Use defect_mode (defect_item)
+        defect_item = defect_mode or rows[0].get("master_defect_mode", "")
+
+        result.append(
+            {
+                "defect_name": defect_item,
+                "id": idx,
+                "value": value,
+            }
+        )
+
+    return result
+
+
 def sum_defects_by_day(data, day_in_month):
     defect_qty = [0] * (day_in_month)  # 31 days
 

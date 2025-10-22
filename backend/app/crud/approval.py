@@ -50,10 +50,10 @@ class ApprovalCRUD:
         # month = data["date"][0:7]
         date = data["date"]
         line_name = data["line_name"]
-        part_no = data["part_no"]
+        part_no = f"'{data['part_no']}'" if data["part_no"] else "null"
         process = data["process"]
         shift = data["shift"]
-        sub_line = data["sub_line"]
+        sub_line = f"'{data['sub_line']}'" if data["sub_line"] else "null"
         user_uuid = data["user_uuid"]
         user_name = data["user_name"]
         line_id = self.get_line_id(line_name)
@@ -64,9 +64,9 @@ class ApprovalCRUD:
                             VALUES ( 
                                         '{date}', 
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'A',
                                         '{user_uuid}',
                                         '{user_name}'
@@ -85,9 +85,9 @@ class ApprovalCRUD:
                             VALUES ( 
                                         '{date}', 
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'B',
                                         '{user_uuid}',
                                         '{user_name}'
@@ -106,9 +106,9 @@ class ApprovalCRUD:
                             VALUES ( 
                                         '{date}', 
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         '{shift}',
                                         '{user_uuid}',
                                         '{user_name}'
@@ -133,10 +133,10 @@ class ApprovalCRUD:
         date = data["date"]
         week_number, year_month = get_week_in_month_and_year_month(date)
         line_name = data["line_name"]
-        part_no = data["part_no"]
+        part_no = f"'{data['part_no']}'" if data["part_no"] else "null"
         process = data["process"]
         shift = data["shift"]
-        sub_line = data["sub_line"]
+        sub_line = f"'{data['sub_line']}'" if data["sub_line"] else "null"
         user_uuid = data["user_uuid"]
         user_name = data["user_name"]
         line_id = self.get_line_id(line_name)
@@ -148,9 +148,9 @@ class ApprovalCRUD:
                                         '{week_number}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'A',
                                         'True',
                                         '{user_uuid}',
@@ -172,9 +172,9 @@ class ApprovalCRUD:
                                         '{week_number}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'B',
                                         'True',
                                         '{user_uuid}',
@@ -196,9 +196,9 @@ class ApprovalCRUD:
                                         '{week_number}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         '{shift}',
                                         'True',
                                         '{user_uuid}',
@@ -225,10 +225,10 @@ class ApprovalCRUD:
         date = data["date"]
         half_month, year_month = get_half_month_and_year_month(date)
         line_name = data["line_name"]
-        part_no = data["part_no"]
+        part_no = f"'{data['part_no']}'" if data["part_no"] else "null"
         process = data["process"]
         shift = data["shift"]
-        sub_line = data["sub_line"]
+        sub_line = f"'{data['sub_line']}'" if data["sub_line"] else "null"
         user_uuid = data["user_uuid"]
         user_name = data["user_name"]
         line_id = self.get_line_id(line_name)
@@ -240,9 +240,9 @@ class ApprovalCRUD:
                                         '{half_month}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'A',
                                         'True',
                                         '{user_uuid}',
@@ -264,9 +264,9 @@ class ApprovalCRUD:
                                         '{half_month}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         'B',
                                         'True',
                                         '{user_uuid}',
@@ -288,9 +288,9 @@ class ApprovalCRUD:
                                         '{half_month}', 
                                         '{year_month}',
                                         '{line_id}',
-                                        '{part_no}',
+                                        {part_no},
                                         '{process}',
-                                        '{sub_line}',
+                                        {sub_line},
                                         '{shift}',
                                         'True',
                                         '{user_uuid}',

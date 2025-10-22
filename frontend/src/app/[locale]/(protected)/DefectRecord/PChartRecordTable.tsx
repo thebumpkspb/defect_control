@@ -1652,7 +1652,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
     if (
       !input.line_name ||
       !input.month ||
-      !input.part_no ||
+      // !input.part_no ||
       !input.process ||
       !input.shift ||
       isModalVisible == true

@@ -78,18 +78,18 @@ class P_Chart_Record_CRUD:
             # + sub_line
             + "' "
         )
-        if part_no:
+        if part_no and part_no != "null":
             where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
         else:
             where_stmt = where_stmt + " AND part_no is null"
-        if sub_line:
+        if sub_line and sub_line != "null":
             where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
         else:
             where_stmt = where_stmt + " AND sub_line is null"
 
         stmt = f"SELECT * FROM  pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
         rs = await db.execute(text(stmt))
-
+        print("stmt:", text(stmt))
         select_target_control = 0.00
 
         ## query db
@@ -2463,14 +2463,20 @@ class P_Chart_Record_CRUD:
         shift = data["shift"]
         shift = shift.lower()
         line_id = self.get_line_id(line)
+        where_stmt = ""
+        if part_no and part_no != "null":
+            where_stmt = where_stmt + f" and part_no='{part_no}'"
+        if sub_line and sub_line != "null":
+            where_stmt = where_stmt + f" and sub_line='{sub_line}'"
         stmt = f"""SELECT line_id,part_no,process,date,sum(qty_shift_{shift}) as defect_qty FROM public.pchart_defect_record
                     where 
                     line_id='{line_id}' and
-                    part_no='{part_no}' and
+                    --part_no='{part_no}' and
                     process='{process}' and
                     process='{process}' and
-                    sub_line='{sub_line}' and 
+                    --sub_line='{sub_line}' and 
                     defect_type <>'Repeat'
+                    {where_stmt}
                     group by line_id,part_no,process,date
                 """
         # print("stmt2:", stmt)
@@ -2603,9 +2609,11 @@ class P_Chart_Record_CRUD:
         line_id = self.get_line_id(line)
         where_stmt = ""
         if part_no:
-            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+            where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
         if sub_line:
-            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
+            where_stmt = (
+                where_stmt + f" AND (sub_line is null or sub_line='{sub_line}')"
+            )
         stmt = f"""
                     SELECT  
                         date::text,  
@@ -2661,9 +2669,11 @@ class P_Chart_Record_CRUD:
         line_id = self.get_line_id(line)
         where_stmt = ""
         if part_no:
-            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+            where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
         if sub_line:
-            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
+            where_stmt = (
+                where_stmt + f" AND (sub_line is null or sub_line='{sub_line}')"
+            )
         stmt = f"""
                     SELECT  
                         week_number::text,
@@ -2733,9 +2743,11 @@ class P_Chart_Record_CRUD:
         line_id = self.get_line_id(line)
         where_stmt = ""
         if part_no:
-            where_stmt = where_stmt + f" AND part_no='{part_no}'"
+            where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
         if sub_line:
-            where_stmt = where_stmt + f" AND sub_line='{sub_line}'"
+            where_stmt = (
+                where_stmt + f" AND (sub_line is null or sub_line='{sub_line}')"
+            )
         stmt = f"""
                     SELECT  
                         half_month::text,
@@ -2817,9 +2829,9 @@ class P_Chart_Record_CRUD:
         and date>='{first_date}' 
         and date <='{last_date}' 
         """
-        if part_no:
+        if part_no and part_no != "null":
             stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"
-        if sub_line:
+        if sub_line and sub_line != "null":
             stmt = stmt + f" and sub_line ='{sub_line}'"
 
         res = await db.execute(text(stmt))

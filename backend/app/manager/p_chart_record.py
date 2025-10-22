@@ -62,6 +62,8 @@ class P_Chart_Record_Manager:
         res, select_target_control, data = await self.crud.general_information(
             db=db, where_stmt=text_data
         )
+        print("select_target_control:", select_target_control)
+        print("res:", res)
         #!
         list_line = []
         list_line_id = []
@@ -128,11 +130,11 @@ class P_Chart_Record_Manager:
         # )
 
         return_list = []
-
+        print("res2:", res)
         try:
             for r in res:
                 key_index = r._key_to_index
-
+                print("r:", r)
                 # return_list.append(
                 #     General_Information_Result(
                 #         id=r[key_index["id"]],
@@ -3872,6 +3874,7 @@ class P_Chart_Record_Manager:
         # res = await self.crud.get_amount_action_record(db=db, where_stmt=text_data)
         # try:
         data = text_data.dict()
+        # print("data:", data)
         headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         # date_prod_qty = convert_month_year_to_date(data["month"])
         # first_date, last_date = get_first_and_last_date_of_month(date)
@@ -3880,7 +3883,7 @@ class P_Chart_Record_Manager:
         )
         if not defect_qty:
             defect_qty = 0
-        if not data["part_no"]:
+        if not data["part_no"] or data["part_no"] == "null":
             endpoint = (
                 self.BACKEND_URL_SERVICE
                 + "/api/prods/prod_qty?line_id="
@@ -3896,6 +3899,7 @@ class P_Chart_Record_Manager:
                 + f"&shift={data['shift']}&date="
                 + first_date
             )
+        print("endpoint:", endpoint)
         response_json = requests.get(endpoint, headers=headers).json()
         #!response_json["prod_qty"]
 

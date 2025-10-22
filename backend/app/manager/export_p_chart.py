@@ -15,9 +15,11 @@ from app.functions import parse_defect_string
 import json
 from dotenv import load_dotenv
 import os
+from app.manager import P_Chart_Record_Manager
 from app.functions import (
     get_days_in_month,
     transform_defect_data_to_defect_table,
+    transform_defect_data_to_defect_graph,
     generate_month_data,
     sum_defects_by_day,
     calculate_defect_ratio,
@@ -25,6 +27,7 @@ from app.functions import (
 )
 import requests
 import json
+from app.schemas.p_chart_record import General_Information, General_Information_Result
 
 # from collections import defaultdict
 
@@ -35,11 +38,63 @@ class Export_P_Chart_Manager:
         self.utils = Export_P_Chart_Utils()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        self.p_chart_record_manager = P_Chart_Record_Manager()
 
     def combine_json_list_defect_graph(self, data, skip_keys={}):
         Defect_Graph = namedtuple("Defect_Graph", ["id", "defect_name", "value"])
         safe_dict = {"Defect_Graph": Defect_Graph}
         data = eval(data, {}, safe_dict)
+        result = {}
+        # ---- 1. Combine defects by defect_name dynamically ----
+        defect_dict = {}
+        for entry in data:
+            for defect in entry["defect"]:
+                # Support both dict and object access
+                if isinstance(defect, dict):
+                    name = defect["defect_name"]
+                    val = defect["value"]
+                else:
+                    name = getattr(defect, "defect_name")
+                    val = getattr(defect, "value")
+                if name not in defect_dict:
+                    defect_dict[name] = list(val)
+                else:
+                    # sum elementwise
+                    defect_dict[name] = [a + b for a, b in zip(defect_dict[name], val)]
+        # convert back to list of dicts
+        result["defect"] = [
+            {"defect_name": name, "value": values}
+            for name, values in defect_dict.items()
+        ]
+        # ---- 2. Combine other numeric lists dynamically ----
+        # skip_keys = {"ucl1", "ucl2"}
+        for key in data[0]:
+            if key in ("defect", "p_bar"):  # skip 'defect' and 'p_bar' separately
+                result[key] = data[0][key] if key != "defect" else result["defect"]
+                continue
+            if key in skip_keys:
+                result[key] = data[0][key]
+                continue
+            # Only combine lists of numbers
+            if isinstance(data[0][key], list) and all(
+                isinstance(x, (int, float)) for x in data[0][key]
+            ):
+                # sum across all dicts for each position
+                combined = [0] * len(data[0][key])
+                for entry in data:
+                    for i, val in enumerate(entry.get(key, [0] * len(combined))):
+                        combined[i] += val
+                result[key] = combined
+            else:
+                # Keep the first value (or implement special logic if needed)
+                result[key] = data[0][key]
+        # return str(result).replace("'", '"')
+        return result
+
+    def combine_json_list_defect_graph_new(self, data, skip_keys={}):
+        # Defect_Graph = namedtuple("Defect_Graph", ["id", "defect_name", "value"])
+        # safe_dict = {"Defect_Graph": Defect_Graph}
+        # data = eval(data, {}, safe_dict)
         result = {}
         # ---- 1. Combine defects by defect_name dynamically ----
         defect_dict = {}
@@ -228,6 +283,22 @@ class Export_P_Chart_Manager:
         equation_image2 = current_directory + "/app/utils/export_p_chart/equation2.png"
 
         records = await self.crud.fetch_filtered_records(db=db, filters=filters)
+        general_information = (
+            await self.p_chart_record_manager.post_general_information(
+                text_data=General_Information(
+                    month=filters["month"],
+                    line_name=filters["line_name"],
+                    part_no=filters["part_no"],
+                    shift=filters["shift"],
+                    process=filters["process"],
+                    sub_line=filters["sub_line"],
+                ),
+                db=db,
+            )
+        )
+        general_information = general_information[0]
+
+        print("general_information:", general_information)
         part_name = "All"
         for r in records:
             key_index = r._key_to_index
@@ -236,49 +307,59 @@ class Export_P_Chart_Manager:
                 if filters["process"] != "Outline"
                 else "All"
             )
-            n_bar = r[key_index["n_bar"]] or 0
-            p_bar = r[key_index["p_bar"]] or 0
-            k = r[key_index["k"]] or 0
-            uclp = r[key_index["uclp"]] or 0
-            lclp = r[key_index["lclp"]] or 0
-            p_bar_last = r[key_index["p_bar_last"]] or 0
+            # n_bar = r[key_index["n_bar"]] or 0
+            # p_bar = r[key_index["p_bar"]] or 0
+            # k = r[key_index["k"]] or 0
+            # uclp = r[key_index["uclp"]] or 0
+            # lclp = r[key_index["lclp"]] or 0
+            # p_bar_last = r[key_index["p_bar_last"]] or 0
+        n_bar = general_information.n_bar or 0
+        p_bar = general_information.p_bar or 0
+        k = general_information.k or 0
+        uclp = general_information.uclp or 0
+        lclp = general_information.lclp or 0
+        p_bar_last = general_information.p_last_month or 0
 
         pchart_graph = None
         #!
-        graph_records = await self.crud.fetch_filtered_graph_records(
-            db=db, filters=filters
-        )
+        # graph_records = await self.crud.fetch_filtered_graph_records(
+        #     db=db, filters=filters
+        # )
+        # # for r in graph_records:
+        # #     key_index = r._key_to_index
+        # #     pchart_graph = r[key_index["pchart_graph"]]
+        # # TODO:
+        # result_graph = []
         # for r in graph_records:
         #     key_index = r._key_to_index
-        #     pchart_graph = r[key_index["pchart_graph"]]
-        # TODO:
-        result_graph = []
-        for r in graph_records:
-            key_index = r._key_to_index
-            result_graph.append(r[key_index["pchart_graph"]])
-        result_graph = "[" + ", ".join(str(item) for item in result_graph) + "]"
+        #     result_graph.append(r[key_index["pchart_graph"]])
+        # result_graph = "[" + ", ".join(str(item) for item in result_graph) + "]"
 
-        print("result_graph:", result_graph)
-        if filters["process"] != "Outline":
-            pchart_graph = self.combine_json_list_defect_graph(
-                result_graph,
-                {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
-            )
-        else:
-            pchart_graph = None
-        # print("pchart_graph:", pchart_graph)
+        # print("result_graph:", result_graph)
+        # if filters["process"] != "Outline":
+        #     pchart_graph = self.combine_json_list_defect_graph(
+        #         result_graph,
+        #         {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
+        #     )
+        #     print("pchart_graph:", pchart_graph)
+        # else:
+        #     pchart_graph = None
+        # # print("pchart_graph:", pchart_graph)
         # !
         # print("pchart_graph:", pchart_graph)
-        target = await self.crud.fetch_filtered_master_target_line(
-            db=db, filters=filters
-        )
-        if target and len(target.fetchall()) > 0:
-            for r in target:
-                key_index = r._key_to_index
-                target_control = r[key_index["target_control"]]
+        # target = await self.crud.fetch_filtered_master_target_line(
+        #     db=db, filters=filters
+        # )
+        # if target and len(target.fetchall()) > 0:
+        #     for r in target:
+        #         key_index = r._key_to_index
+        #         target_control = r[key_index["target_control"]]
+        # else:
+        #     target_control = "-"
+        if general_information.target_control > 0:
+            target_control = general_information.target_control
         else:
             target_control = "-"
-
         #!
 
         # for i in range(day_in_month + 1):
@@ -293,15 +374,34 @@ class Export_P_Chart_Manager:
             filters["process"] == "Outline"
             or not filters["part_no"]
             or filters["part_no"] == "null"
+            or True
         ):
             line_id = self.crud.get_line_id(filters["line_name"])
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?line_id="
-                + str(line_id)
-                + f"&shift={filters['shift']}"
-                + f"&date={date_str}"
-            )
+            # endpoint = (
+            #     self.BACKEND_URL_SERVICE
+            #     + "/api/prods/prod_qty?line_id="
+            #     + str(line_id)
+            #     + f"&shift={filters['shift']}"
+            #     + f"&date={date_str}"
+            # )
+            if (not filters["part_no"] or filters["part_no"] == "null") or filters[
+                "process"
+            ] == "Outline":
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?line_id="
+                    + str(line_id)
+                    + f"&shift={filters['shift']}"
+                    + f"&date={date_str}"
+                )
+            else:
+                endpoint = (
+                    self.BACKEND_URL_SERVICE
+                    + "/api/prods/prod_qty?part_line_id="
+                    + str(filters["sub_line"])
+                    + f"&shift={filters['shift']}"
+                    + f"&date={date_str}"
+                )
             headers = {"X-API-Key": self.BACKEND_API_SERVICE}
             response_json = requests.get(endpoint, headers=headers).json()
 
@@ -316,10 +416,17 @@ class Export_P_Chart_Manager:
             defect_table_list = transform_defect_data_to_defect_table(
                 defect_outline, day_in_month
             )
+
             day_table_list = generate_month_data(filters["month"])
             defect_qty_list = sum_defects_by_day(defect_outline, day_in_month)[
                 "defect_qty"
             ]
+            #!
+            # TODO: get_calculation_data
+            # calculate_data = await self.p_chart_record_manager.get_calculation_data()
+            # TODO: post_general_information
+
+            #!
             defect_ratio_list = calculate_defect_ratio(defect_qty_list, list_prod_qty)
             review_list = extract_fields_by_day(defect_outline)
             defect_outline_table = {
@@ -329,13 +436,59 @@ class Export_P_Chart_Manager:
                 "prod_qty": list_prod_qty,
                 "defect_qty": defect_qty_list,
                 "defect_ratio": defect_ratio_list,
-                "record_by": review_list["record_by"],
-                "review_by_tl": review_list["review_by_tl"],
-                "review_by_mgr": review_list["review_by_mgr"],
-                "review_by_gm": review_list["review_by_gm"],
+                # "record_by": review_list["record_by"],
+                # "review_by_tl": review_list["review_by_tl"],
+                # "review_by_mgr": review_list["review_by_mgr"],
+                # "review_by_gm": review_list["review_by_gm"],
+                "record_by": [
+                    ".".join(word[0] for word in item.split()) + "."
+                    for item in review_list["record_by"]
+                ],
+                "review_by_tl": [
+                    ".".join(word[0] for word in item.split()) + "."
+                    for item in review_list["review_by_tl"]
+                ],
+                "review_by_mgr": [
+                    ".".join(word[0] for word in item.split()) + "."
+                    for item in review_list["review_by_mgr"]
+                ],
+                "review_by_gm": [
+                    ".".join(word[0] for word in item.split()) + "."
+                    for item in review_list["review_by_gm"]
+                ],
+                # [".".join(word[0] for word in item.split()) + "." for item in arr]
             }
-            # print("defect_outline_table:", defect_outline_table)
+            print("defect_outline_table:", defect_outline_table)
             data_table = defect_outline_table
+            #!
+            defect_graph_list = transform_defect_data_to_defect_graph(
+                defect_outline, day_in_month
+            )
+            ucl_target = [
+                (p_bar + (math.sqrt((100 - p_bar) * p_bar / x))) if x != 0 else 0
+                for x in list_prod_qty[:-1]
+            ]
+            defect_outline_graph = {
+                "defect": defect_graph_list,
+                "p_bar": [p_bar] * day_in_month,
+                "percent_defect": defect_ratio_list[:-1],
+                "ucl_target": ucl_target,
+                "x_axis_label": day_table_list["index"][:-1],
+                "x_axis_value": list(map(int, day_table_list["index"][:-1])),
+                "x_axis_maxmin": [
+                    min(list(map(int, day_table_list["index"][:-1]))),
+                    max(list(map(int, day_table_list["index"][:-1]))),
+                ],
+                "y_left_axis": [0, 10, 20, 30, 40],
+                "y_right_axis": [0.0, 1.0, 2.0, 3.0, 4.0],
+            }
+            print("defect_outline_graph:", defect_outline_graph)
+            pchart_graph = self.combine_json_list_defect_graph_new(
+                [defect_outline_graph],
+                {"p_bar", "ucl_target", "x_axis_label", "x_axis_value", "y_right_axis"},
+            )
+            print("2pchart_graph:", pchart_graph)
+            #!
         else:
             table = await self.crud.fetch_filtered_table(db=db, filters=filters)
             result_table = []
@@ -435,18 +588,18 @@ class Export_P_Chart_Manager:
             "AF5": shift_b,
         }
         # TODO:
-        # if filters["process"] != "Outline":
-        # data_to_write.update(
-        #     {
-        #         "AZ9": f"{n_bar:.2f}",
-        #         "AZ12": f"{p_bar:.2f}",
-        #         "AZ18": f"{k:.2f}",
-        #         "AZ22": f"{uclp:.2f}",
-        #         "AZ24": f"{lclp:.2f}",
-        #         "AY27": target_control,
-        #         "AY29": f"{p_bar_last:.5f}",
-        #     }
-        # )
+        if filters["process"] != "Outline":
+            data_to_write.update(
+                {
+                    "AZ9": f"{n_bar:.2f}",
+                    "AZ12": f"{p_bar:.2f}",
+                    "AZ18": f"{k:.2f}",
+                    "AZ22": f"{uclp:.2f}",
+                    "AZ24": f"{lclp:.2f}",
+                    "AY27": target_control,
+                    "AY29": f"{p_bar_last:.5f}",
+                }
+            )
         start_col = 14
         if filters["process"] == "Outline":
             start_row = 8
