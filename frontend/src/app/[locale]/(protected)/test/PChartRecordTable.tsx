@@ -1137,7 +1137,7 @@ const defaultDefectTable = {
   value: [],
 };
 
-const pChartRecordTableResultDefault = {
+const pChartRecordTableResultDefault: any = {
   month: "",
   line_name: "",
   part_no: "",
@@ -1494,7 +1494,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         sub_line: input.sub_line,
       });
 
-      const selectedRecordTableData =
+      const selectedRecordTableData: any =
         response.p_chart_record_table_result.find((item) => {
           return item.shift === input.shift;
         }) || pChartRecordTableResultDefault;

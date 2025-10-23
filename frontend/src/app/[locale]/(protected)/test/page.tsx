@@ -1053,6 +1053,7 @@ export default function PChartHeader() {
           input={{
             month: month,
             line_name: selectedSectionLine,
+            line_id: selectedLineId,
             part_no: selectedPartNo,
             shift: shift,
             process: process,

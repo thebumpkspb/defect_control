@@ -84,64 +84,64 @@ const defaultTableData: TableData[] = [];
 //   ],
 // };
 
-const mockData: DefectParetoChartResult = {
-  month: "November-2024",
-  department: "Manufacturing",
-  section: "414454 - Sta. Assy PA70",
-  line: ["414259 - Mag. Sw. PA", "414454 - Starter Assy PA70"],
-  defect_pareto_chart: {
-    axis_x: ["Scrap 1", "Other 1", "Name plate NG"],
-    axis_y_lift: ["0", "25", "50", "75", "100", "125"],
-    axis_y_right: ["0", "100", "150", "200", "250", "300"],
-    pareto: [
-      10.06, 18.27, 26.04, 33.58, 40.97, 47.64, 54.28, 59.31, 63.42, 67.11,
-      70.45, 73.73, 76.6, 79.27, 81.94, 84.09, 86.25, 88.1, 89.84, 91.28, 92.61,
-      93.95, 95.28, 96.36, 97.43, 98.36, 99.23, 99.9, 100,
-    ],
-    defect_qty: [
-      392, 320, 303, 294, 288, 260, 259, 196, 160, 144, 130, 128, 112, 104, 104,
-      84, 84, 72, 68, 56, 52, 52, 52, 42, 42, 36, 34, 26, 4,
-    ],
-  },
-  description_of_defect: [
-    {
-      date: "2024-11-01",
-      line_name: "414259 - Mag. Sw. PA",
-      part_no: "TG053400-4980",
-      sub_line: "123",
-      part_name: "SWITCH ASSY, MAGNETIC",
-      trouble: "Trouble_1_Outline",
-      process: "inline",
-      prod_vol: 3071,
-      defect_qty: 58,
-      percent_defect: 1.89,
-    },
-    {
-      date: "2024-11-01",
-      line_name: "414454 - Starter Assy PA70",
-      part_no: "TG428000-0630",
-      sub_line: "123",
-      part_name: "STARTER ASSY",
-      trouble: "Mobin ขาหักผิดปกติ",
-      process: "inline",
-      prod_vol: 3071,
-      defect_qty: 35,
-      percent_defect: 1.14,
-    },
-    {
-      date: "2024-11-01",
-      line_name: "414259 - Mag. Sw. PA",
-      part_no: "TG053400-5050",
-      sub_line: "123",
-      part_name: "SWITCH ASSY, MAGNETIC (G)",
-      trouble: "Trouble_1_Inspection",
-      process: "inline",
-      prod_vol: 3071,
-      defect_qty: 120,
-      percent_defect: 3.91,
-    },
-  ],
-};
+// const mockData: DefectParetoChartResult = {
+//   month: "November-2024",
+//   department: "Manufacturing",
+//   section: "414454 - Sta. Assy PA70",
+//   line: ["414259 - Mag. Sw. PA", "414454 - Starter Assy PA70"],
+//   defect_pareto_chart: {
+//     axis_x: ["Scrap 1", "Other 1", "Name plate NG"],
+//     axis_y_lift: ["0", "25", "50", "75", "100", "125"],
+//     axis_y_right: ["0", "100", "150", "200", "250", "300"],
+//     pareto: [
+//       10.06, 18.27, 26.04, 33.58, 40.97, 47.64, 54.28, 59.31, 63.42, 67.11,
+//       70.45, 73.73, 76.6, 79.27, 81.94, 84.09, 86.25, 88.1, 89.84, 91.28, 92.61,
+//       93.95, 95.28, 96.36, 97.43, 98.36, 99.23, 99.9, 100,
+//     ],
+//     defect_qty: [
+//       392, 320, 303, 294, 288, 260, 259, 196, 160, 144, 130, 128, 112, 104, 104,
+//       84, 84, 72, 68, 56, 52, 52, 52, 42, 42, 36, 34, 26, 4,
+//     ],
+//   },
+//   description_of_defect: [
+//     {
+//       date: "2024-11-01",
+//       line_name: "414259 - Mag. Sw. PA",
+//       part_no: "TG053400-4980",
+//       sub_line: "123",
+//       part_name: "SWITCH ASSY, MAGNETIC",
+//       trouble: "Trouble_1_Outline",
+//       process: "inline",
+//       prod_vol: 3071,
+//       defect_qty: 58,
+//       percent_defect: 1.89,
+//     },
+//     {
+//       date: "2024-11-01",
+//       line_name: "414454 - Starter Assy PA70",
+//       part_no: "TG428000-0630",
+//       sub_line: "123",
+//       part_name: "STARTER ASSY",
+//       trouble: "Mobin ขาหักผิดปกติ",
+//       process: "inline",
+//       prod_vol: 3071,
+//       defect_qty: 35,
+//       percent_defect: 1.14,
+//     },
+//     {
+//       date: "2024-11-01",
+//       line_name: "414259 - Mag. Sw. PA",
+//       part_no: "TG053400-5050",
+//       sub_line: "123",
+//       part_name: "SWITCH ASSY, MAGNETIC (G)",
+//       trouble: "Trouble_1_Inspection",
+//       process: "inline",
+//       prod_vol: 3071,
+//       defect_qty: 120,
+//       percent_defect: 3.91,
+//     },
+//   ],
+// };
 
 interface DescriptionOfDefectProps {
   dataSource: DefectParetoChartResult;
