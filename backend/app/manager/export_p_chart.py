@@ -939,132 +939,186 @@ class Export_P_Chart_Manager:
                     defect_outline,
                 )
             )
-            for i, defect in enumerate(defect_outline_page2):
-                print("i:", i)
-                print("defect:", defect)
-                # ── wrap wide fields
-                trouble_lines = textwrap.wrap(defect["master_defect_mode"], width=45)
-                area_lines = textwrap.wrap(defect["master_defect_type"], width=45)
-                partno_lines = textwrap.wrap(defect["part_no"], width=45)
-                partname_lines = textwrap.wrap(defect["part_name"], width=45)
-                qty_lines = textwrap.wrap(defect["defect_qty"], width=45)
-                incharge_lines = textwrap.wrap(defect["pic"], width=45)
-                max_lines = max(
-                    len(trouble_lines),
-                    len(area_lines),
-                    len(partno_lines),
-                    len(partname_lines),
-                    len(qty_lines),
-                )
+            defect_outline_page2 = sorted(
+                defect_outline_page2, key=lambda x: (x["date"], x["part_no"])
+            )
+            print("len:", len(defect_outline_page2))
+            defect_outline_amount = len(defect_outline_page2)
+            # print("page :", math.ceil(defect_amount / 37))
+            outline_page_amount = math.ceil(defect_outline_amount / 44)
+            print("outline_page_amount:", outline_page_amount)
+            ws2.title = f"Page{outline_page_amount+4}"
+            # ws.title = f"Page{outline_page_amount+3}"
 
-                # # ── wrap narrow fields
-                # in_change_lines = textwrap.wrap(in_change[i], width=15)
-                # manager_lines = textwrap.wrap(manager[i], width=15)
+            for idx_page in range(1, outline_page_amount + 1):
+                print(f"Page{idx_page}")
+                new_ws = wb.copy_worksheet(ws2)
+                new_ws.title = f"Page{str(int(idx_page+1))}"
+                # start_idx = (idx_page - 1) * 37
+                # end_idx = (idx_page) * 37
+                start_idx = (idx_page - 1) * 44
+                end_idx = (idx_page) * 44
+                if end_idx >= defect_outline_amount:
+                    end_idx = defect_outline_amount
 
-                base_idx = 0
-                remaining = max_lines
+                # print(f"data --> {start_idx}:{end_idx}")
+                chunk_sorted_outline_defect_table = defect_outline_page2[
+                    start_idx:end_idx
+                ]
+                print("chunk_sorted_defect_table:", chunk_sorted_outline_defect_table)
+                # sorted_defect_table = sorted_defect_table[:37]
+                ##!!
 
-                while remaining:
-                    free_lines = MAX_ROW - row + 1
-                    lines_now = min(remaining, free_lines)
+                # counts = defaultdict(int)
+                # # print("sorted_defect_table:", sorted_defect_table)
+                # for row in chunk_sorted_defect_table:
+                #     defect_type = row["defect_type"]
+                #     counts[defect_type] += 1
 
-                    if base_idx == 0:
-                        # write index and date only once (first line of record)
-                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = i + 1
-                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = defect[
-                            "date"
-                        ]
+                # # Convert defaultdict back to a regular dict (optional)
+                # counts = dict(counts)
+                # print("counts:", counts)
+                row_del = 0
+                data_to_write_2 = {}
+                col_offset = LEFT_COL_OFFSET
+                row = 5
+                for i, defect in enumerate(chunk_sorted_outline_defect_table):
+                    print("i:", i)
+                    print("defect:", defect)
+                    # ── wrap wide fields
+                    trouble_lines = textwrap.wrap(
+                        defect["master_defect_mode"], width=45
+                    )
+                    area_lines = textwrap.wrap(defect["master_defect_type"], width=45)
+                    partno_lines = textwrap.wrap(defect["part_no"], width=45)
+                    partname_lines = textwrap.wrap(defect["part_name"], width=45)
+                    qty_lines = textwrap.wrap(defect["defect_qty"], width=45)
+                    incharge_lines = textwrap.wrap(defect["pic"], width=45)
+                    max_lines = max(
+                        len(trouble_lines),
+                        len(area_lines),
+                        len(partno_lines),
+                        len(partname_lines),
+                        len(qty_lines),
+                    )
+                    # print("max_lines:", max_lines)
+                    # # ── wrap narrow fields
+                    # in_change_lines = textwrap.wrap(in_change[i], width=15)
+                    # manager_lines = textwrap.wrap(manager[i], width=15)
 
-                        # write in_change and manager, only on first slice
-                        # for k in range(lines_now):
-                        #     idx = base_idx + k
-                        #     in_change_text = (
-                        #         in_change_lines[idx]
-                        #         if idx < len(in_change_lines)
-                        #         else ""
-                        #     )
-                        #     manager_text = (
-                        #         manager_lines[idx] if idx < len(manager_lines) else ""
-                        #     )
+                    base_idx = 0
+                    remaining = max_lines
 
-                        #     data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
-                        #         in_change_text
-                        #     )
-                        #     data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
-                        #         manager_text
-                        #     )
-                    else:
-                        # clear index/date in overflow rows
-                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
-                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                    while remaining:
+                        free_lines = MAX_ROW - row + 1
+                        lines_now = min(remaining, free_lines)
 
-                        # clear in_change and manager in overflow rows
+                        if base_idx == 0:
+                            # write index and date only once (first line of record)
+                            data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = (
+                                ((idx_page - 1) * 44) + i + 1
+                            )
+                            data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = defect[
+                                "date"
+                            ]
+
+                            # write in_change and manager, only on first slice
+                            # for k in range(lines_now):
+                            #     idx = base_idx + k
+                            #     in_change_text = (
+                            #         in_change_lines[idx]
+                            #         if idx < len(in_change_lines)
+                            #         else ""
+                            #     )
+                            #     manager_text = (
+                            #         manager_lines[idx] if idx < len(manager_lines) else ""
+                            #     )
+
+                            #     data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
+                            #         in_change_text
+                            #     )
+                            #     data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
+                            #         manager_text
+                            #     )
+                        else:
+                            # clear index/date in overflow rows
+                            data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                            data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+
+                            # clear in_change and manager in overflow rows
+                            for k in range(lines_now):
+                                data_to_write_2[
+                                    f"{chr ( 70 + col_offset )}{row + k}"
+                                ] = ""
+                                data_to_write_2[
+                                    f"{chr ( 71 + col_offset )}{row + k}"
+                                ] = ""
+
+                        # write trouble and action
                         for k in range(lines_now):
-                            data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = ""
-                            data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = ""
+                            idx = base_idx + k
 
-                    # write trouble and action
-                    for k in range(lines_now):
-                        idx = base_idx + k
+                            partname_text = (
+                                partname_lines[idx] if idx < len(partname_lines) else ""
+                            )
+                            partno_text = (
+                                partno_lines[idx] if idx < len(partno_lines) else ""
+                            )
 
-                        partname_text = (
-                            partname_lines[idx] if idx < len(partname_lines) else ""
-                        )
-                        partno_text = (
-                            partno_lines[idx] if idx < len(partno_lines) else ""
-                        )
+                            area_text = area_lines[idx] if idx < len(area_lines) else ""
+                            trouble_text = (
+                                trouble_lines[idx] if idx < len(trouble_lines) else ""
+                            )
+                            qty_text = qty_lines[idx] if idx < len(qty_lines) else ""
 
-                        area_text = area_lines[idx] if idx < len(area_lines) else ""
-                        trouble_text = (
-                            trouble_lines[idx] if idx < len(trouble_lines) else ""
-                        )
-                        qty_text = qty_lines[idx] if idx < len(qty_lines) else ""
+                            incharge_text = (
+                                incharge_lines[idx] if idx < len(incharge_lines) else ""
+                            )
 
-                        incharge_text = (
-                            incharge_lines[idx] if idx < len(incharge_lines) else ""
-                        )
+                            data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
+                                partname_text if partname_text != "None" else ""
+                            )
+                            data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = (
+                                partno_text
+                            )
+                            data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
+                                area_text
+                            )
+                            data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
+                                trouble_text
+                            )
+                            data_to_write_2[f"{chr ( 72 + col_offset )}{row + k}"] = (
+                                qty_text
+                            )
+                            data_to_write_2[f"{chr ( 73 + col_offset )}{row + k}"] = (
+                                "ST"
+                            )
+                            data_to_write_2[f"{chr ( 74 + col_offset )}{row + k}"] = (
+                                incharge_text if incharge_text != "None" else ""
+                            )
 
-                        data_to_write_2[f"{chr ( 68 + col_offset )}{row + k}"] = (
-                            partname_text
-                        )
-                        data_to_write_2[f"{chr ( 69 + col_offset )}{row + k}"] = (
-                            partno_text
-                        )
-                        data_to_write_2[f"{chr ( 70 + col_offset )}{row + k}"] = (
-                            area_text
-                        )
-                        data_to_write_2[f"{chr ( 71 + col_offset )}{row + k}"] = (
-                            trouble_text
-                        )
-                        data_to_write_2[f"{chr ( 72 + col_offset )}{row + k}"] = (
-                            qty_text
-                        )
-                        data_to_write_2[f"{chr ( 73 + col_offset )}{row + k}"] = "ST"
-                        data_to_write_2[f"{chr ( 74 + col_offset )}{row + k}"] = (
-                            incharge_text
-                        )
+                        # advance
+                        row += lines_now
+                        base_idx += lines_now
+                        remaining -= lines_now
 
-                    # advance
-                    row += lines_now
-                    base_idx += lines_now
-                    remaining -= lines_now
+                        # overflow → switch to right block
+                        if remaining:
+                            data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
+                            data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
+                            col_offset = RIGHT_COL_OFFSET
+                            row = 5
 
-                    # overflow → switch to right block
-                    if remaining:
-                        data_to_write_2[f"{chr ( 66 + col_offset )}{row}"] = ""
-                        data_to_write_2[f"{chr ( 67 + col_offset )}{row}"] = ""
-                        col_offset = RIGHT_COL_OFFSET
-                        row = 5
-
-            for cell, value in data_to_write_2.items():
-                col_letter, row = openpyxl.utils.cell.coordinate_from_string(
-                    cell
-                )  # Correctly unpack column and row
-                col = openpyxl.utils.column_index_from_string(
-                    col_letter
-                )  # Convert column letter to index
-                ws2.cell(row=row, column=col, value=value)
-
+                for cell, value in data_to_write_2.items():
+                    col_letter, row = openpyxl.utils.cell.coordinate_from_string(
+                        cell
+                    )  # Correctly unpack column and row
+                    col = openpyxl.utils.column_index_from_string(
+                        col_letter
+                    )  # Convert column letter to index
+                    new_ws.cell(row=row, column=col, value=value)
+            wb.remove(wb[f"Page{outline_page_amount+4}"])
+            # wb.remove(wb[f"Page{page_amount+3}"])
         # for idx, value in enumerate ( merge_cell_list ):
         #    ws.merge_cells ( value )
         # Process and insert the graph image
@@ -1095,8 +1149,13 @@ class Export_P_Chart_Manager:
         defect_amount = len(sorted_defect_table)
         # print("page :", math.ceil(defect_amount / 37))
         page_amount = math.ceil(defect_amount / 46)
-        ws2.title = f"Page{page_amount+2}"
-        ws.title = f"Page{page_amount+3}"
+        if filters["process"] == "Outline":
+            for i in range(1, outline_page_amount + 1):
+                wb[f"Page{1+i}"].title = f"Page{page_amount+2+i}"
+            wb[f"Page1"].title = f"Page{page_amount+outline_page_amount+i+3}"
+        else:
+            ws2.title = f"Page{page_amount+2}"
+            ws.title = f"Page{page_amount+3}"
 
         for idx_page in range(1, page_amount + 1):
             # print(f"Page{idx_page}")
@@ -1235,6 +1294,9 @@ class Export_P_Chart_Manager:
                 img = OpenPyxlImage(equation_image2)
                 img.anchor = "AT33"
                 wb[f"Page{idx_page}"].add_image(img)  # Adjust position as needed
+                wb[f"Page{idx_page}"].print_area = "A1:BC87"
+            else:
+                wb[f"Page{idx_page}"].print_area = "A1:AU65"
             # ws.add_image(img)  # Adjust position as needed
             # for row in wb[f"Page{idx_page}"].iter_rows(min_row=row_del, max_row=81):
             #     for cell in row:
@@ -1249,11 +1311,41 @@ class Export_P_Chart_Manager:
             # if filters["process"] != "Outline":
             #     wb[f"Page{idx_page}"].delete_rows(7, 23)
             # ws.delete_rows(idx=row_del, amount=82 - row_del)
-        new_ws2 = wb.copy_worksheet(ws2)
-        new_ws2.title = f"Page{page_amount+1}"
-        wb.remove(wb[f"Page{page_amount+2}"])
-        wb.remove(wb[f"Page{page_amount+3}"])
+            # print(f"Page{idx_page}")
+
+            wb[f"Page{idx_page}"].page_setup.orientation = wb[
+                f"Page{idx_page}"
+            ].ORIENTATION_PORTRAIT
+        if filters["process"] == "Outline":
+            for i in range(1, outline_page_amount + 1):
+                new_ws2 = wb.copy_worksheet(wb[f"Page{page_amount+2+i}"])
+                new_ws2.title = f"Page{page_amount+i}"
+                wb.remove(wb[f"Page{page_amount+2+i}"])
+            wb.remove(wb[f"Page{page_amount+outline_page_amount+i+3}"])
+        #     wb[f'Page{1+i}'].title = f"Page{page_amount+2+i}"
+        # wb[f'Page1'].title = f"Page{page_amount+outline_page_amount+i+3}"
+        else:
+            new_ws2 = wb.copy_worksheet(ws2)
+            new_ws2.title = f"Page{page_amount+1}"
+            wb.remove(wb[f"Page{page_amount+2}"])
+            wb.remove(wb[f"Page{page_amount+3}"])
         #!
+        if filters["process"] != "Outline":
+            outline_page_amount = 1
+            first_header_page = "AQ2"
+            second_header_page = "N3"
+        else:
+            first_header_page = "AR2"
+            second_header_page = "T3"
+        for i in range(1, page_amount + outline_page_amount + 1):
+            if i <= page_amount:
+                wb[f"Page{i}"][
+                    first_header_page
+                ] = f"Page {i}/{page_amount+outline_page_amount}"
+            else:
+                wb[f"Page{i}"][
+                    second_header_page
+                ] = f"Page {i}/{page_amount+outline_page_amount}"
         wb.save(output_excel_path2)
         self.utils.convert_excel_to_pdf(output_excel_path2, output_pdf_path)
         # print("PDF report generated successfully.")

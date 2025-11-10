@@ -1006,8 +1006,8 @@ export interface PChartRecordHistoryRecordsViewRequest {
   month: string;
   line_name: string;
   process: string;
-  sub_line: string;
-  part_no: string;
+  sub_line: string | null;
+  part_no: string | null;
   shift: string;
 }
 

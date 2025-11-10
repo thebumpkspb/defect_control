@@ -640,8 +640,8 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         defective_items: pChartRecordTableSelectedDefectMode || "", // defective mode
         comment: "", // comment
         process: input.process || "",
-        sub_line: input.sub_line || "",
-        part_no: input.part_no || "",
+        sub_line: input.sub_line,
+        part_no: input.part_no,
         defect_qty_A: null,
         defect_qty_B: null,
         pic: null,
@@ -1008,7 +1008,7 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
           if (!sub_line.includes(createForm.sub_line)) {
             setCreateForm((prev) => ({
               ...prev,
-              sub_line: "",
+              sub_line: null,
             }));
           }
         }

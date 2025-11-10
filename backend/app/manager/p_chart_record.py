@@ -57,7 +57,7 @@ class P_Chart_Record_Manager:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
             )
-
+        # data=text_data.dict()
         ## get data general_information from db
         res, select_target_control, data = await self.crud.general_information(
             db=db, where_stmt=text_data
@@ -132,6 +132,24 @@ class P_Chart_Record_Manager:
         return_list = []
         print("res2:", res)
         try:
+            return_list.append(
+                General_Information_Result(
+                    id=0,
+                    month=data["month"],
+                    line_name=data["line_name"],
+                    part_no=data["part_no"],
+                    part_name="",
+                    process=data["process"],
+                    shift=data["shift"],
+                    target_control=select_target_control,
+                    p_last_month=list_p_last_month,
+                    n_bar=n_bar_now_month,
+                    p_bar=p_bar_now_month,
+                    k=k_now_month,
+                    uclp=uclp_now_month,
+                    lclp=lclp_now_month,
+                )
+            )
             for r in res:
                 key_index = r._key_to_index
                 print("r:", r)

@@ -455,7 +455,7 @@ export interface AddNewRecordSaveRequest {
   defect_type: string;
   process: string;
   sub_line: string | null;
-  part_no: string;
+  part_no: string | null;
   defective_items: string;
   defect_qty_A: number | null;
   defect_qty_B: number | null;

@@ -1539,9 +1539,9 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     if (!values.partNo) missingFields.push("Part No");
     if (!values.shift) missingFields.push("Shift");
     if (!values.trouble) missingFields.push("Trouble");
-    if (!values.action) missingFields.push("Action");
-    if (!values.inCharge) missingFields.push("In charge");
-    if (!values.manager) missingFields.push("Manager");
+    // if (!values.action) missingFields.push("Action");
+    // if (!values.inCharge) missingFields.push("In charge");
+    // if (!values.manager) missingFields.push("Manager");
     if (!values.defect_item) missingFields.push("defect_item");
     if (!values.category) missingFields.push("category");
     // if (!values.detectBy) missingFields.push("Detect By");
@@ -2056,6 +2056,14 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
                   color: "black",
                 }}
                 // mode="multiple"
+                showSearch
+                filterOption={(input, option) => {
+                  const optionLabel =
+                    (option?.label as unknown as string) || "";
+                  return optionLabel
+                    .toLowerCase()
+                    .includes(input.toLowerCase());
+                }}
                 options={parts?.map((item) => ({
                   value: item.part_no,
                   label: item.part_no,
@@ -2294,7 +2302,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
             <Form.Item
               label={
                 <p>
-                  Action <text style={{ color: "red" }}>*</text>
+                  Action <text style={{ color: "black" }}>*</text>
                 </p>
               }
               name="action"
@@ -2316,7 +2324,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
             <Form.Item
               label={
                 <p>
-                  In Charge <text style={{ color: "red" }}>*</text>
+                  In Charge <text style={{ color: "black" }}>*</text>
                 </p>
               }
               name="inCharge"
@@ -2338,7 +2346,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
             <Form.Item
               label={
                 <p>
-                  Manager <text style={{ color: "red" }}>*</text>
+                  Manager <text style={{ color: "black" }}>*</text>
                 </p>
               }
               name="manager"

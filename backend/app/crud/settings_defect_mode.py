@@ -262,7 +262,7 @@ class Settings_Defect_Mode_CRUD:
             if defect_type in ["M/C Set up", "Quality Test"]:
                 defect_mode = ""
 
-            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{"'"+part_no+"'" if part_no else 'NULL'},{"'"+part_name+"'" if part_name else 'NULL'},'{defect_type}','{defect_mode}',{target_by_piece},{category},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
+            stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{"'"+part_no+"'" if part_no else 'NULL'},{"'"+part_name+"'" if part_name else 'NULL'},'{defect_type}','{defect_mode}',{target_by_piece if int(target_by_piece)!= 0 else 'NULL'},{category},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
             await db.commit()
 
@@ -346,17 +346,24 @@ class Settings_Defect_Mode_CRUD:
             + str(line_id)
             + "' AND process = '"
             + process
-            + "' AND part_no = '"
-            + part_no
-            + "' AND part_name = '"
-            + part_name
+            # + "' AND part_no = '"
+            # + part_no
+            # + "' AND part_name = '"
+            # + part_name
             + "' AND defect_type = '"
             + defect_type
             + "' AND defect_mode = '"
             + defect_mode
             + "' AND active = 'active' "
         )
-
+        if part_no:
+            where_stmt = where_stmt + f" AND part_no = '{part_no}'"
+        else:
+            where_stmt = where_stmt + f" AND part_no is null"
+        if part_name:
+            where_stmt = where_stmt + f" AND part_name = '{part_name}'"
+        else:
+            where_stmt = where_stmt + f" AND part_name is null"
         stmt = f"""UPDATE master_defect SET active = 'delete', updated_at = current_timestamp AT TIME ZONE 'Etc/GMT-7' WHERE  {where_stmt if where_stmt is not None else ''} """
         await db.execute(text(stmt))
         await db.commit()

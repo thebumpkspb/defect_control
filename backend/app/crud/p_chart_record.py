@@ -1722,17 +1722,24 @@ class P_Chart_Record_CRUD:
             + str(d_end)
             + "' AND pchart_defect_record_log.line_id = '"
             + str(line_id)
-            + "' AND pchart_defect_record_log.part_no = '"
-            + part_no
+            # + "' AND pchart_defect_record_log.part_no = '"
+            # + part_no
             + "' AND pchart_defect_record_log.process = '"
             + process
-            + "' AND pchart_defect_record_log.sub_line = '"
-            + sub_line
+            # + "' AND pchart_defect_record_log.sub_line = '"
+            # + sub_line
             + "' AND pchart_defect_record_log.shift in ("
             + shift
             + ") AND pchart_defect_record_log.active = 'active' "
         )
-
+        if part_no:
+            where_stmt = (
+                where_stmt + f" AND pchart_defect_record_log.part_no = '{part_no}'"
+            )
+        if sub_line:
+            where_stmt = (
+                where_stmt + f" AND pchart_defect_record_log.sub_line = '{sub_line}'"
+            )
         stmt = f"SELECT  pchart_defect_record_log.id, pchart_defect_record_log.date, pchart_defect_record_log.line_id, pchart_defect_record_log.part_no, pchart_defect_record_log.process, pchart_defect_record_log.sub_line, pchart_defect_record_log.defect_type, pchart_defect_record_log.defective_items, pchart_defect_record_log.shift, pchart_defect_record_log.qty, pchart_defect_record_log.pic, pchart_defect_record_log.creator, pchart_defect_record_log.ref, pchart_defect_record_log.id_defective_items, master_defect.defect_mode, master_defect.category FROM pchart_defect_record_log INNER JOIN master_defect ON pchart_defect_record_log.id_defective_items = master_defect.id WHERE {where_stmt if where_stmt is not None else ''} ORDER BY pchart_defect_record_log.date, ref"
         # print("stmt:", stmt)
         rs = await db.execute(text(stmt))

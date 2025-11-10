@@ -501,7 +501,9 @@ def transform_defect_data_to_defect_graph(data, day_in_month):
     # Group only by defect_mode (defect_item)
     for row in data:
         defect_mode = row.get("master_defect_mode")
-        grouped[defect_mode].append(row)
+        defect_type = row.get("master_defect_type")
+        if defect_type != "Repeat":
+            grouped[defect_mode].append(row)
 
     result = []
     for idx, (defect_mode, rows) in enumerate(grouped.items(), 1):
@@ -536,7 +538,7 @@ def transform_defect_data_to_defect_graph(data, day_in_month):
 
         # Use defect_mode (defect_item)
         defect_item = defect_mode or rows[0].get("master_defect_mode", "")
-
+        # defect_item = defect_type or rows[0].get("master_defect_type", "")
         result.append(
             {
                 "defect_name": defect_item,
@@ -552,6 +554,7 @@ def sum_defects_by_day(data, day_in_month):
     defect_qty = [0] * (day_in_month)  # 31 days
 
     for row in data:
+        defect_type = row.get("master_defect_type", "")
         date_str = row.get("date", "")
         qty_str = row.get("defect_qty", "0")
         # Check if date is valid in format YYYY-MM-DD
@@ -565,7 +568,8 @@ def sum_defects_by_day(data, day_in_month):
                 day = int(date_str[8:10])
                 qty = int(qty_str) if qty_str.isdigit() else 0
                 if 1 <= day <= 31:
-                    defect_qty[day - 1] += qty
+                    if defect_type != "Repeat":
+                        defect_qty[day - 1] += qty
             except Exception:
                 pass
 

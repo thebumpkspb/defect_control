@@ -723,13 +723,14 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
   };
 
   const fetchSettingTargetTableView = async () => {
+    console.log("input2:", input);
     try {
       const response = await pChartRecordHistoryRecordsView({
         line_name: input.line_name || "",
-        part_no: input.part_no || "",
+        part_no: input.part_no,
         month: input.month || "",
         process: input.process || "",
-        sub_line: input.sub_line || "",
+        sub_line: input.sub_line,
         shift: input.shift || "",
         // sub_line:input.sub_line,
       });
