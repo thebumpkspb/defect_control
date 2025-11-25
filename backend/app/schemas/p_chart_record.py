@@ -43,6 +43,7 @@ class P_Chart_Graph_Result(General_Information):
     x_axis_maxmin: List[int] | None = None
     y_left_axis: List[float] | None = None
     y_right_axis: List[float] | None = None
+    line_target: List[float] | None = None
 
 
 class P_Chart_Graph_Result_Response(BaseModel):

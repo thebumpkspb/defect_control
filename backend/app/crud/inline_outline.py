@@ -1484,7 +1484,7 @@ class Inline_Outline_CRUD:
 
         list_axis_x_daily = []
         list_axis_y_lift = ["0.00", "25.00", "50.00", "75.00", "100.00", "125.00"]
-        list_axis_y_right = ["0.00%", "1.00%", "2.00%", "3.00%", "4.00%", "5.00%"]
+        list_axis_y_right = ["0.00", "1.00", "2.00", "3.00", "4.00", "5.00"]
         list_defect_percent_actual = []
         list_defect_qty_daily = []
         list_defect_qty_daily_process = {}

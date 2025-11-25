@@ -127,7 +127,11 @@ class Export_P_Chart_Utils:
         ax2.set_ylim([0, max_ucl_target_values + 1])
 
         # Legend handling
-        handles, labels = ax1.get_legend_handles_labels()
+        # handles, labels = ax1.get_legend_handles_labels()
+        handles1, labels1 = ax1.get_legend_handles_labels()
+        handles2, labels2 = ax2.get_legend_handles_labels()
+        handles = handles2 + handles1
+        labels = labels2 + labels1
         n_items = len(labels)
         ncol = (n_items + 1) // 2  # rounds up for an odd number of items
         ax1.legend(

@@ -19,6 +19,7 @@ load_dotenv()
 from app.schemas.p_chart_record import (
     Check_Over_UCL_Target,
     General_Information_Result,
+    General_Information,
     Get_Amount_Action_Record,
     P_Chart_Graph_Result,
     Defect_Graph,
@@ -280,8 +281,13 @@ class P_Chart_Record_Manager:
         y_left_axis = y_left_axis.split(",")
         y_left_axis = list(map(int, y_left_axis))
 
+        # y_right_axis = pchart_graph[
+        #     pchart_graph.find("y_right_axis") + 16 : pchart_graph.find("}") - 1
+        # ]
         y_right_axis = pchart_graph[
-            pchart_graph.find("y_right_axis") + 16 : pchart_graph.find("}") - 1
+            pchart_graph.find("y_right_axis")
+            + 16 : pchart_graph.find("line_target")
+            - 4
         ]
         y_right_axis = y_right_axis.split(",")
         y_right_axis = list(map(float, y_right_axis))
@@ -294,7 +300,11 @@ class P_Chart_Record_Manager:
         else:
             p_bar = p_bar.split(",")
             p_bar = list(map(float, p_bar))
-
+        line_target = pchart_graph[
+            pchart_graph.find("line_target") + 15 : pchart_graph.find("}") - 1
+        ]
+        line_target = line_target.split(",")
+        line_target = list(map(float, line_target))
         percent_defect = pchart_graph[
             pchart_graph.find("percent_defect")
             + 18 : pchart_graph.find("ucl_target")
@@ -347,6 +357,7 @@ class P_Chart_Record_Manager:
                     x_axis_maxmin=x_axis_maxmin,
                     y_left_axis=y_left_axis,
                     y_right_axis=y_right_axis,
+                    line_target=line_target,
                 )
             )
 
@@ -954,16 +965,31 @@ class P_Chart_Record_Manager:
         first_date, last_date = get_first_and_last_date_of_month(
             date=date_p_bar, previous_month=True
         )
-        res_p_bar_last_month = await self.get_calculation_data(
-            text_data=text_data,
-            select_line_id=select_line_id,
-            first_date=first_date,
-            last_date=last_date,
+        # res_p_bar_last_month = await self.get_calculation_data(
+        #     text_data=text_data,
+        #     select_line_id=select_line_id,
+        #     first_date=first_date,
+        #     last_date=last_date,
+        #     db=db,
+        # )
+        general_information = await self.post_general_information(
+            text_data=General_Information(
+                month=data["month"],
+                line_name=data["line_name"],
+                part_no=data["part_no"],
+                shift=data["shift"],
+                process=data["process"],
+                sub_line=data["sub_line"],
+            ),
             db=db,
         )
-        print("res_p_bar_last_month:", res_p_bar_last_month)
-        list_p_bar_all = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
-        print("list_p_bar_all:", list_p_bar_all)
+        print("general_information:", general_information)
+        # print("res_p_bar_last_month:", res_p_bar_last_month)
+        # list_p_bar_all = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        list_p_bar_all = [general_information[0].p_last_month] * day_in_month_graph
+        list_line_target = [general_information[0].target_control] * day_in_month_graph
+        # print("list_line_target:", list_line_target)
+        # print("list_p_bar_all:", list_p_bar_all)
         #!
         n_amount = 0
         for i in range(0, day_in_month_graph):
@@ -1068,6 +1094,7 @@ class P_Chart_Record_Manager:
                         ],
                         "y_left_axis": [0, 10, 20, 30, 40, 50],
                         "y_right_axis": [0.00, 1.00, 2.00, 3.00, 4.00, 5.00],
+                        "line_target": list_line_target,
                     },
                 )
             # # print("11")
@@ -1615,19 +1642,32 @@ class P_Chart_Record_Manager:
         # # # print("list_p_bar_a:", list_p_bar_a)
         #!
         date_p_bar = convert_month_year_to_date(data["month"])
-        first_date, last_date = get_first_and_last_date_of_month(
-            date=date_p_bar, previous_month=True
-        )
-        res_p_bar_last_month = await self.get_calculation_data(
-            text_data=text_data,
-            select_line_id=select_line_id,
-            first_date=first_date,
-            last_date=last_date,
+        # first_date, last_date = get_first_and_last_date_of_month(
+        #     date=date_p_bar, previous_month=True
+        # )
+        # res_p_bar_last_month = await self.get_calculation_data(
+        #     text_data=text_data,
+        #     select_line_id=select_line_id,
+        #     first_date=first_date,
+        #     last_date=last_date,
+        #     db=db,
+        # )
+        general_information = await self.post_general_information(
+            text_data=General_Information(
+                month=data["month"],
+                line_name=data["line_name"],
+                part_no=data["part_no"],
+                shift=data["shift"],
+                process=data["process"],
+                sub_line=data["sub_line"],
+            ),
             db=db,
         )
-        print("res_p_bar_last_month:", res_p_bar_last_month)
-        list_p_bar_a = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
-        print("list_p_bar_a:", list_p_bar_a)
+        list_p_bar_a = [general_information[0].p_last_month] * day_in_month_graph
+        list_line_target = [general_information[0].target_control] * day_in_month_graph
+        # print("res_p_bar_last_month:", res_p_bar_last_month)
+        # list_p_bar_a = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        # print("list_p_bar_a:", list_p_bar_a)
         #!
         n_amount = 0
 
@@ -1725,6 +1765,7 @@ class P_Chart_Record_Manager:
                         ],
                         "y_left_axis": [0, 10, 20, 30, 40],
                         "y_right_axis": [0.00, 1.00, 2.00, 3.00, 4.00],
+                        "line_target": list_line_target,
                     },
                 )
 
@@ -2252,24 +2293,37 @@ class P_Chart_Record_Manager:
         #     )
         # )
         date_p_bar = convert_month_year_to_date(data["month"])
-        first_date, last_date = get_first_and_last_date_of_month(
-            date=date_p_bar, previous_month=True
-        )
-        res_p_bar_last_month = await self.get_calculation_data(
-            text_data=text_data,
-            select_line_id=select_line_id,
-            first_date=first_date,
-            last_date=last_date,
+        # first_date, last_date = get_first_and_last_date_of_month(
+        #     date=date_p_bar, previous_month=True
+        # )
+        # res_p_bar_last_month = await self.get_calculation_data(
+        #     text_data=text_data,
+        #     select_line_id=select_line_id,
+        #     first_date=first_date,
+        #     last_date=last_date,
+        #     db=db,
+        # )
+        # print("res_p_bar_last_month:", res_p_bar_last_month)
+        general_information = await self.post_general_information(
+            text_data=General_Information(
+                month=data["month"],
+                line_name=data["line_name"],
+                part_no=data["part_no"],
+                shift=data["shift"],
+                process=data["process"],
+                sub_line=data["sub_line"],
+            ),
             db=db,
         )
-        print("res_p_bar_last_month:", res_p_bar_last_month)
+        list_p_bar_b = [general_information[0].p_last_month] * day_in_month_graph
+        list_line_target = [general_information[0].target_control] * day_in_month_graph
         # print("list_over_target_by_piece:", list_over_target_by_piece)
         # for r in res_p_bar_last_month:
         #     key_index = r._key_to_index
 
         #     list_p_bar_b = [r[key_index["p_bar"]]] * day_in_month_graph
-        list_p_bar_b = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
-        print("list_p_bar_b:", list_p_bar_b)
+        # list_p_bar_b = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        # print("list_p_bar_b:", list_p_bar_b)
         n_amount = 0
         for i in range(0, day_in_month_graph):
             list_x_axis_label.append(str(i + 1))
@@ -2363,6 +2417,7 @@ class P_Chart_Record_Manager:
                         ],
                         "y_left_axis": [0, 10, 20, 30, 40],
                         "y_right_axis": [0.00, 1.00, 2.00, 3.00, 4.00],
+                        "line_target": list_line_target,
                     },
                 )
 

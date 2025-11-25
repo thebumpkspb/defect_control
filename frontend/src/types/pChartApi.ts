@@ -324,6 +324,7 @@ export interface PChartRecordGraphResult {
   x_axis_maxmin: number[];
   y_left_axis: number[];
   y_right_axis: number[];
+  line_target: number[];
 }
 
 export interface PChartRecordDefect {

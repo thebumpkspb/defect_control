@@ -12,6 +12,7 @@ import {
   Defect,
   DefectSummaryResult,
 } from "@/types/inlineOutlineDefectSumApi";
+import { formatNumber } from "@/functions/helper";
 
 const { Title } = Typography;
 
@@ -187,7 +188,7 @@ const DefectSummaryByType = forwardRef(
             radius: ["50%", "70%"],
             avoidLabelOverlap: false,
             label: {
-              show: false,
+              show: true,
               position: "center",
             },
             emphasis: {
@@ -198,7 +199,7 @@ const DefectSummaryByType = forwardRef(
               },
             },
             labelLine: {
-              show: false,
+              show: true,
             },
             data: filteredData?.map((item) => ({
               value: item.qty,
@@ -299,7 +300,7 @@ const DefectSummaryByType = forwardRef(
           <span
             style={{ fontSize: "12px", textAlign: "right", display: "block" }}
           >
-            {value}
+            {formatNumber(value)}
           </span>
         ),
         width: "75px",

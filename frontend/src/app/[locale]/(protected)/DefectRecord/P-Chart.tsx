@@ -29,6 +29,7 @@ import {
 import { pChartRecordGraphNoErr } from "@/lib/api";
 import { delay } from "@/functions";
 import { HistoryPopup } from "./HistoryPopup";
+import { formatNumber } from "@/functions/helper";
 
 const { Title } = Typography;
 
@@ -54,6 +55,7 @@ const defaultGrapData = {
   x_axis_maxmin: [1, 30],
   y_left_axis: [0, 20, 40, 60, 80, 100],
   y_right_axis: [0, 1, 2, 3, 4, 5],
+  line_target: [],
 };
 
 interface PChartProps {
@@ -75,7 +77,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
     const [chartData, setChartData] = useState<PChartRecordDefect[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
     const chartRef = useRef<any>();
-
+    console.log("input:", input);
     // const chartData = [
     //   { value: 1048, name: "Desktop", category: "Computers" },
     //   { value: 735, name: "Mobile", category: "Phones" },
@@ -152,7 +154,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
           process: input.process,
           sub_line: input.sub_line,
         });
-        // console.log("pchart graph data:", response.p_chart_graph_result);
+        console.log("pchart graph data:", response.p_chart_graph_result);
         // setGraphData(response.p_chart_graph_result[0]);
         setChartOption(toChartOption(response.p_chart_graph_result[0]));
         setChartData(response.p_chart_graph_result[0]?.defect);
@@ -178,6 +180,10 @@ const PChart = forwardRef<PChartRef, PChartProps>(
         name: defectItem.defect_name ? defectItem.defect_name : "",
         type: "bar",
         stack: "defect",
+        // label: {
+        //   show: true, // show label
+        //   position: "inside", // 'inside', 'top', 'right', etc.
+        // },
         data: defectItem.value,
         itemStyle: defectItem.itemStyle,
       }));
@@ -226,6 +232,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
     const [chartOption, setChartOption] =
       useState<EChartsOption>(defaultGrapData);
     // console.log("chartOption:", chartOption);
+    // console.log("graphData:", graphData);
     const toChartOption = (
       graphData: PChartRecordGraphResult
     ): EChartsOption => {
@@ -235,6 +242,14 @@ const PChart = forwardRef<PChartRef, PChartProps>(
       // const middle = Math.ceil(legendData.length / 2);
       // const legendRow1 = legendData.slice(0, middle);
       // const legendRow2 = legendData.slice(middle);
+      console.log("graphData.defect:", graphData.defect);
+      const barSeries = toDeflectStackBarGraph(graphData.defect);
+
+      // Compute totals dynamically for each x-axis index
+      const totals = graphData.x_axis_label.map((_, i) =>
+        barSeries.reduce((sum, s) => sum + (s.data[i] ?? 0), 0)
+      );
+
       return {
         backgroundColor: "#ffffff", // พื้นหลังสีขาว
         // legend: {
@@ -259,7 +274,9 @@ const PChart = forwardRef<PChartRef, PChartProps>(
           // height: 120,
           // itemGap: 20,
           // width: "80%",
-          data: graphData.defect.map((a) => a.defect_name),
+          data: ["Target Control", "UCL Target", "P-bar", "%Defect"].concat(
+            graphData.defect.map((a) => a.defect_name)
+          ),
         },
         // legend: [
         //   {
@@ -354,6 +371,9 @@ const PChart = forwardRef<PChartRef, PChartProps>(
             },
             min: graphData.y_left_axis[0], // ตั้งค่าต่ำสุดของแกน Y
             max: graphData.y_left_axis[-1],
+            splitLine: {
+              show: false, // hides grid lines along the x-axis
+            },
           },
           {
             type: "value",
@@ -361,6 +381,8 @@ const PChart = forwardRef<PChartRef, PChartProps>(
             position: "right",
             min: graphData.y_right_axis[0], // ตั้งค่าต่ำสุดของแกน Y
             max: graphData.y_right_axis[-1],
+            // min: 0, // ตั้งค่าต่ำสุดของแกน Y
+            // max: 1.4,
             axisLabel: {
               formatter: "{value} %",
               color: "#000000",
@@ -403,7 +425,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
             yAxisIndex: 1,
             data: graphData.percent_defect,
             itemStyle: {
-              color: "#73C0DE", // เปลี่ยนสีเส้น
+              color: "#0000ff", // เปลี่ยนสีเส้น
             },
             lineStyle: {
               width: 2,
@@ -445,7 +467,65 @@ const PChart = forwardRef<PChartRef, PChartProps>(
               symbolSize: 0,
             },
           },
-          ...toDeflectStackBarGraph(graphData.defect),
+          {
+            name: "Target Control",
+            type: "line",
+            data: graphData.line_target,
+            symbol: "none",
+            showSymbol: false,
+            yAxisIndex: 1,
+            itemStyle: {
+              color: "red", // เปลี่ยนสีเส้น
+            },
+            lineStyle: {
+              type: "dashed",
+              color: "red",
+              width: 2,
+              symbolSize: 0,
+            },
+          },
+          ...barSeries,
+          {
+            name: "Total",
+            type: "line",
+            data: totals, // use computed totals
+            lineStyle: { color: "transparent" },
+            itemStyle: { color: "transparent" },
+            symbolSize: 0,
+            label: {
+              show: true,
+              position: "top",
+              color: "#000",
+              // fontWeight: "bold",
+              formatter: (params: any) => {
+                const total = params.data;
+                // Only show label if total > 0
+                return total > 0 ? formatNumber(total) : "";
+              },
+            },
+          },
+          // ...toDeflectStackBarGraph(graphData.defect),
+          // {
+          //   name: "Total",
+          //   type: "line",
+          //   data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 11, 1, , 1, 11], // not needed if we compute totals dynamically
+          //   // lineStyle: { color: "transparent" }, // hide the line
+          //   // itemStyle: { color: "transparent" }, // hide the symbol
+          //   label: {
+          //     show: true,
+          //     position: "top",
+          //     color: "#000",
+          //     fontWeight: "bold",
+          //     formatter: (params) => {
+          //       console.log("params:", params);
+          //       // compute total dynamically from all stacked series
+          //       console.log("toChartOption:", toChartOption);
+          //       return toChartOption.series
+          //         ?.filter((s) => s.stack === "defect" && s.type === "bar") // include only stacked bars
+          //         ?.reduce((sum, s) => sum + s.data[params.dataIndex], 0);
+          //     },
+          //   },
+          // },
           // ...toDeflectStackBarGraph(visibleData),
         ],
       };
