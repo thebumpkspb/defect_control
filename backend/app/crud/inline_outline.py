@@ -8,8 +8,16 @@ import requests
 import json
 import os
 import pandas as pd
+from app.functions import (
+    convert_month_year_to_date,
+    get_first_and_last_date_of_month,
+    get_initials,
+    transform_approval_data,
+)
 
 load_dotenv()
+
+from typing import List
 
 
 class Inline_Outline_CRUD:
@@ -1472,6 +1480,91 @@ class Inline_Outline_CRUD:
             list_defect_qty_monthly_process,
         )
 
+    async def general_information(
+        self, db: AsyncSession, select_line_id: List[int], where_stmt: str | None = None
+    ):
+        data = where_stmt.dict()
+
+        month = data["month"]
+        line_name = data["line_name"]
+        part_no = data["part_no"]
+        shift = data["shift"]
+        process = data["process"]
+        sub_line = data["sub_line"]
+        # line_id = self.get_line_id(line_name)
+        line_id = (
+            "(" + ",".join(str(n) for n in select_line_id) + ")"
+            if select_line_id
+            else "(0)"
+        )
+        ## query db
+        where_stmt = (
+            "month = '"
+            + month
+            + "' AND line_id in "
+            + line_id
+            # + "' AND part_no = '"
+            # + part_no
+            + " AND shift = '"
+            + shift
+            + "' AND process = '"
+            + process
+            # + "' AND sub_line = '"
+            # + sub_line
+            + "' "
+        )
+        if part_no and part_no != "null":
+            where_stmt = where_stmt + " AND part_no = '" + part_no + "'"
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line and sub_line != "null":
+            where_stmt = where_stmt + " AND sub_line = '" + sub_line + "'"
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
+
+        stmt = f"SELECT * FROM  pchart_report WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
+        rs = await db.execute(text(stmt))
+        print("stmt:", text(stmt))
+        select_target_control = 0.00
+
+        ## query db
+        where_stmt = (
+            "line_id in "
+            + line_id
+            # + "' AND part_no = '"
+            # + part_no
+            + " AND process = '"
+            + process
+            # + "' AND sub_line = '"
+            # + sub_line
+            + "' AND target_type = 'Monthly' AND month_year = '"
+            + month
+            + "' AND active = 'active' "
+        )
+        if part_no:
+            where_stmt = (
+                where_stmt + " AND (part_no is null or part_no = '" + part_no + "')"
+            )
+        else:
+            where_stmt = where_stmt + " AND part_no is null"
+        if sub_line:
+            where_stmt = (
+                where_stmt + " AND (sub_line is null or sub_line = '" + sub_line + "')"
+            )
+        else:
+            where_stmt = where_stmt + " AND sub_line is null"
+        where_stmt = where_stmt + " ORDER BY part_no NULLS FIRST; "
+        stmt = f"SELECT target_control FROM master_target_line WHERE  {where_stmt if where_stmt is not None else ''} "
+        rs_target_control = await db.execute(text(stmt))
+
+        for r in rs_target_control:
+            key_index = r._key_to_index
+
+            ## get data from db
+            select_target_control = r[key_index["target_control"]]
+
+        return rs, select_target_control, data
+
     async def get_graph_daily_defect_summary(
         self,
         db: AsyncSession,
@@ -2026,3 +2119,60 @@ class Inline_Outline_CRUD:
         data = where_stmt.dict()
 
         return data
+
+    async def get_defect_qty_by_date(
+        self,
+        db: AsyncSession,
+        first_date: str,
+        last_date: str,
+        select_line_id: List[int],
+        where_stmt: str | None = None,
+    ):
+        data = where_stmt.dict()
+        # date = data["date"]
+        month = data["month"]
+        date = convert_month_year_to_date(month)
+        line = data["line_name"]
+        part_no = data["part_no"]
+        process = data["process"]
+        sub_line = data["sub_line"]
+        shift = data["shift"].lower()
+        line_id = (
+            "(" + ",".join(str(n) for n in select_line_id) + ")"
+            if select_line_id
+            else "(0)"
+        )
+        # first_date, last_date = get_first_and_last_date_of_month(date)
+        # if shift == "All":
+        #     shift = "'A','B'"
+        # else:
+        #     shift = f"'{shift}'"
+
+        # line_id = self.get_line_id(line)
+        stmt = f"""
+        SELECT sum(qty_shift_{shift}) as defect_qty FROM public.pchart_defect_record
+        where line_id in {line_id} 
+        and process='Inline' 
+        and date>='{first_date}' 
+        and date <='{last_date}' 
+        """
+        if part_no and part_no != "null":
+            stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"
+        if sub_line and sub_line != "null":
+            stmt = stmt + f" and sub_line ='{sub_line}'"
+
+        res = await db.execute(text(stmt))
+        # return_list = []
+        return_list = None
+        for r in res:
+            key_index = r._key_to_index
+            return_list = r[key_index["defect_qty"]]
+        #     key_index = r._key_to_index
+        #     return_list.append(
+        #         {
+        #             "date": r[key_index["date"]],
+        #             "record_by": get_initials(r[key_index["record_by"]]),
+        #         }
+        #     )
+        # amount_action_record = r[key_index["amount_action_record"]]
+        return return_list

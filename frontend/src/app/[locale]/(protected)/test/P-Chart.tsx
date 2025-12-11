@@ -61,6 +61,7 @@ const defaultGrapData = {
   x_axis_maxmin: [1, 30],
   y_left_axis: [0, 20, 40, 60, 80, 100],
   y_right_axis: [0, 1, 2, 3, 4, 5],
+  line_target: [],
 };
 
 interface PChartProps {

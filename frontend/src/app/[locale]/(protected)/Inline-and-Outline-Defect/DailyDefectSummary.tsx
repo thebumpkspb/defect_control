@@ -68,6 +68,9 @@ const defaultGrapData = {
   axis_y_right: ["string"],
   defect_percent_actual: [0],
   defect_qty: [],
+  ucl_target: [],
+  p_bar: [],
+  target_control: [],
 };
 
 // const mockGrapData = {
@@ -279,7 +282,7 @@ const DailyDefectSummary = forwardRef<
             color: "#000000", // ตัวหนังสือสีดำ
             fontSize: 12,
           },
-          data: ["%Defect(Actual)", "%Target", "P-bar"].concat(
+          data: ["% Target", "UCL Target", "P-bar", "%Defect(Actual)"].concat(
             graphData.defect_qty.map((a) => a.name)
           ),
         },
@@ -351,34 +354,60 @@ const DailyDefectSummary = forwardRef<
             },
             symbolSize: 8,
           },
-          // {
-          //   name: "UCL Target",
-          //   type: "line",
-          //   step: "middle",
-          //   symbol: "none",
-          //   yAxisIndex: 1,
-          //   showSymbol: false,
-          //   // data: graphData.target_percent,
-          //   data: [0],
-          //   lineStyle: {
-          //     type: "solid",
-          //     color: "red",
-          //     width: 1.5,
-          //   },
-          // },
-          // {
-          //   name: "P-bar",
-          //   type: "line",
-          //   // data: graphData.target_percent,
-          //   data: [0],
-          //   symbol: "none",
-          //   showSymbol: false,
-          //   lineStyle: {
-          //     type: "dotted",
-          //     color: "#2ECC71",
-          //     width: 1.5,
-          //   },
-          // },
+
+          {
+            name: "UCL Target",
+            type: "line",
+            step: "middle",
+            symbol: "none",
+            yAxisIndex: 1,
+            showSymbol: false,
+            data: graphData.ucl_target,
+            // data: [0],
+            lineStyle: {
+              type: "solid",
+              color: "red",
+              width: 1.5,
+            },
+            itemStyle: {
+              color: "red",
+            },
+          },
+          {
+            name: "% Target",
+            type: "line",
+            step: "middle",
+            symbol: "none",
+            yAxisIndex: 1,
+            showSymbol: false,
+            data: graphData.target_control,
+            // data: [0],
+            lineStyle: {
+              type: "dashed",
+              color: "red",
+              width: 1.5,
+            },
+            itemStyle: {
+              color: "red",
+            },
+          },
+          {
+            name: "P-bar",
+            type: "line",
+            data: graphData.p_bar,
+            yAxisIndex: 1,
+            // data: [0],
+            symbol: "none",
+            showSymbol: false,
+            lineStyle: {
+              type: "dotted",
+              color: "#2ECC71",
+              width: 1.5,
+            },
+            itemStyle: {
+              color: "#2ECC71",
+            },
+          },
           ...toDeflectStackBarGraph(graphData.defect_qty),
           {
             name: "Total",

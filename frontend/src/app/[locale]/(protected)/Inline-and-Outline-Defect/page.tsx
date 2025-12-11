@@ -217,6 +217,9 @@ const defaultDefectSummaryResult: DefectSummaryResult = {
           qty: [0],
         },
       ],
+      ucl_target: [],
+      target_control: [],
+      p_bar: [],
     },
     outline: {
       prod_vol: 0,

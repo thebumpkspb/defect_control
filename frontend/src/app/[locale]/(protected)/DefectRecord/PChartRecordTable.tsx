@@ -2277,6 +2277,11 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
                 </div>
               );
             }
+          } else if (
+            !record.isChild &&
+            ["Record by (LL up)"].includes(record.defectType || "")
+          ) {
+            return text;
           } else {
             return formatNumber(text);
             // console.log("record krub:", record);

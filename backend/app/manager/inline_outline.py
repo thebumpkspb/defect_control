@@ -10,12 +10,23 @@ import json
 import pandas as pd
 import time
 import os
+import calendar
+import math
+from typing import List
 
 # import urllib.parse
 from urllib.parse import urljoin, quote
 from fastapi.responses import Response
 from io import BytesIO
 import codecs  # เพิ่มการนำเข้า codecs
+from app.functions import (
+    convert_month_year_to_date,
+)
+from app.functions import (
+    get_last_day_from_month_year,
+    parse_defect_string,
+    get_first_and_last_date_of_month,
+)
 
 load_dotenv()
 
@@ -40,10 +51,15 @@ from app.schemas.inline_outline import (
     Defect_Pareto_Chart,
     Defect_Pareto_Chart_Process,
     Description_Of_Defect,
+    General_Information,
+    General_Information_Result,
 )
 
 from app.crud.inline_outline import Inline_Outline_CRUD
 from app.utils.logger import get_logger
+from app.manager import P_Chart_Record_Manager
+
+# from app.schemas.p_chart_record import General_Information, General_Information_Result
 
 logger = get_logger(__name__)
 
@@ -53,6 +69,7 @@ class Inline_Outline_Manager:
         self.crud = Inline_Outline_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        # self.p_chart_record_manager = P_Chart_Record_Manager()
 
     async def get_default_defect_summary(self):
 
@@ -370,13 +387,202 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_department_change because {e}",
             )
 
+    async def post_general_information(self, text_data: str, db: AsyncSession = None):
+
+        if not text_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
+            )
+        data = text_data.dict()
+        ## get data general_information from db
+        print("data:", data)
+        # print("select_target_control:", select_target_control)
+        # print("res:", res)
+        #!
+        list_line = []
+        list_line_id = []
+        try:
+            ## get line, line_id from api
+            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            response_json = requests.get(endpoint, headers=headers).json()
+
+            for i in range(0, len(response_json["lines"])):
+                list_line.append(response_json["lines"][i]["section_line"])
+                list_line_id.append(response_json["lines"][i]["line_id"])
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"because {e}",
+            )
+
+        # index_select = list_line.index(data["line_name"])
+        # select_line_id = list_line_id[index_select]
+        line_value = data["line_name"]
+
+        if isinstance(line_value, (list, tuple)):
+            # If it's an array, get all matching IDs
+            select_line_id = [
+                list_line_id[list_line.index(line)] for line in line_value
+            ]
+        else:
+            # If it's a single value, get one ID
+            select_line_id = list_line_id[list_line.index(line_value)]
+        print("select_line_id:", select_line_id)
+        res, select_target_control, data = await self.crud.general_information(
+            db=db, select_line_id=select_line_id, where_stmt=text_data
+        )
+        #!
+        #!-> get prod_actul
+        #!-> get defect_qty
+        #!-> calculation
+        #!
+        date_p_bar = convert_month_year_to_date(data["month"])
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date_p_bar, previous_month=True
+        )
+        res_p_bar_last_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_last_month:", res_p_bar_last_month)
+        list_p_last_month = round(res_p_bar_last_month["p_bar"], 2)
+        print("list_p_last_month:", list_p_last_month)
+
+        first_date, last_date = get_first_and_last_date_of_month(date=date_p_bar)
+        res_p_bar_now_month = await self.get_calculation_data(
+            text_data=text_data,
+            select_line_id=select_line_id,
+            first_date=first_date,
+            last_date=last_date,
+            db=db,
+        )
+        print("res_p_bar_now_month:", res_p_bar_now_month)
+        p_bar_now_month = round(res_p_bar_now_month["p_bar"], 2)
+        n_bar_now_month = round(res_p_bar_now_month["n_bar"], 2)
+        k_now_month = round(res_p_bar_now_month["k"], 2)
+        uclp_now_month = round(res_p_bar_now_month["ucl"], 2)
+        lclp_now_month = round(res_p_bar_now_month["lcl"], 2)
+        # print("list_p_last_month:", list_p_last_month)
+        # list_p_bar_a = [res_p_bar_last_month["p_bar"]] * day_in_month_graph
+        # print("list_p_bar_a:", list_p_bar_a)
+        #!
+        ## get data p_chart_record_table_p_bar_last_month from db
+
+        # list_p_last_month = await self.crud.p_chart_record_table_p_bar_last_month(
+        #     db=db, where_stmt=text_data
+        # )
+
+        return_list = []
+        # print("res2:", res)
+        # res = [{'test'}]
+        try:
+            return_list.append(
+                General_Information_Result(
+                    id=0,
+                    month=data["month"],
+                    line_name=data["line_name"],
+                    part_no=data["part_no"],
+                    part_name="",
+                    process=data["process"],
+                    shift=data["shift"],
+                    target_control=select_target_control,
+                    p_last_month=list_p_last_month,
+                    n_bar=n_bar_now_month,
+                    p_bar=p_bar_now_month,
+                    k=k_now_month,
+                    uclp=uclp_now_month,
+                    lclp=lclp_now_month,
+                )
+            )
+            for r in res:
+                key_index = r._key_to_index
+                print("r:", r)
+                # return_list.append(
+                #     General_Information_Result(
+                #         id=r[key_index["id"]],
+                #         month=r[key_index["month"]],
+                #         line_name=data["line_name"],
+                #         part_no=r[key_index["part_no"]],
+                #         part_name=r[key_index["part_name"]],
+                #         process=r[key_index["process"]],
+                #         shift=r[key_index["shift"]],
+                #         target_control=select_target_control,
+                #         p_last_month=list_p_last_month,
+                #         n_bar=r[key_index["n_bar"]],
+                #         p_bar=r[key_index["p_bar"]],
+                #         k=r[key_index["k"]],
+                #         uclp=r[key_index["uclp"]],
+                #         lclp=r[key_index["lclp"]],
+                #     )
+                # )
+                return_list.append(
+                    General_Information_Result(
+                        id=r[key_index["id"]],
+                        month=r[key_index["month"]],
+                        line_name=data["line_name"],
+                        part_no=r[key_index["part_no"]],
+                        part_name=r[key_index["part_name"]],
+                        process=r[key_index["process"]],
+                        shift=r[key_index["shift"]],
+                        target_control=select_target_control,
+                        p_last_month=list_p_last_month,
+                        n_bar=n_bar_now_month,
+                        p_bar=p_bar_now_month,
+                        k=k_now_month,
+                        uclp=uclp_now_month,
+                        lclp=lclp_now_month,
+                    )
+                )
+            if len(return_list) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="General_Information_Result not found",
+                )
+            return return_list
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unable to post_general_information because {e}",
+            )
+
     async def post_defect_summary(self, text_data: str, db: AsyncSession = None):
 
         if not text_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
             )
+        data = text_data.dict()
+        print("1data:", data)
+        #!
+        # Parse month and year
+        date_obj = datetime.strptime(
+            data["month"], "%B-%Y"
+        )  # %B = full month name, %Y = year
+        year = date_obj.year
+        month = date_obj.month
 
+        # Get number of days in the month
+        days_in_month = calendar.monthrange(year, month)[1]
+        general_information = await self.post_general_information(
+            text_data=General_Information(
+                month=data["month"],
+                line_name=data["line"],
+                part_no=None,
+                shift=data["shift"],
+                process="Inline",
+                sub_line=None,
+            ),
+            db=db,
+        )
+        general_information = general_information[0]
+        # print("general_informationCC:", general_information)
+        #!
         start_time = time.time()
         # print("Start:", start_time)
         target_control = 0.0
@@ -526,9 +732,28 @@ class Inline_Outline_Manager:
                 db=db, where_stmt=text_data, prod_qty=list_prod_qty
             )
         )
-        print("total:", total)
-        print("list_defect_by_type:", list_defect_by_type)
-        print("sum_defect_qty:", sum_defect_qty)
+        # print("total:", total)
+        # print("list_defect_by_type:", list_defect_by_type)
+        # print("sum_defect_qty:", sum_defect_qty)
+        # print("list_prod_qty:", list_prod_qty)
+        ucl_list = [0] * days_in_month
+        for i, idx in enumerate(list_prod_qty):
+            if list_prod_qty[i] != 0:
+                k = round(
+                    (
+                        math.sqrt(
+                            (100 - general_information.p_last_month)
+                            * general_information.p_last_month
+                            / list_prod_qty[i]
+                        )
+                    )
+                    * 3,
+                    2,
+                )
+            else:
+                k = 0
+            ucl_list[i] = round(general_information.p_last_month + k, 2)
+        # print("ucl_list:", ucl_list)
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -598,6 +823,7 @@ class Inline_Outline_Manager:
                 result_list_defect_qty_daily_process[process].append(
                     Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
                 )
+        # print("list_defect_qty_daily[Inline]:", list_defect_qty_daily["Inline"])
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -655,6 +881,13 @@ class Inline_Outline_Manager:
             axis_y_right=list_axis_y_right,
             defect_percent_actual=list_defect_percent_actual["Inline"],
             defect_qty=result_list_defect_qty_daily_process["Inline"],
+            # ucl_target=[0.3] * days_in_month,
+            ucl_target=ucl_list,
+            p_bar=[general_information.p_last_month] * days_in_month,
+            target_control=[target_control] * days_in_month,
+            #! PBar
+            #! Target
+            #! UCL
         )
         daily_defect_outline_summary = Daily_Defect_Summary(
             prod_vol=prod_vol + defect["Outline"],
@@ -1372,3 +1605,114 @@ class Inline_Outline_Manager:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unable to post_export_description because {e}",
             )
+
+    async def get_calculation_data(
+        self,
+        text_data: str,
+        select_line_id: List[int],
+        first_date: str,
+        last_date: str,
+        db: AsyncSession = None,
+    ):
+        if not text_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
+            )
+        # res = await self.crud.get_amount_action_record(db=db, where_stmt=text_data)
+        # try:
+        data = text_data.dict()
+        # print("data:", data)
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        # date_prod_qty = convert_month_year_to_date(data["month"])
+        # first_date, last_date = get_first_and_last_date_of_month(date)
+        defect_qty = await self.crud.get_defect_qty_by_date(
+            db=db,
+            first_date=first_date,
+            last_date=last_date,
+            select_line_id=select_line_id,
+            where_stmt=text_data,
+        )
+        line_id_api_str = "&".join(f"line_id={line_id}" for line_id in select_line_id)
+        if not defect_qty:
+            defect_qty = 0
+        if not data["part_no"] or data["part_no"] == "null":
+            endpoint = (
+                self.BACKEND_URL_SERVICE
+                # + "/api/prods/prod_qty?line_id="
+                + "/api/prods/prod_qty?"
+                # + str(select_line_id)
+                + line_id_api_str
+                + f"&shift={data['shift']}&date="
+                + first_date
+            )
+        else:
+            endpoint = (
+                self.BACKEND_URL_SERVICE
+                + "/api/prods/prod_qty?part_line_id="
+                + str(data["sub_line"])
+                + f"&shift={data['shift']}&date="
+                + first_date
+            )
+        print("endpoint:", endpoint)
+        response_json = requests.get(endpoint, headers=headers).json()
+        #!response_json["prod_qty"]
+
+        prod_actual = 0
+        amount_prod_date = 0
+        for entry in response_json["prod_qty"]:
+            # Parse the date
+            # prod_date = datetime.strptime(
+            #     entry["production_date"], "%Y-%m-%d %H:%M:%S"
+            # )
+            # # Check if it matches the target month
+            # if prod_date.year == target_year and prod_date.month == target_month:
+            prod_actual += entry["actual_val"]
+            if entry["actual_val"] != 0:
+                amount_prod_date += 1
+        if prod_actual == 0:
+            p_bar = 0
+        else:
+            p_bar = round((defect_qty / prod_actual * 100), 2)
+
+        if amount_prod_date == 0:
+            n_bar = 0
+        else:
+            n_bar = round(prod_actual / amount_prod_date, 2)
+
+        if n_bar == 0:
+            k = 0
+        else:
+            k = round(3 * math.sqrt((p_bar * (100 - p_bar)) / n_bar), 2)
+        ucl = round(p_bar + k, 2)
+        lcl = round(p_bar - k, 2) if (p_bar - k) > 0 else 0
+        # print("defect_qty:", defect_qty)
+        # print("prod_actual:", prod_actual)
+        # print("amount_prod_date:", amount_prod_date)
+        # print("p_bar:", p_bar)
+        # print("n_bar:", n_bar)
+        # print("k:", k)
+        # print("ucl:", ucl)
+        # print("lcl:", lcl)
+        return_data = {
+            "p_bar": p_bar,
+            "n_bar": n_bar,
+            "k": k,
+            "ucl": ucl,
+            "lcl": lcl,
+        }
+        # return_list = Get_Calculation_Data(
+        #     month=res["month"],
+        #     line_name=res["line_name"],
+        #     part_no=res["part_no"],
+        #     process=res["process"],
+        #     date=res["date"],
+        #     shift=res["shift"],
+        #     amount_action_record=res["amount_action_record"],
+        # )
+        # return return_list
+        return return_data
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"Unable to get_calculation_data because {e}",
+        #     )

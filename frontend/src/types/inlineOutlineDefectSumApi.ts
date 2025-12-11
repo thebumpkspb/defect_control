@@ -185,6 +185,9 @@ export interface GraphDailyDefectSummary {
   axis_y_right: string[];
   defect_percent_actual: number[];
   defect_qty: DefectQty[];
+  ucl_target?: number[];
+  target_control?: number[];
+  p_bar?: number[];
 }
 export interface GraphDailyDefectProcessSummary {
   inline: GraphDailyDefectSummary;

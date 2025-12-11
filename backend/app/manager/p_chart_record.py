@@ -13,6 +13,7 @@ import ast
 from app.functions import (
     convert_month_year_to_date,
 )
+import calendar
 
 load_dotenv()
 
@@ -63,8 +64,8 @@ class P_Chart_Record_Manager:
         res, select_target_control, data = await self.crud.general_information(
             db=db, where_stmt=text_data
         )
-        print("select_target_control:", select_target_control)
-        print("res:", res)
+        # print("select_target_control:", select_target_control)
+        # print("res:", res)
         #!
         list_line = []
         list_line_id = []
@@ -663,9 +664,10 @@ class P_Chart_Record_Manager:
 
             if year == int(current_year):
                 # day_in_month = int(current_day)
-                day_in_month = (
-                    date(year, month_number + 1, 1) - date(year, month_number, 1)
-                ).days
+                # day_in_month = (
+                #     date(year, month_number + 1, 1) - date(year, month_number, 1)
+                # ).days
+                day_in_month = calendar.monthrange(year, month_number)[1]
             else:
                 day_in_month = 0
         end_time = time.time()
@@ -1404,9 +1406,10 @@ class P_Chart_Record_Manager:
 
             if year == int(current_year):
                 # day_in_month = int(current_day)
-                day_in_month = (
-                    date(year, month_number + 1, 1) - date(year, month_number, 1)
-                ).days
+                # day_in_month = (
+                #     date(year, month_number + 1, 1) - date(year, month_number, 1)
+                # ).days
+                day_in_month = calendar.monthrange(year, month_number)[1]
             else:
                 day_in_month = 0
 
@@ -2059,9 +2062,10 @@ class P_Chart_Record_Manager:
 
             if year == int(current_year):
                 # day_in_month = int(current_day)
-                day_in_month = (
-                    date(year, month_number + 1, 1) - date(year, month_number, 1)
-                ).days
+                # day_in_month = (
+                #     date(year, month_number + 1, 1) - date(year, month_number, 1)
+                # ).days
+                day_in_month = calendar.monthrange(year, month_number)[1]
             else:
                 day_in_month = 0
 

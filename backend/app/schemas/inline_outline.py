@@ -64,6 +64,27 @@ class Monthly_Defect_Process_Summary(BaseModel):
     inspection: Monthly_Defect_Summary
 
 
+class General_Information(BaseModel):
+    month: str | None = None
+    line_name: List[str] | None = None
+    part_no: str | None = None
+    shift: str | None = None
+    process: str | None = None
+    sub_line: str | None = None
+
+
+class General_Information_Result(General_Information):
+    part_name: str | None = None
+    target_control: float | None = None
+    p_last_month: float | None = None
+    n_bar: float | None = None
+    p_bar: float | None = None
+    k: float | None = None
+    uclp: float | None = None
+    lclp: float | None = None
+    id: int | None = None
+
+
 class Daily_Defect_Summary(BaseModel):
     prod_vol: int | None = None
     defect: int | None = None
@@ -74,6 +95,10 @@ class Daily_Defect_Summary(BaseModel):
     defect_percent_actual: List[float] | None = None
     defect_qty: List[Defect_Qty_Detail] | None = None
     ucl_target: List[float] | None = None
+    p_bar: List[float] | None = None
+    target_control: List[float] | None = None
+    # p_bar
+    # target_control
 
 
 class Daily_Defect_Process_Summary(BaseModel):
