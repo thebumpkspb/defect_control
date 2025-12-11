@@ -73,6 +73,7 @@ class Daily_Defect_Summary(BaseModel):
     axis_y_right: List[str] | None = None
     defect_percent_actual: List[float] | None = None
     defect_qty: List[Defect_Qty_Detail] | None = None
+    ucl_target: List[float] | None = None
 
 
 class Daily_Defect_Process_Summary(BaseModel):

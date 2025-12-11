@@ -38,6 +38,7 @@ import { UserStore } from "@/store";
 import { SearchOutlined } from "@ant-design/icons";
 import debounce from "lodash.debounce";
 import { first } from "lodash";
+import { formatNumber } from "@/functions/helper";
 
 interface DataType {
   key: string;
@@ -2277,7 +2278,7 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
               );
             }
           } else {
-            return text;
+            return formatNumber(text);
             // console.log("record krub:", record);
             // return (
             //   <ul>
@@ -2478,6 +2479,9 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         dataIndex: "total",
         key: "total",
         width: 100,
+        render: (text: any, record: any) => {
+          return formatNumber(text);
+        },
       },
     ];
   };

@@ -20,6 +20,7 @@ import {
   GraphYearlyDefectProcessSummary,
   GraphYearlyDefectSummary,
 } from "@/types/inlineOutlineDefectSumApi";
+import { formatNumber } from "@/functions/helper";
 
 const { Title } = Typography;
 
@@ -118,6 +119,13 @@ const YearlyDefectSummary = forwardRef<
   const toChartOption = (
     graphData: GraphYearlyDefectSummary
   ): EChartsOption => {
+    const barSeries = toDeflectStackBarGraph(graphData?.defect_qty);
+    // console.log("graphData:", graphData);
+    // Compute totals dynamically for each x-axis index
+    const totals = graphData?.axis_x?.map((_, i) =>
+      barSeries.reduce((sum, s) => sum + (s.data[i] ?? 0), 0)
+    );
+    // console.log("totals:", totals);
     return {
       backgroundColor: "#ffffff",
       legend: {
@@ -176,7 +184,10 @@ const YearlyDefectSummary = forwardRef<
             formatter: "{value} pcs.",
             color: "#000000",
           },
-          show: false, // ซ่อนแกน Y ซ้าย
+          splitLine: {
+            show: false, // hides grid lines along the x-axis
+          },
+          // show: false, // ซ่อนแกน Y ซ้าย
           // min: graphData.y_left_axis[0],
           // min: 0,
           // max: 300,
@@ -192,7 +203,7 @@ const YearlyDefectSummary = forwardRef<
             formatter: "{value} %",
             color: "#000000",
           },
-          show: false, // ซ่อนแกน Y ขวา
+          // show: false, // ซ่อนแกน Y ขวา
         },
       ],
       series: [
@@ -204,6 +215,9 @@ const YearlyDefectSummary = forwardRef<
           yAxisIndex: 1,
           showSymbol: false,
           data: graphData?.target_percent,
+          itemStyle: {
+            color: "red",
+          },
           lineStyle: {
             type: "solid",
             color: "red",
@@ -239,7 +253,26 @@ const YearlyDefectSummary = forwardRef<
         //     symbolSize: 0,
         //   },
         // },
-        ...toDeflectStackBarGraph(graphData?.defect_qty),
+        ...barSeries,
+        {
+          name: "Total",
+          type: "line",
+          data: totals, // use computed totals
+          lineStyle: { color: "transparent" },
+          itemStyle: { color: "transparent" },
+          symbolSize: 0,
+          label: {
+            show: true,
+            position: "top",
+            color: "#000",
+            // fontWeight: "bold",
+            formatter: (params: any) => {
+              const total = params.data;
+              // Only show label if total > 0
+              return total > 0 ? formatNumber(total) : "";
+            },
+          },
+        },
       ],
     };
   };

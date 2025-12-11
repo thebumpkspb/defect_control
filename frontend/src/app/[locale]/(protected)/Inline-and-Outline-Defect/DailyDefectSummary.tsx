@@ -20,6 +20,7 @@ import {
   GraphDailyDefectProcessSummary,
   GraphDailyDefectSummary,
 } from "@/types/inlineOutlineDefectSumApi";
+import { formatNumber } from "@/functions/helper";
 
 const { Title } = Typography;
 
@@ -257,6 +258,12 @@ const DailyDefectSummary = forwardRef<
 
     const toChartOption = (graphData: GraphDailyDefectSummary) => {
       // console.log("graphData:", graphData);
+      const barSeries = toDeflectStackBarGraph(graphData?.defect_qty);
+      console.log("graphData:", graphData);
+      // Compute totals dynamically for each x-axis index
+      const totals = graphData?.axis_x?.map((_, i) =>
+        barSeries.reduce((sum, s) => sum + (s.data[i] ?? 0), 0)
+      );
       return {
         backgroundColor: "#ffffff",
         // legend: {
@@ -272,7 +279,9 @@ const DailyDefectSummary = forwardRef<
             color: "#000000", // ตัวหนังสือสีดำ
             fontSize: 12,
           },
-          data: graphData.defect_qty.map((a) => a.name),
+          data: ["%Defect(Actual)", "%Target", "P-bar"].concat(
+            graphData.defect_qty.map((a) => a.name)
+          ),
         },
         grid: { left: 50, right: 50, bottom: 50, top: 120, containLabel: true },
         tooltip: {
@@ -310,16 +319,20 @@ const DailyDefectSummary = forwardRef<
             name: "Q'ty (pcs.)",
             position: "left",
             axisLabel: { formatter: "{value} pcs.", color: "#000000" },
-            min: graphData.axis_y_lift,
-            max: graphData.axis_y_lift,
+            min: graphData.axis_y_lift[0],
+            max: graphData.axis_y_lift[-1],
+            splitLine: {
+              show: false, // hides grid lines along the x-axis
+            },
+            // show: true,
           },
           {
             type: "value",
             name: "% Defect",
             position: "right",
             axisLabel: { formatter: "{value} %", color: "#000000" },
-            min: graphData.axis_y_right,
-            max: graphData.axis_y_right,
+            min: graphData.axis_y_right[0],
+            max: graphData.axis_y_right[-1],
           },
         ],
         series: [
@@ -367,6 +380,25 @@ const DailyDefectSummary = forwardRef<
           //   },
           // },
           ...toDeflectStackBarGraph(graphData.defect_qty),
+          {
+            name: "Total",
+            type: "line",
+            data: totals, // use computed totals
+            lineStyle: { color: "transparent" },
+            itemStyle: { color: "transparent" },
+            symbolSize: 0,
+            label: {
+              show: true,
+              position: "top",
+              color: "#000",
+              // fontWeight: "bold",
+              formatter: (params: any) => {
+                const total = params.data;
+                // Only show label if total > 0
+                return total > 0 ? formatNumber(total) : "";
+              },
+            },
+          },
         ],
       };
     };
@@ -461,9 +493,9 @@ const DailyDefectSummary = forwardRef<
                   marginTop: "5px",
                 }}
               >
-                <span>{defectDataSource?.prod_vol} pcs.</span>
-                <span>{defectDataSource?.defect} pcs.</span>
-                <span>{defectDataSource?.defect_percent}%</span>
+                <span>{formatNumber(defectDataSource?.prod_vol)} pcs.</span>
+                <span>{formatNumber(defectDataSource?.defect)} pcs.</span>
+                <span>{formatNumber(defectDataSource?.defect_percent)}%</span>
               </div>
             </div>
           </Col>

@@ -44,6 +44,7 @@ import { LayoutStore, ModeStore, UserStore } from "@/store";
 import { delay } from "@/functions";
 import { AddNewRecordRef } from "./AddNewRecord";
 import dayjs from "dayjs";
+import { formatNumber } from "@/functions/helper";
 const { setUser, loadUser } = UserStore.getState();
 
 const defaultGeneralInformation: PChartGeneralInformation = {
@@ -915,7 +916,7 @@ export default function PChartHeader() {
               </div>
               <Input
                 placeholder="0.00"
-                value={generalInformation.n_bar ?? ""}
+                value={formatNumber(Number(generalInformation.n_bar)) ?? ""}
                 readOnly
                 style={{
                   border: "none",
