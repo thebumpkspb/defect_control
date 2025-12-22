@@ -1979,8 +1979,14 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         width: 230,
         render: (text: string, record: DataType, index: number) => {
           // console.log("record:", record);
-          if (text == "Repeat") {
-            return <div>{text + " (ไม่นับ%Defect)"}</div>;
+          // if (["Repeat", "M/C Set up", "Quality Test"].includes(text)) {
+          if (["Repeat"].includes(text)) {
+            return <div>{text} (ไม่นับ%Defect)</div>;
+            // return (
+            //   <div>
+            //     <div>{text}</div> <div>{" (ไม่นับ%Defect)"}</div>
+            //   </div>
+            // );
           }
           // else if (text == "Repeat NG") {
           //   return <div>{text + " (นับ%Defect)"}</div>;
@@ -2302,7 +2308,8 @@ const PChartRecordTable: React.FC<PChartTableProps> = ({
         onCell: (record: DataType, index?: number) => {
           let backgroundColor = "#fff";
           let fontColor = "#000";
-          if (data.ucl_target) {
+          // console.log("input.process:", input.process);
+          if (data.ucl_target && input.process != "Outline") {
             if (record.defectType == "Defect Ratio")
               if (
                 data.ucl_target[Number(day) - 1] <

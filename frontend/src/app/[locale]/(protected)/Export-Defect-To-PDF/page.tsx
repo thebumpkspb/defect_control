@@ -149,6 +149,7 @@ export default function PChartHeader() {
 
   const handleDownloadExportDeflectFile: any = (file_type: string) => {
     console.log("handleDownloadExportDeflectFile");
+    4;
     const missingFields: string[] = [];
 
     if (!month) {
@@ -576,6 +577,7 @@ export default function PChartHeader() {
                       </Text>
                     </div>
                     <Select
+                      allowClear
                       showSearch
                       disabled={process == "Outline"}
                       placeholder="Select Part No"
@@ -624,6 +626,7 @@ export default function PChartHeader() {
                       </Text>
                     </div>
                     <Select
+                      allowClear
                       disabled={process == "Outline"}
                       showSearch
                       placeholder="Select Sub Line"

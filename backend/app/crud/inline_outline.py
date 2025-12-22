@@ -13,6 +13,7 @@ from app.functions import (
     get_first_and_last_date_of_month,
     get_initials,
     transform_approval_data,
+    exceptDefectTypeList,
 )
 
 load_dotenv()
@@ -295,7 +296,7 @@ class Inline_Outline_CRUD:
             + str(d_start)
             + "' AND date <= '"
             + str(d_end)
-            + "' AND defect_type NOT IN ('Repeat') "
+            + "' AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') "
         )
 
         stmt = f"SELECT * FROM pchart_defect_record WHERE {where_stmt if where_stmt is not None else ''} ORDER BY id"
@@ -611,7 +612,7 @@ class Inline_Outline_CRUD:
             + s_year
             + "-04-01' AND date <= '"
             + e_year
-            + "-03-31' AND defect_type NOT IN ('Repeat') GROUP BY process,defect_type ORDER BY array_position(ARRAY['Repeat NG', 'Scrap', 'M/C Set up', 'Quality Test', 'Appearance', 'Dimension', 'Performance', 'Other']::varchar[], defect_type);"
+            + "-03-31' AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') GROUP BY process,defect_type ORDER BY array_position(ARRAY['Repeat NG', 'Scrap', 'M/C Set up', 'Quality Test', 'Appearance', 'Dimension', 'Performance', 'Other']::varchar[], defect_type);"
         )
 
         rs = await db.execute(text(stmt))
@@ -1210,6 +1211,7 @@ class Inline_Outline_CRUD:
             f"SELECT process,defect_type, defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
             + f") AND defect_type IN ('Repeat NG', 'Scrap') AND defective_items NOT IN ('') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
+            # + f") AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') AND defective_items NOT IN ('') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
             + s_year
             + "-04-01' AND date <= '"
             + d_end
@@ -1223,23 +1225,24 @@ class Inline_Outline_CRUD:
             defect_name.append(r[key_index["defective_items"]])
             defect_process.append(r[key_index["process"]])
         # query db
-        stmt = (
-            f"SELECT process,defect_type, defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
-            + str_list_line_id
-            + f") AND defect_type IN ('M/C Set up','Quality Test') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
-            + s_year
-            + "-04-01' AND date <= '"
-            + d_end
-            + "' GROUP BY process,defect_type ORDER BY array_position(ARRAY['M/C Set up', 'Quality Test']::varchar[], defect_type);"
-        )
-        rs = await db.execute(text(stmt))
-        for r in rs:
-            key_index = r._key_to_index
+        #!FixDefectType
+        # stmt = (
+        #     f"SELECT process,defect_type, defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+        #     + str_list_line_id
+        #     + f") AND defect_type IN ('M/C Set up','Quality Test') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
+        #     + s_year
+        #     + "-04-01' AND date <= '"
+        #     + d_end
+        #     + "' GROUP BY process,defect_type ORDER BY array_position(ARRAY['M/C Set up', 'Quality Test']::varchar[], defect_type);"
+        # )
+        # rs = await db.execute(text(stmt))
+        # for r in rs:
+        #     key_index = r._key_to_index
 
-            # get data from db
-            defect_name.append(r[key_index["defective_items"]])
-            defect_process.append(r[key_index["process"]])
-
+        #     # get data from db
+        #     defect_name.append(r[key_index["defective_items"]])
+        #     defect_process.append(r[key_index["process"]])
+        #!FixDefectType
         # query db
         stmt = (
             f"SELECT process,defect_type, defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
@@ -1348,7 +1351,13 @@ class Inline_Outline_CRUD:
                         else:
                             df = df_defect_qty_process[
                                 (df_defect_qty_process["defective_items"] == defect)
-                                & (df_defect_qty_process["defect_type"] != "Repeat")
+                                # & (df_defect_qty_process["defect_type"] != "Repeat")
+                                #! FixDefectType
+                                & (
+                                    ~df_defect_qty_process["defect_type"].isin(
+                                        exceptDefectTypeList()
+                                    )
+                                )
                                 & (
                                     df_defect_qty_process["date"]
                                     >= pd.to_datetime(str(d_start)[:10])
@@ -1635,30 +1644,31 @@ class Inline_Outline_CRUD:
         #     # get data from db
         #     defect_process.append(r[key_index["process"]])
         #     defect_name.append(r[key_index["defective_items"]])
-        for r in rs:
-            key_index = r._key_to_index
-            pairs.append((r[key_index["process"]], r[key_index["defective_items"]]))
-
-        stmt = (
-            f"SELECT process,defect_type, defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
-            + str_list_line_id
-            + f") AND defect_type IN ('M/C Set up','Quality Test') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
-            + str(d_start)
-            + "' AND date <= '"
-            + str(d_end)
-            + "' GROUP BY process,defect_type ORDER BY array_position(ARRAY['M/C Set up', 'Quality Test']::varchar[], defect_type);"
-        )
-        rs = await db.execute(text(stmt))
+        #!FixDefectType
         # for r in rs:
         #     key_index = r._key_to_index
+        #     pairs.append((r[key_index["process"]], r[key_index["defective_items"]]))
 
-        #     # get data from db
-        #     defect_process.append(r[key_index["process"]])
-        #     defect_name.append(r[key_index["defective_items"]])
-        for r in rs:
-            key_index = r._key_to_index
-            pairs.append((r[key_index["process"]], r[key_index["defective_items"]]))
+        # stmt = (
+        #     f"SELECT process,defect_type, defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
+        #     + str_list_line_id
+        #     + f") AND defect_type IN ('M/C Set up','Quality Test') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
+        #     + str(d_start)
+        #     + "' AND date <= '"
+        #     + str(d_end)
+        #     + "' GROUP BY process,defect_type ORDER BY array_position(ARRAY['M/C Set up', 'Quality Test']::varchar[], defect_type);"
+        # )
+        # rs = await db.execute(text(stmt))
+        # # for r in rs:
+        # #     key_index = r._key_to_index
 
+        # #     # get data from db
+        # #     defect_process.append(r[key_index["process"]])
+        # #     defect_name.append(r[key_index["defective_items"]])
+        # for r in rs:
+        #     key_index = r._key_to_index
+        #     pairs.append((r[key_index["process"]], r[key_index["defective_items"]]))
+        #!FixDefectType
         # query db
         stmt = (
             f"SELECT process,defect_type, defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
@@ -1717,7 +1727,8 @@ class Inline_Outline_CRUD:
                 stmt = (
                     f"SELECT process,date,defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
                     + str_list_line_id
-                    + ") AND defect_type NOT IN ('Repeat') AND defective_items = '"
+                    #! FixDefectType
+                    + ") AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') AND defective_items = '"
                     + defect
                     + f"' AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
                     + str(d_start)
@@ -1861,6 +1872,7 @@ class Inline_Outline_CRUD:
         stmt = (
             f"SELECT process,defect_type AS defective_items, SUM(qty_shift_{shift.lower()}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
+            #! NotFixDefectType
             + f") AND defect_type NOT IN ('Repeat') AND qty_shift_{shift.lower()} NOT IN (0) AND date >= '"
             + str(d_start)
             + "' AND date <= '"
@@ -2021,7 +2033,7 @@ class Inline_Outline_CRUD:
             + str(d_end)
             + f"' GROUP BY defect_type,process UNION SELECT process,defective_items, SUM(qty_shift_{shift}) AS defect_qty FROM pchart_defect_record WHERE line_id IN ("
             + str_list_line_id
-            + f") AND defect_type NOT IN ('Repeat') AND defective_items NOT IN ('') AND qty_shift_{shift} NOT IN (0) AND date >= '"
+            + f") AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') AND defective_items NOT IN ('') AND qty_shift_{shift} NOT IN (0) AND date >= '"
             + str(d_start)
             + "' AND date <= '"
             + str(d_end)
@@ -2099,7 +2111,7 @@ class Inline_Outline_CRUD:
             + process
             + "' AND sub_line = '"
             + str(sub_line)
-            + "' AND defect_type NOT IN ('Repeat') "
+            + "' AND defect_type NOT IN ('Repeat','M/C Set up','Quality Test') "
         )
 
         stmt = f"SELECT sum(qty_shift_{shift}) as defect_qty FROM pchart_defect_record WHERE {where_stmt if where_stmt is not None else ''} "
@@ -2155,6 +2167,7 @@ class Inline_Outline_CRUD:
         and process='Inline' 
         and date>='{first_date}' 
         and date <='{last_date}' 
+        and defect_type not in ('Repeat','M/C Set up','Quality Test')
         """
         if part_no and part_no != "null":
             stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"

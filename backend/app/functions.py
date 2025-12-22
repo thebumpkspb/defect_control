@@ -502,7 +502,9 @@ def transform_defect_data_to_defect_graph(data, day_in_month):
     for row in data:
         defect_mode = row.get("master_defect_mode")
         defect_type = row.get("master_defect_type")
-        if defect_type != "Repeat":
+        #! FixDefectType
+        # if defect_type != "Repeat":
+        if defect_type not in exceptDefectTypeList():
             grouped[defect_mode].append(row)
 
     result = []
@@ -568,7 +570,9 @@ def sum_defects_by_day(data, day_in_month):
                 day = int(date_str[8:10])
                 qty = int(qty_str) if qty_str.isdigit() else 0
                 if 1 <= day <= 31:
-                    if defect_type != "Repeat":
+                    #! FixDefectType
+                    # if defect_type != "Repeat":
+                    if defect_type not in exceptDefectTypeList():
                         defect_qty[day - 1] += qty
             except Exception:
                 pass
@@ -620,3 +624,7 @@ def extract_fields_by_day(
     for field in fields:
         output[field] = extract_by_day(data, field)
     return output
+
+
+def exceptDefectTypeList():
+    return ["Repeat", "M/C Set up", "Quality Test"]

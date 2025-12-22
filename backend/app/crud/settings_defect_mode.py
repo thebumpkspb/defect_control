@@ -259,8 +259,9 @@ class Settings_Defect_Mode_CRUD:
         if status == True:
             ## case new record
             ## query db
-            if defect_type in ["M/C Set up", "Quality Test"]:
-                defect_mode = ""
+            #! Comment
+            # if defect_type in ["M/C Set up", "Quality Test"]:
+            #     defect_mode = ""
 
             stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{"'"+part_no+"'" if part_no else 'NULL'},{"'"+part_name+"'" if part_name else 'NULL'},'{defect_type}','{defect_mode}',{target_by_piece if int(target_by_piece)!= 0 else 'NULL'},{category},'{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))
@@ -478,8 +479,9 @@ class Settings_Defect_Mode_CRUD:
         if status == True:
             ## case new record
             ## query db
-            if defect_type in ["M/C Set up", "Quality Test"]:
-                defect_mode = ""
+            #!Comment
+            # if defect_type in ["M/C Set up", "Quality Test"]:
+            #     defect_mode = ""
 
             stmt = f"""INSERT INTO master_defect ( line_id,process,part_no,part_name,defect_type,defect_mode,target_by_piece,category,creator,created_at,updated_at,active) VALUES ( '{line_id}','{process}',{part_no},{part_name},'{defect_type}','{defect_mode}',{target_by_piece},'{category}','{creator}',current_timestamp AT TIME ZONE 'Etc/GMT-7',current_timestamp AT TIME ZONE 'Etc/GMT-7','active' )"""
             await db.execute(text(stmt))

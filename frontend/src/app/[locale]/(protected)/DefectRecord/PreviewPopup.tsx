@@ -20,6 +20,7 @@ import {
   RadioChangeEvent,
   Tag,
   Collapse,
+  Spin,
 } from "antd";
 const { Panel } = Collapse;
 // const { Option } = Select
@@ -210,7 +211,7 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     input: PChartPreviewPopupInput
   ) => {
     // { "month": "November-2024", "line_name": "414454 - Sta. Assy : PA70 Type", "part_no": "TG428000-0630", "shift": "B", "process": "Inline" }
-
+    setIsLoading(true);
     try {
       const response = await pChartAbnormalOccurrenceViewNoErr({
         month: input.month,
@@ -246,8 +247,10 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
       );
       console.error("Error fetching abnomal occurrence view:", error);
     }
+    setIsLoading(false);
   };
-  const { setIsLoading } = LayoutStore.getState();
+  // const { setIsLoading } = LayoutStore.getState();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [data, setData] = useState<DataRow[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isAddRowModalVisible, setIsAddRowModalVisible] = useState(false);
@@ -259,9 +262,11 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
   // const [selectedPartNo, setSelectedPartNo] = useState<string | null>(
   //   input.part_no || null
   // );
+  // console.log("data:", data);
   const [defectModes, setDefectModes] = useState<SettingTableResult[]>([]);
   const [lineSettings, setLineSettings] = useState<PChartLine[]>([]);
   const { user } = UserStore();
+  console.log("defectModes:", defectModes);
   useEffect(() => {
     const fetchLineSettings = async () => {
       setIsLoading(true);
@@ -333,7 +338,8 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
   useEffect(() => {
     const updateDefectModesTable = async () => {
       // console.log("testja");
-      if (!input.line_name || !input.part_no) return; // ตรวจสอบค่า
+      // if (!input.line_name || !input.part_no) return; // ตรวจสอบค่า
+      if (!input.line_name) return; // ตรวจสอบค่า
       setIsLoading(true);
       try {
         const data = await fetchDefectModesActionRecord({
@@ -528,11 +534,13 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
       filterSearch: true,
       onFilter: (value: Key | boolean | any, record: DataRow) =>
         // record.action === value,
+        //! Need fix
         record?.defect_item?.some((defect: any) =>
           value.includes(`[${defect.defect_type}] ${defect.defect_mode}`)
         ),
-      render: (defects: any, record: DataRow) =>
-        isEditing === record.key ? (
+      render: (defects: any, record: DataRow) => {
+        console.log("defects:", defects);
+        return isEditing === record.key ? (
           // <Input
           //   value={editForm.action}
           //   onChange={(e) => {
@@ -627,7 +635,8 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
               }
             })}
           </div>
-        ),
+        );
+      },
     },
     {
       title: "Category",
@@ -1216,13 +1225,14 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     setIsEditing(null);
   };
 
+  //! Need to check
   const saveEdit = async (key: string) => {
     const editedRow = data.find((row: any) => row.key === key);
     if (!editedRow) return;
 
     // const requestBody = transformToApiFormat(editedRow);
     const requestBody = editForm;
-
+    setIsLoading(true);
     try {
       const response = await pChartAbnormalOccurrenceEditSave(requestBody);
       // console.log("Updated data:", response.abnormal_occurrence_view_result);
@@ -1237,6 +1247,7 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     } catch (error) {
       console.error("Error saving edits:", error);
     }
+    setIsLoading(false);
   };
 
   const deleteRow = async (key: string | null) => {
@@ -1247,7 +1258,7 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     }
 
     const reqBody = mapToDeleteReq(deletedItem);
-
+    setIsLoading(true);
     try {
       const response = await pChartAbnormalOccurrenceDelete(reqBody);
 
@@ -1260,6 +1271,7 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
     } catch (error) {
       console.error("Error delete:", error);
     }
+    setIsLoading(false);
     // setData(data.filter((item) => item.key !== key));
   };
 
@@ -1294,62 +1306,64 @@ const PreviewPopup: React.FC<PreviewPopupProps> = ({
       width={1200} // Increased width for a more spacious layout
       bodyStyle={{ paddingBottom: "40px" }} // Adds space at the bottom
     >
-      <Row justify="space-between" align="middle">
-        <Title level={3} style={{ color: "red", margin: 0 }}>
-          Abnormal Occurrence & Action Record
-        </Title>
-      </Row>
-      <Text>ลงบันทึกปัญหาหรือสิ่งผิดปกติและการแก้ไข</Text>
-      <div style={{ margin: "10px 0" }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAddRowButton}
-        >
-          Add a row
-        </Button>
+      <Spin spinning={isLoading}>
+        <Row justify="space-between" align="middle">
+          <Title level={3} style={{ color: "red", margin: 0 }}>
+            Abnormal Occurrence & Action Record
+          </Title>
+        </Row>
+        <Text>ลงบันทึกปัญหาหรือสิ่งผิดปกติและการแก้ไข</Text>
+        <div style={{ margin: "10px 0" }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddRowButton}
+          >
+            Add a row
+          </Button>
 
-        <Button
-          type="primary"
-          style={{ marginLeft: "10px", float: "right" }}
-          onClick={() => setIsDetailedView(!isDetailedView)}
-        >
-          {isDetailedView ? "See less" : "See more"}
-        </Button>
-      </div>
+          <Button
+            type="primary"
+            style={{ marginLeft: "10px", float: "right" }}
+            onClick={() => setIsDetailedView(!isDetailedView)}
+          >
+            {isDetailedView ? "See less" : "See more"}
+          </Button>
+        </div>
 
-      <div>
-        <Table
-          dataSource={data}
-          columns={isDetailedView ? detailedColumns : columns}
-          pagination={{
-            position: ["bottomRight"],
-            pageSize: 10,
-            total: data.length,
-          }}
-          rowClassName={() => "custom-row"}
-          scroll={{ x: isDetailedView ? 2700 : 1300 }}
+        <div>
+          <Table
+            dataSource={data}
+            columns={isDetailedView ? detailedColumns : columns}
+            pagination={{
+              position: ["bottomRight"],
+              pageSize: 10,
+              total: data.length,
+            }}
+            rowClassName={() => "custom-row"}
+            scroll={{ x: isDetailedView ? 2700 : 1300 }}
+          />
+        </div>
+
+        <AddRowAbnormalPopup
+          visible={isAddRowModalVisible}
+          onClose={() => setIsAddRowModalVisible(false)}
+          triggerUpdateTable={() => fetchAbnormalOccurenceViewNoErr(input)}
+          input={input}
+          shift={shift}
+          // defectModes={defectModes}
+          username={username}
+          date={date}
+          // parts={parts}
+          // selectedPartNo={selectedPartNo}
+          // setSelectedPartNo={setSelectedPartNo}
+          lineSettings={lineSettings}
+          // setDefectModes={setDefectModes}
+          // parts={parts}
+
+          // pChartRecordTableSelectedDefectMode={pChartRecordTableSelectedDefectMode}
         />
-      </div>
-
-      <AddRowAbnormalPopup
-        visible={isAddRowModalVisible}
-        onClose={() => setIsAddRowModalVisible(false)}
-        triggerUpdateTable={() => fetchAbnormalOccurenceViewNoErr(input)}
-        input={input}
-        shift={shift}
-        // defectModes={defectModes}
-        username={username}
-        date={date}
-        // parts={parts}
-        // selectedPartNo={selectedPartNo}
-        // setSelectedPartNo={setSelectedPartNo}
-        lineSettings={lineSettings}
-        // setDefectModes={setDefectModes}
-        // parts={parts}
-
-        // pChartRecordTableSelectedDefectMode={pChartRecordTableSelectedDefectMode}
-      />
+      </Spin>
     </Modal>
   );
 };
@@ -1510,6 +1524,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     selectedSubLine: string | null,
     shift?: string | null
   ): Promise<PChartAbnormalOccurrenceAddRowView> => {
+    setIsLoading(true);
     try {
       const response = await pChartAbnormalOccurrenceAddRowView({
         month: input.month || "",
@@ -1527,6 +1542,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     } catch (error) {
       console.error("Error Add Row View :", error);
     }
+    setIsLoading(false);
     return addRowViewDefault;
   };
 
@@ -1571,7 +1587,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     // disable this for now
     // reqBody.date = dayjs(reqBody.date).subtract(1, "day").format("YYYY-MM-DD");
     // reqBody.month = getFormattedMonth(reqBody.date);
-
+    setIsLoading(true);
     try {
       const response = await pChartAbnormalOccurrenceAddRowOk(reqBody);
 
@@ -1584,6 +1600,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
     } catch (error) {
       console.error("Error add row:", error);
     }
+    setIsLoading(false);
 
     handleOnCloseModal();
   };
@@ -1594,7 +1611,8 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
   const [createRowForm, setCreateRowForm] =
     useState<PChartAbnormalOccurrenceAddRowOkRequest>(addRowOkFormDefault);
 
-  const { setIsLoading } = LayoutStore.getState();
+  // const { setIsLoading } = LayoutStore.getState();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [defectModes, setDefectModes] = useState<SettingTableResult[]>([]);
   const [selectedProcess, setSelectedProcess] = useState<string | null>(
     input.process
@@ -1847,59 +1865,64 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
       footer={null}
       width={740}
     >
-      <Form
-        form={form}
-        layout="horizontal" // เปลี่ยน Layout เป็นแนวนอน
-        onFinish={handleAddRowOk}
-        labelCol={{ span: 8 }} // ความกว้างของ Label
-        wrapperCol={{ span: 16 }} // ความกว้างของ Input
-        style={{ width: "100%" }}
-        onValuesChange={(changedValues, allValues) => {
-          if (changedValues.partNo !== undefined) {
-            setSelectedPartNo(changedValues.partNo);
-          }
-          if (changedValues.line_name !== undefined) {
-            const selectedLine = lineSettings.find(
-              (line: any) =>
-                line.section_line.toString() ==
-                changedValues.line_name.toString()
-            );
-            if (changedValues.sub_line !== undefined) {
-              setSelectedSubLine(changedValues.sub_line);
+      <Spin spinning={isLoading}>
+        <Form
+          form={form}
+          layout="horizontal" // เปลี่ยน Layout เป็นแนวนอน
+          onFinish={handleAddRowOk}
+          labelCol={{ span: 8 }} // ความกว้างของ Label
+          wrapperCol={{ span: 16 }} // ความกว้างของ Input
+          style={{ width: "100%" }}
+          onValuesChange={(changedValues, allValues) => {
+            if (changedValues.partNo !== undefined) {
+              setSelectedPartNo(changedValues.partNo);
             }
-
-            // console.log("value:", value);
-            // setSelectedLineCodeRx(selectedLine?.line_code_rx);
-            setSelectedLineId(selectedLine?.line_id); // อัปเดต line_id
-            setSelectedLine(changedValues.line_name || "");
-            // setAge(changedValues.age);
-          }
-          console.log("Changed:", changedValues);
-          console.log("All:", allValues);
-        }}
-      >
-        <Collapse defaultActiveKey={["required"]} size="large" className="mb-6">
-          {/* Required Fields Panel - Always expanded by default */}
-          <Panel
-            header={
-              <Space>
-                <span>📋</span>
-                <span className="font-semibold">ข้อมูลที่จำเป็นต้องกรอก</span>
-                <span className="text-red-500">*</span>
-              </Space>
-            }
-            key="required"
-          >
-            {/*Line*/}
-            <Form.Item
-              label={
-                <p>
-                  Line <text style={{ color: "red" }}>*</text>
-                </p>
+            if (changedValues.line_name !== undefined) {
+              const selectedLine = lineSettings.find(
+                (line: any) =>
+                  line.section_line.toString() ==
+                  changedValues.line_name.toString()
+              );
+              if (changedValues.sub_line !== undefined) {
+                setSelectedSubLine(changedValues.sub_line);
               }
-              name="line_name"
+
+              // console.log("value:", value);
+              // setSelectedLineCodeRx(selectedLine?.line_code_rx);
+              setSelectedLineId(selectedLine?.line_id); // อัปเดต line_id
+              setSelectedLine(changedValues.line_name || "");
+              // setAge(changedValues.age);
+            }
+            console.log("Changed:", changedValues);
+            console.log("All:", allValues);
+          }}
+        >
+          <Collapse
+            defaultActiveKey={["required"]}
+            size="large"
+            className="mb-6"
+          >
+            {/* Required Fields Panel - Always expanded by default */}
+            <Panel
+              header={
+                <Space>
+                  <span>📋</span>
+                  <span className="font-semibold">ข้อมูลที่จำเป็นต้องกรอก</span>
+                  <span className="text-red-500">*</span>
+                </Space>
+              }
+              key="required"
             >
-              {/* <Input.Group
+              {/*Line*/}
+              <Form.Item
+                label={
+                  <p>
+                    Line <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="line_name"
+              >
+                {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -1909,7 +1932,7 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-              {/* <Select
+                {/* <Select
                 value={selectedLineId}
                 style={{
                   border: "none",
@@ -1935,54 +1958,54 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
                   setSelectedLine(selectedLine?.section_line || "");
                 }}
               /> */}
-              <Select
-                placeholder="Select Line Name"
-                style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                // value={selectedLineId}
-                onChange={(value) => {
-                  // const selectedLine = lineSettings.find(
-                  //   (line: any) => line.line_id.toString() == value.toString()
-                  // );
-                  // console.log("value:", value);
-                  // setSelectedLineId(value); // อัปเดต line_id
-                  // setSelectedLine(selectedLine?.section_line || "");
-                }}
-                showSearch
-                filterOption={(input, option) => {
-                  const optionLabel =
-                    (option?.children as unknown as string) || "";
-                  return optionLabel
-                    .toLowerCase()
-                    .includes(input.toLowerCase());
-                }}
+                <Select
+                  placeholder="Select Line Name"
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  // value={selectedLineId}
+                  onChange={(value) => {
+                    // const selectedLine = lineSettings.find(
+                    //   (line: any) => line.line_id.toString() == value.toString()
+                    // );
+                    // console.log("value:", value);
+                    // setSelectedLineId(value); // อัปเดต line_id
+                    // setSelectedLine(selectedLine?.section_line || "");
+                  }}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const optionLabel =
+                      (option?.children as unknown as string) || "";
+                    return optionLabel
+                      .toLowerCase()
+                      .includes(input.toLowerCase());
+                  }}
+                >
+                  {lineSettings.map((line: any) => (
+                    <Select.Option
+                      key={line.line_id}
+                      // value={line.line_id.toString()}
+                      value={line.section_line}
+                    >
+                      {line.section_line}
+                    </Select.Option>
+                  ))}
+                </Select>
+                {/* </Input.Group> */}
+              </Form.Item>
+              {/*process*/}
+              <Form.Item
+                label={
+                  <p>
+                    Process <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="process"
               >
-                {lineSettings.map((line: any) => (
-                  <Select.Option
-                    key={line.line_id}
-                    // value={line.line_id.toString()}
-                    value={line.section_line}
-                  >
-                    {line.section_line}
-                  </Select.Option>
-                ))}
-              </Select>
-              {/* </Input.Group> */}
-            </Form.Item>
-            {/*process*/}
-            <Form.Item
-              label={
-                <p>
-                  Process <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="process"
-            >
-              {/* <Input.Group
+                {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -1992,170 +2015,170 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-              <Select
-                // placeholder=""
-                value={selectedProcess}
-                style={{
-                  border: "none",
-                  flex: 1,
-                  // height: "32px",
-                  // minWidth: "120px",
-                  // width: "100%",
-                  color: "black",
-                }}
-                // mode="multiple"
-                options={["Inline", "Outline", "Inspection"].map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                onChange={(value) => {
-                  setSelectedProcess(value);
-                  // setCreateForm((prev) => ({
-                  //   ...prev,
-                  //   pic: value,
-                  // }));
-                  // closeHistoryRecordTableVisible();
-                }}
-              />
-              {/* </Input.Group> */}
-            </Form.Item>
-            {/* Date */}
-            <Form.Item
-              label={
-                <p>
-                  Date <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="date"
-            >
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-
-            {/* Part No */}
-            <Form.Item
-              label={
-                <p>
-                  Part No <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="partNo"
-            >
-              {/* <Input
-                // value={addRowView?.part_no || "[Debugging] No Value Set"}
-                readOnly
-              /> */}
-              <Select
-                // placeholder=""
-                value={selectedPartNo}
-                style={{
-                  border: "none",
-                  flex: 1,
-                  // height: "32px",
-                  // minWidth: "120px",
-                  // width: "100%",
-                  color: "black",
-                }}
-                // mode="multiple"
-                showSearch
-                filterOption={(input, option) => {
-                  const optionLabel =
-                    (option?.label as unknown as string) || "";
-                  return optionLabel
-                    .toLowerCase()
-                    .includes(input.toLowerCase());
-                }}
-                options={parts?.map((item) => ({
-                  value: item.part_no,
-                  label: item.part_no,
-                }))}
-                // onChange={(value) => {
-                //   // setSelectedPartNo(value);
-                //   // setCreateForm((prev) => ({
-                //   //   ...prev,
-                //   //   pic: value,
-                //   // }));
-                //   // closeHistoryRecordTableVisible();
-                // }}
-              />
-            </Form.Item>
-            {/* Sub Line*/}
-            <Form.Item
-              label={
-                <p>
-                  Sub Line <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="sub_line"
-            >
-              {/* <Input
-                // value={addRowView?.part_no || "[Debugging] No Value Set"}
-                readOnly
-              /> */}
-              <Select
-                // placeholder=""
-                // value={selectedPartNo}
-                style={{
-                  border: "none",
-                  flex: 1,
-                  // height: "32px",
-                  // minWidth: "120px",
-                  // width: "100%",
-                  color: "black",
-                }}
-                // mode="multiple"
-                // options={parts?.map((item) => ({
-                //   value: item.part_no,
-                //   label: item.part_no,
-                // }))}
-                // onChange={(value) => {
-                //   // setSelectedPartNo(value);
-                //   // setCreateForm((prev) => ({
-                //   //   ...prev,
-                //   //   pic: value,
-                //   // }));
-                //   // closeHistoryRecordTableVisible();
-                // }}
-                filterOption={(input, option) => {
-                  console.log("option:", option);
-                  return true;
-                  // const optionLabel =
-                  //   (option?.children as unknown as string) || "";
-                  // return optionLabel
-                  //   .toLowerCase()
-                  //   .includes(input.toLowerCase());
-                }}
+                <Select
+                  // placeholder=""
+                  value={selectedProcess}
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    // height: "32px",
+                    // minWidth: "120px",
+                    // width: "100%",
+                    color: "black",
+                  }}
+                  // mode="multiple"
+                  options={["Inline", "Outline", "Inspection"].map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  onChange={(value) => {
+                    setSelectedProcess(value);
+                    // setCreateForm((prev) => ({
+                    //   ...prev,
+                    //   pic: value,
+                    // }));
+                    // closeHistoryRecordTableVisible();
+                  }}
+                />
+                {/* </Input.Group> */}
+              </Form.Item>
+              {/* Date */}
+              <Form.Item
+                label={
+                  <p>
+                    Date <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="date"
               >
-                {subLines.map((subLine) => (
-                  <Select.Option
-                    key={subLine.rxno_part}
-                    value={subLine.rxno_part}
-                    // label={subLine.process}
-                  >
-                    {subLine.process || " "}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            {/* Shift */}
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
 
-            <Form.Item
-              label={
-                <p>
-                  Shift <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="shift"
-            >
-              {/* <Select> */}
-              <Radio.Group>
-                {shiftAbnormalList.map((item: any) => (
-                  <Radio.Button key={item.value} value={item.value}>
-                    {item.value}
-                  </Radio.Button>
-                ))}
-              </Radio.Group>
-              {/* </Select> */}
-              {/* <Radio.Group
+              {/* Part No */}
+              <Form.Item
+                label={
+                  <p>
+                    Part No <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="partNo"
+              >
+                {/* <Input
+                // value={addRowView?.part_no || "[Debugging] No Value Set"}
+                readOnly
+              /> */}
+                <Select
+                  // placeholder=""
+                  value={selectedPartNo}
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    // height: "32px",
+                    // minWidth: "120px",
+                    // width: "100%",
+                    color: "black",
+                  }}
+                  // mode="multiple"
+                  showSearch
+                  filterOption={(input, option) => {
+                    const optionLabel =
+                      (option?.label as unknown as string) || "";
+                    return optionLabel
+                      .toLowerCase()
+                      .includes(input.toLowerCase());
+                  }}
+                  options={parts?.map((item) => ({
+                    value: item.part_no,
+                    label: item.part_no,
+                  }))}
+                  // onChange={(value) => {
+                  //   // setSelectedPartNo(value);
+                  //   // setCreateForm((prev) => ({
+                  //   //   ...prev,
+                  //   //   pic: value,
+                  //   // }));
+                  //   // closeHistoryRecordTableVisible();
+                  // }}
+                />
+              </Form.Item>
+              {/* Sub Line*/}
+              <Form.Item
+                label={
+                  <p>
+                    Sub Line <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="sub_line"
+              >
+                {/* <Input
+                // value={addRowView?.part_no || "[Debugging] No Value Set"}
+                readOnly
+              /> */}
+                <Select
+                  // placeholder=""
+                  // value={selectedPartNo}
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    // height: "32px",
+                    // minWidth: "120px",
+                    // width: "100%",
+                    color: "black",
+                  }}
+                  // mode="multiple"
+                  // options={parts?.map((item) => ({
+                  //   value: item.part_no,
+                  //   label: item.part_no,
+                  // }))}
+                  // onChange={(value) => {
+                  //   // setSelectedPartNo(value);
+                  //   // setCreateForm((prev) => ({
+                  //   //   ...prev,
+                  //   //   pic: value,
+                  //   // }));
+                  //   // closeHistoryRecordTableVisible();
+                  // }}
+                  filterOption={(input, option) => {
+                    console.log("option:", option);
+                    return true;
+                    // const optionLabel =
+                    //   (option?.children as unknown as string) || "";
+                    // return optionLabel
+                    //   .toLowerCase()
+                    //   .includes(input.toLowerCase());
+                  }}
+                >
+                  {subLines.map((subLine) => (
+                    <Select.Option
+                      key={subLine.rxno_part}
+                      value={subLine.rxno_part}
+                      // label={subLine.process}
+                    >
+                      {subLine.process || " "}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              {/* Shift */}
+
+              <Form.Item
+                label={
+                  <p>
+                    Shift <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="shift"
+              >
+                {/* <Select> */}
+                <Radio.Group>
+                  {shiftAbnormalList.map((item: any) => (
+                    <Radio.Button key={item.value} value={item.value}>
+                      {item.value}
+                    </Radio.Button>
+                  ))}
+                </Radio.Group>
+                {/* </Select> */}
+                {/* <Radio.Group
             buttonStyle="solid"
             value={shiftAddRow}
             style={{
@@ -2189,17 +2212,17 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               B
             </Radio.Button>
           </Radio.Group> */}
-            </Form.Item>
-            {/*defect_item*/}
-            <Form.Item
-              label={
-                <p>
-                  Defect item <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="defect_item"
-            >
-              {/* <Input.Group
+              </Form.Item>
+              {/*defect_item*/}
+              <Form.Item
+                label={
+                  <p>
+                    Defect item <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="defect_item"
+              >
+                {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -2209,39 +2232,39 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-              <Select
-                placeholder=""
-                style={{
-                  border: "none",
-                  flex: 1,
-                  // height: "32px",
-                  color: "black",
-                }}
-                mode="multiple"
-                options={defectModes.map((item) => ({
-                  value: item.id,
-                  label: `[${item.defect_type}] ${item.defect_mode}`,
-                }))}
-                onChange={(value) => {
-                  // setCreateForm((prev) => ({
-                  //   ...prev,
-                  //   pic: value,
-                  // }));
-                  // closeHistoryRecordTableVisible();
-                }}
-              />
-              {/* </Input.Group> */}
-            </Form.Item>
-            {/*category*/}
-            <Form.Item
-              label={
-                <p>
-                  5M1E <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="category"
-            >
-              {/* <Input.Group
+                <Select
+                  placeholder=""
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    // height: "32px",
+                    color: "black",
+                  }}
+                  mode="multiple"
+                  options={defectModes.map((item) => ({
+                    value: item.id,
+                    label: `[${item.defect_type}] ${item.defect_mode}`,
+                  }))}
+                  onChange={(value) => {
+                    // setCreateForm((prev) => ({
+                    //   ...prev,
+                    //   pic: value,
+                    // }));
+                    // closeHistoryRecordTableVisible();
+                  }}
+                />
+                {/* </Input.Group> */}
+              </Form.Item>
+              {/*category*/}
+              <Form.Item
+                label={
+                  <p>
+                    5M1E <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="category"
+              >
+                {/* <Input.Group
             compact
             style={{
               display: "flex",
@@ -2251,287 +2274,288 @@ const AddRowAbnormalPopup: React.FC<AddRowAbnormalPopupProps> = ({
               overflow: "hidden",
             }}
           > */}
-              <Select
-                placeholder=""
-                style={{
-                  border: "none",
-                  flex: 1,
-                  // height: "32px",
-                  // minWidth: "120px",
-                  // width: "100%",
-                  color: "black",
-                }}
-                mode="multiple"
-                options={categories.map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                onChange={(value) => {
-                  // setCreateForm((prev) => ({
-                  //   ...prev,
-                  //   pic: value,
-                  // }));
-                  // closeHistoryRecordTableVisible();
-                }}
-              />
-              {/* </Input.Group> */}
-            </Form.Item>
-            {/* Trouble */}
-            <Form.Item
-              label={
-                <p>
-                  Trouble <text style={{ color: "red" }}>*</text>
-                </p>
-              }
-              name="trouble"
-            >
-              <Input
-              // value={createRowForm.trouble}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     trouble: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* Action */}
-            <Form.Item
-              label={
-                <p>
-                  Action <text style={{ color: "black" }}>*</text>
-                </p>
-              }
-              name="action"
-            >
-              <Input
-              // value={createRowForm.action}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     action: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* In Charge */}
-            <Form.Item
-              label={
-                <p>
-                  In Charge <text style={{ color: "black" }}>*</text>
-                </p>
-              }
-              name="inCharge"
-            >
-              <Input
-              // value={createRowForm.in_change}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     in_change: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* Manager */}
-            <Form.Item
-              label={
-                <p>
-                  Manager <text style={{ color: "black" }}>*</text>
-                </p>
-              }
-              name="manager"
-            >
-              <Input
-              // value={createRowForm.manager}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     manager: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-          </Panel>
-          <Panel
-            header={
-              <Space>
-                <span>⚙️</span>
-                <span className="font-semibold">ข้อมูลเสริม</span>
-                <span className="text-muted-foreground text-sm">
-                  (คลิกเพื่อแสดง)
-                </span>
-              </Space>
-            }
-            key="optional"
-          >
-            {/* Detect By */}
-            <Form.Item label="Detect By" name="detectBy">
-              <Radio.Group
-              // value={createRowForm.detect_by}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     detect_by: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
+                <Select
+                  placeholder=""
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    // height: "32px",
+                    // minWidth: "120px",
+                    // width: "100%",
+                    color: "black",
+                  }}
+                  mode="multiple"
+                  options={categories.map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  onChange={(value) => {
+                    // setCreateForm((prev) => ({
+                    //   ...prev,
+                    //   pic: value,
+                    // }));
+                    // closeHistoryRecordTableVisible();
+                  }}
+                />
+                {/* </Input.Group> */}
+              </Form.Item>
+              {/* Trouble */}
+              <Form.Item
+                label={
+                  <p>
+                    Trouble <text style={{ color: "red" }}>*</text>
+                  </p>
+                }
+                name="trouble"
               >
-                {detectBy.map((item) => (
-                  <Radio key={item.value} value={item.value}>
-                    {item.value}
-                  </Radio>
-                ))}
-              </Radio.Group>
-            </Form.Item>
+                <Input
+                // value={createRowForm.trouble}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     trouble: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
 
-            {/* Defect details */}
-            <Form.Item label="Defect details" name="defectDetails">
-              <Input
-              // value={createRowForm.defect_detail}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     defect_detail: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* Rank */}
-            <Form.Item label="Rank" name="rank">
-              <Radio.Group
-              // value={createRowForm.rank}
-              // onChange={(value) => {
-              //   console.log("Trouble e.target.value:", value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     rank: value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
+              {/* Action */}
+              <Form.Item
+                label={
+                  <p>
+                    Action <text style={{ color: "black" }}>*</text>
+                  </p>
+                }
+                name="action"
               >
-                {/* <Option value="A">A</Option>
+                <Input
+                // value={createRowForm.action}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     action: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+
+              {/* In Charge */}
+              <Form.Item
+                label={
+                  <p>
+                    In Charge <text style={{ color: "black" }}>*</text>
+                  </p>
+                }
+                name="inCharge"
+              >
+                <Input
+                // value={createRowForm.in_change}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     in_change: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+
+              {/* Manager */}
+              <Form.Item
+                label={
+                  <p>
+                    Manager <text style={{ color: "black" }}>*</text>
+                  </p>
+                }
+                name="manager"
+              >
+                <Input
+                // value={createRowForm.manager}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     manager: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+            </Panel>
+            <Panel
+              header={
+                <Space>
+                  <span>⚙️</span>
+                  <span className="font-semibold">ข้อมูลเสริม</span>
+                  <span className="text-muted-foreground text-sm">
+                    (คลิกเพื่อแสดง)
+                  </span>
+                </Space>
+              }
+              key="optional"
+            >
+              {/* Detect By */}
+              <Form.Item label="Detect By" name="detectBy">
+                <Radio.Group
+                // value={createRowForm.detect_by}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     detect_by: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                >
+                  {detectBy.map((item) => (
+                    <Radio key={item.value} value={item.value}>
+                      {item.value}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+
+              {/* Defect details */}
+              <Form.Item label="Defect details" name="defectDetails">
+                <Input
+                // value={createRowForm.defect_detail}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     defect_detail: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+
+              {/* Rank */}
+              <Form.Item label="Rank" name="rank">
+                <Radio.Group
+                // value={createRowForm.rank}
+                // onChange={(value) => {
+                //   console.log("Trouble e.target.value:", value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     rank: value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                >
+                  {/* <Option value="A">A</Option>
             <Option value="B">B</Option>
             <Option value="C">C</Option> */}
-                {rankList.map((item) => (
-                  <Radio key={item.value} value={item.value}>
-                    {item.value}
-                  </Radio>
-                ))}
-              </Radio.Group>
-            </Form.Item>
+                  {rankList.map((item) => (
+                    <Radio key={item.value} value={item.value}>
+                      {item.value}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
 
-            {/* Root Cause Process */}
-            <Form.Item label="Root cause process" name="rootCauseProcess">
-              <Radio.Group
-              // value={createRowForm.root_cause_process}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     root_cause_process: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              >
-                {/* <Radio value="In-house">In-house</Radio>
+              {/* Root Cause Process */}
+              <Form.Item label="Root cause process" name="rootCauseProcess">
+                <Radio.Group
+                // value={createRowForm.root_cause_process}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     root_cause_process: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                >
+                  {/* <Radio value="In-house">In-house</Radio>
             <Radio value="Supplier">Supplier</Radio> */}
-                {rootCauseProcess.map((item) => (
-                  <Radio key={item.value} value={item.value}>
-                    {item.value}
-                  </Radio>
-                ))}
-              </Radio.Group>
-            </Form.Item>
+                  {rootCauseProcess.map((item) => (
+                    <Radio key={item.value} value={item.value}>
+                      {item.value}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
 
-            {/* Process Name / Supplier Name */}
-            <Form.Item
-              label="Process name / Supplier name"
-              name="processNameOrSupplierName"
-            >
-              <Input
-              // value={createRowForm.process_name_supplier_name}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     process_name_supplier_name: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* Cause */}
-            <Form.Item label="Cause" name="cause">
-              <Input
-              // value={createRowForm.cause}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     cause: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
-              />
-            </Form.Item>
-
-            {/* New / Re-occur */}
-            <Form.Item label="New / Re-occur" name="newOrReoccur">
-              <Radio.Group
-              // value={createRowForm.new_re_occur}
-              // onChange={(e) => {
-              //   console.log("Trouble e.target.value:", e.target.value);
-              //   setCreateRowForm((prev) => ({
-              //     ...prev,
-              //     new_re_occur: e.target.value,
-              //   }));
-              //   console.log("createRowForm:", createRowForm);
-              // }}
+              {/* Process Name / Supplier Name */}
+              <Form.Item
+                label="Process name / Supplier name"
+                name="processNameOrSupplierName"
               >
-                {/* <Radio value="New">New</Radio>
+                <Input
+                // value={createRowForm.process_name_supplier_name}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     process_name_supplier_name: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+
+              {/* Cause */}
+              <Form.Item label="Cause" name="cause">
+                <Input
+                // value={createRowForm.cause}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     cause: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                />
+              </Form.Item>
+
+              {/* New / Re-occur */}
+              <Form.Item label="New / Re-occur" name="newOrReoccur">
+                <Radio.Group
+                // value={createRowForm.new_re_occur}
+                // onChange={(e) => {
+                //   console.log("Trouble e.target.value:", e.target.value);
+                //   setCreateRowForm((prev) => ({
+                //     ...prev,
+                //     new_re_occur: e.target.value,
+                //   }));
+                //   console.log("createRowForm:", createRowForm);
+                // }}
+                >
+                  {/* <Radio value="New">New</Radio>
             <Radio value="Re-occur">Re-occur</Radio> */}
-                {newOrReoccur.map((item) => (
-                  <Radio key={item.value} value={item.value}>
-                    {item.value}
-                  </Radio>
-                ))}
-              </Radio.Group>
-            </Form.Item>
-          </Panel>
-        </Collapse>
-        {/* Footer Buttons */}
-        <Form.Item
-          wrapperCol={{ offset: 8, span: 16 }}
-          style={{ textAlign: "right" }}
-        >
-          <Button onClick={handleOnCloseModal}>Cancel</Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            style={{ marginLeft: "10px" }}
-            onClick={() => {}}
+                  {newOrReoccur.map((item) => (
+                    <Radio key={item.value} value={item.value}>
+                      {item.value}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+            </Panel>
+          </Collapse>
+          {/* Footer Buttons */}
+          <Form.Item
+            wrapperCol={{ offset: 8, span: 16 }}
+            style={{ textAlign: "right" }}
           >
-            OK
-          </Button>
-        </Form.Item>
-      </Form>
+            <Button onClick={handleOnCloseModal}>Cancel</Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              style={{ marginLeft: "10px" }}
+              onClick={() => {}}
+            >
+              OK
+            </Button>
+          </Form.Item>
+        </Form>
+      </Spin>
     </Modal>
   );
 };

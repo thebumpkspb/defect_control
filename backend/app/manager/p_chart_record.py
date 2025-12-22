@@ -40,6 +40,7 @@ from app.functions import (
     get_last_day_from_month_year,
     parse_defect_string,
     get_first_and_last_date_of_month,
+    exceptDefectTypeList,
 )
 from app.crud.p_chart_record import P_Chart_Record_CRUD
 from app.utils.logger import get_logger
@@ -798,7 +799,9 @@ class P_Chart_Record_Manager:
                 if list_target_by_piece[c] != None:
                     if r["qty_shift_all"] > list_target_by_piece[c]:
                         list_over_target_by_piece[d - 1] = True
-                if defect != "Repeat":
+                #! FixDefectType
+                # if defect != "Repeat":
+                if defect not in exceptDefectTypeList():
                     defect_qty_all[d - 1] += r["qty_shift_all"]
 
             # for d in range(1, day_in_month + 1):
@@ -809,7 +812,7 @@ class P_Chart_Record_Manager:
 
             list_value_all[-1] = sum(list_value_all)
 
-            if defect == "Repeat":
+            if defect in exceptDefectTypeList():
                 c_id += 1
                 defect_table_all.append(
                     Defect_table(
@@ -1503,7 +1506,9 @@ class P_Chart_Record_Manager:
                 if list_target_by_piece[c] != None:
                     if r["qty_shift_a"] > list_target_by_piece[c]:
                         list_over_target_by_piece[d - 1] = True
-                if defect != "Repeat":
+                #! FixDefectType
+                # if defect != "Repeat":
+                if defect not in exceptDefectTypeList():
                     defect_qty_a[d - 1] += r["qty_shift_a"]
 
             # for r in res_qty:
@@ -1520,7 +1525,7 @@ class P_Chart_Record_Manager:
 
             list_value_a[-1] = sum(list_value_a)
 
-            if defect == "Repeat":
+            if defect in exceptDefectTypeList():
 
                 c_id += 1
                 defect_table_a.append(
@@ -2160,7 +2165,9 @@ class P_Chart_Record_Manager:
                 if list_target_by_piece[c] != None:
                     if r["qty_shift_b"] > list_target_by_piece[c]:
                         list_over_target_by_piece[d - 1] = True
-                if defect != "Repeat":
+                #! FixDefectType
+                # if defect != "Repeat":
+                if defect not in exceptDefectTypeList():
                     defect_qty_b[d - 1] += r["qty_shift_b"]
             # d = int(str(r["date"])[8:10])
             # if list_value_b[d - 1] > list_target_by_piece[c]:
@@ -2179,7 +2186,7 @@ class P_Chart_Record_Manager:
 
             list_value_b[-1] = sum(list_value_b)
 
-            if defect == "Repeat":
+            if defect in exceptDefectTypeList():
 
                 c_id += 1
                 defect_table_b.append(
@@ -3409,7 +3416,8 @@ class P_Chart_Record_Manager:
                     shift=r[key_index["shift"]],
                     line=data["line_name"],
                     part_no=r[key_index["part_no"]],
-                    sub_line=data["sub_line"],
+                    # sub_line=data["sub_line"],
+                    sub_line=r[key_index["sub_line"]],
                     process=r[key_index["process"]],
                     defect_type=r[key_index["defect_type"]],
                     # defect_mode = r[key_index["defective_items"]],
@@ -3831,7 +3839,9 @@ class P_Chart_Record_Manager:
         data = text_data.dict()
         date_prod_qty = data["date"]
         line = data["line_name"]
-        if data["defect_type"] != "Repeat":
+        #! FixDefectType
+        # if data["defect_type"] != "Repeat":
+        if data["defect_type"] not in exceptDefectTypeList():
             defect_qty = data["defect_qty"]
         else:
             defect_qty = 0

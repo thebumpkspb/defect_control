@@ -1203,9 +1203,10 @@ class Export_P_Chart_Manager:
                 if value["defect_item"] == "":
                     value["defect_item"] = str(value["defect_type"])
 
-                if value["defect_type"] not in ["M/C Set up", "Quality Test"]:
-                    cell_address = f"D{row}"
-                    data_to_write[cell_address] = str(value["id"])
+                #! Fix
+                # if value["defect_type"] not in ["M/C Set up", "Quality Test"]:
+                cell_address = f"D{row}"
+                data_to_write[cell_address] = str(value["id"])
 
                 cell_address = f"F{row}"
                 data_to_write[cell_address] = str(value["defect_item"])
@@ -1228,14 +1229,15 @@ class Export_P_Chart_Manager:
                 initial_row = initial_row + value
                 end = initial_row
 
-                if key not in ["M/C Set up", "Quality Test"]:
-                    selected_row = start
-                    cell_address = f"C{selected_row}"
-                    data_to_write[cell_address] = str(key)
-                    if start < end:
-                        merge_cell_list.append(f"C{start}:C{end}")
-                        wb[f"Page{idx_page}"].merge_cells(f"C{start}:C{end}")
-                        # ws.merge_cells(f"C{start}:C{end}")
+                #!fix
+                # if key not in ["M/C Set up", "Quality Test"]:
+                selected_row = start
+                cell_address = f"C{selected_row}"
+                data_to_write[cell_address] = str(key)
+                if start < end:
+                    merge_cell_list.append(f"C{start}:C{end}")
+                    wb[f"Page{idx_page}"].merge_cells(f"C{start}:C{end}")
+                    # ws.merge_cells(f"C{start}:C{end}")
 
             # Handle merged cells correctly
             # print("data_to_write:", data_to_write)

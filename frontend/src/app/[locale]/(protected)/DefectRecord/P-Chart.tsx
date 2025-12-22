@@ -787,7 +787,7 @@ const PChart = forwardRef<PChartRef, PChartProps>(
           <div
             style={{ display: "flex", justifyContent: "center", color: "red" }}
           >
-            ***Defect Repeat จะไม่ขึ้นกราฟ***
+            ***Defect Repeat, M/C Set up, Quality Test จะไม่ขึ้นกราฟ***
           </div>
         </div>
 

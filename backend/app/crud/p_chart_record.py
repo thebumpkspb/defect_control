@@ -1459,6 +1459,7 @@ class P_Chart_Record_CRUD:
 
         return rs
 
+    # TODO: Need to check
     async def abnormal_occurrence_edit_save(
         self, db: AsyncSession, where_stmt: str | None = None
     ):
@@ -1511,6 +1512,7 @@ class P_Chart_Record_CRUD:
             + process
             + "' AND sub_line = '"
             + sub_line
+            #!
             + "' AND defect_item = '"
             + defect_item
             + "' AND defect_category = '"
@@ -2475,6 +2477,7 @@ class P_Chart_Record_CRUD:
             where_stmt = where_stmt + f" and part_no='{part_no}'"
         if sub_line and sub_line != "null":
             where_stmt = where_stmt + f" and sub_line='{sub_line}'"
+        #! FixDefectType
         stmt = f"""SELECT line_id,part_no,process,date,sum(qty_shift_{shift}) as defect_qty FROM public.pchart_defect_record
                     where 
                     line_id='{line_id}' and
@@ -2482,7 +2485,7 @@ class P_Chart_Record_CRUD:
                     process='{process}' and
                     process='{process}' and
                     --sub_line='{sub_line}' and 
-                    defect_type <>'Repeat'
+                    defect_type not in ('Repeat','M/C Set up','Quality Test')
                     {where_stmt}
                     group by line_id,part_no,process,date
                 """
@@ -2835,6 +2838,7 @@ class P_Chart_Record_CRUD:
         and process='Inline' 
         and date>='{first_date}' 
         and date <='{last_date}' 
+        and defect_type not in ('Repeat','M/C Set up','Quality Test')
         """
         if part_no and part_no != "null":
             stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"

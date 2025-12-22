@@ -22,6 +22,7 @@ import {
   Table,
   message,
   AutoComplete,
+  Spin,
 } from "antd";
 import type { GetRef, InputRef, RadioChangeEvent } from "antd";
 import Image from "next/image";
@@ -1081,525 +1082,527 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
         // width={1300}
         width="90%"
       >
-        {/* General Information */}
-        <div style={{ display: "flex" }}>
-          <Title level={5}>General Information</Title>
-          <div
-            style={{ color: "red", paddingLeft: "20px", fontWeight: "bold" }}
-          >
-            ***หากต้องการเปลี่ยน Line Name หรือ Process โปรดกลับไปที่หน้าหลัก***
+        <Spin spinning={isLoading}>
+          {/* General Information */}
+          <div style={{ display: "flex" }}>
+            <Title level={5}>General Information</Title>
+            <div
+              style={{ color: "red", paddingLeft: "20px", fontWeight: "bold" }}
+            >
+              ***หากต้องการเปลี่ยน Line Name หรือ Process
+              โปรดกลับไปที่หน้าหลัก***
+            </div>
           </div>
-        </div>
-        <Row gutter={[16, 16]}>
-          <Col span={4}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-                // width: "200px",
-                flex: 1,
-              }}
-            >
-              <div
+          <Row gutter={[16, 16]}>
+            <Col span={4}>
+              <Input.Group
+                compact
                 style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                  // width: "200px",
+                  flex: 1,
                 }}
               >
-                <Text style={{ color: "gray" }}>Date</Text>
-              </div>
-              <DatePicker
-                picker="date"
-                value={selectedDate}
-                format={dateFormat} // Display the custom format
-                onChange={handleSetDate}
-                allowClear={false}
-                placeholder="Select Date"
-                style={{
-                  border: "none",
-                  flex: 1,
-                  textAlign: "center",
-                  height: "32px",
-                  color: "black",
-                }}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Input.Group>
-          </Col>
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Date</Text>
+                </div>
+                <DatePicker
+                  picker="date"
+                  value={selectedDate}
+                  format={dateFormat} // Display the custom format
+                  onChange={handleSetDate}
+                  allowClear={false}
+                  placeholder="Select Date"
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    textAlign: "center",
+                    height: "32px",
+                    color: "black",
+                  }}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Input.Group>
+            </Col>
 
-          <Col span={8}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
+            <Col span={8}>
+              <Input.Group
+                compact
                 style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray" }}>Line Name</Text>
-              </div>
-              <Select
-                disabled
-                value={createForm.line_name}
-                placeholder="Select Line"
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Line Name</Text>
+                </div>
+                <Select
+                  disabled
+                  value={createForm.line_name}
+                  placeholder="Select Line"
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const optionLabel = (option?.label || "").toLowerCase();
+                    return optionLabel.includes(input.toLowerCase());
+                  }}
+                  options={addNewRecordViewResult.line_name.map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      line_name: value,
+                    }));
+                    closeHistoryRecordTableVisible();
+                  }}
+                />
+              </Input.Group>
+            </Col>
+            <Col span={3}>
+              <Input.Group
+                compact
                 style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                showSearch
-                filterOption={(input, option) => {
-                  const optionLabel = (option?.label || "").toLowerCase();
-                  return optionLabel.includes(input.toLowerCase());
-                }}
-                options={addNewRecordViewResult.line_name.map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    line_name: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-          <Col span={3}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray" }}>Process</Text>
-              </div>
-              <Select
-                disabled
-                placeholder=""
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Process</Text>
+                </div>
+                <Select
+                  disabled
+                  placeholder=""
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  value={createForm.process}
+                  // todo: use changeNewRecordViewData
+                  // if needed to use change add api
+                  options={addNewRecordViewResult.process.map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      process: value,
+                    }));
+                    closeHistoryRecordTableVisible();
+                  }}
+                />
+              </Input.Group>
+            </Col>
+            <Col span={3}>
+              <Input.Group
+                compact
                 style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                value={createForm.process}
-                // todo: use changeNewRecordViewData
-                // if needed to use change add api
-                options={addNewRecordViewResult.process.map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    process: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-          <Col span={3}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray" }}>Defect Type</Text>
-              </div>
-              <Select
-                // disabled
-                value={createForm.defect_type}
-                placeholder=""
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                // disabled={
-                //   // disable if defect type has no defect mode
-                //   defectType.find(
-                //     (item) => item.value === createForm.defect_type
-                //   )?.hasDefectMode === false
-                // }
-                style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                // todo: use changeNewRecordViewData
-                // if needed to use change add api
-                showSearch
-                filterOption={(input, option: any) => {
-                  const optionLabel = (option?.label || "").toLowerCase();
-                  return optionLabel.includes(input.toLowerCase());
-                }}
-                // options={addNewRecordViewResult.defect_type.map((item) => ({
-                //   value: item,
-                //   label: item,
-                // }))}
-                // options={[
-                //   ...new Set(
-                //     defectTypeOptions.map((item: any) => item.defect_type)
-                //   ),
-                // ].map((item) => ({
-                //   value: item,
-                //   label: item,
-                // }))}
-                options={defectTypeOptions.map((item: any) => ({
-                  value: item,
-                  label: item,
-                }))}
-                // onChange={handleSetDefectType}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    defect_type: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-                // onChange={(value) => {
-                //   setCreateForm((prev) => ({
-                //     ...prev,
-                //     defective_type: value,
-                //   }));
-                // }}
-              />
-            </Input.Group>
-          </Col>
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Defect Type</Text>
+                </div>
+                <Select
+                  // disabled
+                  value={createForm.defect_type}
+                  placeholder=""
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  // disabled={
+                  //   // disable if defect type has no defect mode
+                  //   defectType.find(
+                  //     (item) => item.value === createForm.defect_type
+                  //   )?.hasDefectMode === false
+                  // }
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  // todo: use changeNewRecordViewData
+                  // if needed to use change add api
+                  showSearch
+                  filterOption={(input, option: any) => {
+                    const optionLabel = (option?.label || "").toLowerCase();
+                    return optionLabel.includes(input.toLowerCase());
+                  }}
+                  // options={addNewRecordViewResult.defect_type.map((item) => ({
+                  //   value: item,
+                  //   label: item,
+                  // }))}
+                  // options={[
+                  //   ...new Set(
+                  //     defectTypeOptions.map((item: any) => item.defect_type)
+                  //   ),
+                  // ].map((item) => ({
+                  //   value: item,
+                  //   label: item,
+                  // }))}
+                  options={defectTypeOptions.map((item: any) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  // onChange={handleSetDefectType}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      defect_type: value,
+                    }));
+                    closeHistoryRecordTableVisible();
+                  }}
+                  // onChange={(value) => {
+                  //   setCreateForm((prev) => ({
+                  //     ...prev,
+                  //     defective_type: value,
+                  //   }));
+                  // }}
+                />
+              </Input.Group>
+            </Col>
 
-          <Col span={5}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
+            <Col span={5}>
+              <Input.Group
+                compact
                 style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray" }}>Defect Mode</Text>
-              </div>
-              <Select
-                // disabled
-                value={createForm.defective_items}
-                placeholder=""
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                // disabled={
-                //   // disable if defect type has no defect mode
-                //   defectType.find(
-                //     (item) => item.value === createForm.defect_type
-                //   )?.hasDefectMode === false
-                // }
-                style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                // todo: use changeNewRecordViewData
-                // if needed to use change add api
-                showSearch
-                filterOption={(input, option: any) => {
-                  const optionLabel = (option?.label || "").toLowerCase();
-                  return optionLabel.includes(input.toLowerCase());
-                }}
-                // options={addNewRecordViewResult.defect_mode.map((item) => ({
-                //   value: item,
-                //   label: item,
-                // }))}
-                options={defectModeOptions.map((item: any) => ({
-                  value: item,
-                  label: item,
-                }))}
-                // options={[
-                //   ...new Set(
-                //     defectModeOptions.map((item: any) => item.defect_mode)
-                //   ),
-                // ].map((item) => ({
-                //   value: item,
-                //   label: item,
-                // }))}
-                // onChange={handleSetDefectMode}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    defective_items: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-        </Row>
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Defect Mode</Text>
+                </div>
+                <Select
+                  // disabled
+                  value={createForm.defective_items}
+                  placeholder=""
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  // disabled={
+                  //   // disable if defect type has no defect mode
+                  //   defectType.find(
+                  //     (item) => item.value === createForm.defect_type
+                  //   )?.hasDefectMode === false
+                  // }
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  // todo: use changeNewRecordViewData
+                  // if needed to use change add api
+                  showSearch
+                  filterOption={(input, option: any) => {
+                    const optionLabel = (option?.label || "").toLowerCase();
+                    return optionLabel.includes(input.toLowerCase());
+                  }}
+                  // options={addNewRecordViewResult.defect_mode.map((item) => ({
+                  //   value: item,
+                  //   label: item,
+                  // }))}
+                  options={defectModeOptions.map((item: any) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  // options={[
+                  //   ...new Set(
+                  //     defectModeOptions.map((item: any) => item.defect_mode)
+                  //   ),
+                  // ].map((item) => ({
+                  //   value: item,
+                  //   label: item,
+                  // }))}
+                  // onChange={handleSetDefectMode}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      defective_items: value,
+                    }));
+                    closeHistoryRecordTableVisible();
+                  }}
+                />
+              </Input.Group>
+            </Col>
+          </Row>
 
-        {/* Input Information */}
-        <Title level={5} style={{ marginTop: "10px" }}>
-          Input Information
-        </Title>
-        <Row gutter={16}>
-          <Col span={5}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
+          {/* Input Information */}
+          <Title level={5} style={{ marginTop: "10px" }}>
+            Input Information
+          </Title>
+          <Row gutter={16}>
+            <Col span={5}>
+              <Input.Group
+                compact
                 style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray" }}>Part No.</Text>
-              </div>
-              <Select
-                // disabled
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder="Select Part No"
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Part No.</Text>
+                </div>
+                <Select
+                  // disabled
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder="Select Part No"
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const optionLabel = (option?.label || "").toLowerCase();
+                    return optionLabel.includes(input.toLowerCase());
+                  }}
+                  options={addNewRecordViewResult.part_no.map((item) => ({
+                    value: item,
+                    label: item,
+                  }))}
+                  value={createForm.part_no}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      part_no: value,
+                    }));
+                    closeHistoryRecordTableVisible();
+                  }}
+                />
+              </Input.Group>
+            </Col>
+            <Col span={4}>
+              {/* Sub Line */}
+              <Input.Group
+                compact
                 style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                showSearch
-                filterOption={(input, option) => {
-                  const optionLabel = (option?.label || "").toLowerCase();
-                  return optionLabel.includes(input.toLowerCase());
-                }}
-                options={addNewRecordViewResult.part_no.map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
-                value={createForm.part_no}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    part_no: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-          <Col span={4}>
-            {/* Sub Line */}
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-                flex: 1.5,
-              }}
-            >
-              <div
-                style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  height: "32px",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                  flex: 1.5,
                 }}
               >
-                <Text style={{ color: "gray" }}>Sub Line</Text>
-              </div>
-              <Select
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder="Select Sub Line"
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
+                  }}
+                >
+                  <Text style={{ color: "gray" }}>Sub Line</Text>
+                </div>
+                <Select
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder="Select Sub Line"
+                  style={{
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                  }}
+                  value={createForm.sub_line}
+                  // onChange={(value) => setSelectedSubLine(value)}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      sub_line: value,
+                    }));
+                  }}
+                  showSearch
+                  filterOption={(input, option) => {
+                    const optionLabel =
+                      (option?.children as unknown as string) || "";
+                    return optionLabel
+                      .toLowerCase()
+                      .includes(input.toLowerCase());
+                  }}
+                >
+                  {subLines.map((subLine) => (
+                    <Select.Option
+                      key={subLine.rxno_part}
+                      value={subLine.rxno_part}
+                      // label={subLine.process}
+                    >
+                      {subLine.process || " "}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Input.Group>
+            </Col>
+            <Col span={5}>
+              <Input.Group
+                compact
                 style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                }}
-                value={createForm.sub_line}
-                // onChange={(value) => setSelectedSubLine(value)}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    sub_line: value,
-                  }));
-                }}
-                showSearch
-                filterOption={(input, option) => {
-                  const optionLabel =
-                    (option?.children as unknown as string) || "";
-                  return optionLabel
-                    .toLowerCase()
-                    .includes(input.toLowerCase());
+                  display: "flex",
+                  alignItems: "center",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
+                  // width: "200px",
+                  flex: 2,
                 }}
               >
-                {subLines.map((subLine) => (
-                  <Select.Option
-                    key={subLine.rxno_part}
-                    value={subLine.rxno_part}
-                    // label={subLine.process}
+                <div
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "32px",
+                    flex: 0.8,
+                  }}
+                >
+                  <Text style={{ color: "gray", textAlign: "center" }}>
+                    Shift
+                  </Text>
+                </div>
+                <Radio.Group
+                  buttonStyle="solid"
+                  value={shift}
+                  style={{
+                    flex: 3,
+                    display: "flex",
+                    justifyContent: "space-around",
+                    alignItems: "center",
+                  }}
+                  onChange={handleSelectShift}
+                >
+                  <Radio.Button
+                    value="A"
+                    style={{
+                      borderRadius: 0,
+                      color: "black",
+                      textAlign: "center",
+                      flex: 1,
+                    }}
                   >
-                    {subLine.process || " "}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Input.Group>
-          </Col>
-          <Col span={5}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-                // width: "200px",
-                flex: 2,
-              }}
-            >
-              <div
+                    A
+                  </Radio.Button>
+                  <Radio.Button
+                    value="B"
+                    style={{
+                      borderRadius: 0,
+                      color: "black",
+                      textAlign: "center",
+                      flex: 1,
+                    }}
+                  >
+                    B
+                  </Radio.Button>
+                </Radio.Group>
+              </Input.Group>
+            </Col>
+            <Col span={5}>
+              <Input.Group
+                compact
                 style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  height: "32px",
-                  flex: 0.8,
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "5px",
+                  overflow: "hidden",
                 }}
               >
-                <Text style={{ color: "gray", textAlign: "center" }}>
-                  Shift
-                </Text>
-              </div>
-              <Radio.Group
-                buttonStyle="solid"
-                value={shift}
-                style={{
-                  flex: 3,
-                  display: "flex",
-                  justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                onChange={handleSelectShift}
-              >
-                <Radio.Button
-                  value="A"
+                <div
                   style={{
-                    borderRadius: 0,
-                    color: "black",
-                    textAlign: "center",
-                    flex: 1,
+                    background: "#f5f5f5",
+                    padding: "0 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    height: "32px",
                   }}
                 >
-                  A
-                </Radio.Button>
-                <Radio.Button
-                  value="B"
-                  style={{
-                    borderRadius: 0,
-                    color: "black",
-                    textAlign: "center",
-                    flex: 1,
-                  }}
-                >
-                  B
-                </Radio.Button>
-              </Radio.Group>
-            </Input.Group>
-          </Col>
-          <Col span={5}>
-            <Input.Group
-              compact
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #d9d9d9",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  background: "#f5f5f5",
-                  padding: "0 8px",
-                  display: "flex",
-                  alignItems: "center",
-                  height: "32px",
-                }}
-              >
-                <Text style={{ color: "gray" }}>หน่วยงานที่รับผิดชอบ</Text>
-              </div>
-              {/* <Select
+                  <Text style={{ color: "gray" }}>หน่วยงานที่รับผิดชอบ</Text>
+                </div>
+                {/* <Select
                 // mode="tags"
                 allowClear
                 placeholder=""
@@ -1627,277 +1630,279 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
                 }}
                   
               /> */}
-              <AutoComplete
-                // style={{ width: 200 }}
-                allowClear
-                options={pics.map((item) => ({
-                  value: item,
-                }))}
-                value={createForm.pic}
-                placeholder=""
-                filterOption={(inputValue, option) =>
-                  option!.value
-                    .toUpperCase()
-                    .indexOf(inputValue.toUpperCase()) !== -1
-                }
-                style={{
-                  border: "none",
-                  flex: 1,
-                  height: "32px",
-                  color: "black",
-                  // width: "100%",
-                }}
-                onChange={(value) => {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    pic: value,
-                  }));
-                  closeHistoryRecordTableVisible();
-                }}
-              />
-            </Input.Group>
-          </Col>
-          <Col span={4}>
-            <div style={{ display: "flex" }}>
-              <Form.Item>
-                <Button
-                  type="primary"
-                  danger={isVisibleOverUCL}
-                  onClick={showModal}
-                >
-                  Action Record
-                </Button>
-                <PreviewPopup
-                  visible={previewModalVisible}
-                  onClose={handleCancel}
-                  input={input}
-                  shift={shift}
-                  username={username}
-                  date={selectedDate}
-                />
-              </Form.Item>
-              <div
-                style={{
-                  display: isVisibleOverUCL ? "block" : "none",
-                  color: "red",
-                  fontWeight: "bold",
-                }}
-              >
-                ** กรุณาใส่รายละเอียด Action Record เนื่องจากจำนวน Defect
-                เยอะเกินกว่าเป้า
-              </div>
-            </div>
-          </Col>
-        </Row>
-
-        {/* Defect Qty */}
-        <Title level={5}>Defect Q'ty (จำนวนของเสีย)</Title>
-        <Row style={{ marginBottom: "15px" }}>
-          <Col span={11}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                border: "1px solid #d9d9d9",
-                borderRadius: "8px",
-                padding: "24px",
-                textAlign: "center",
-                backgroundColor: "#fafafa",
-                marginRight: "7px",
-                height: "100%",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Title level={1} style={{ margin: 0, fontSize: "150px" }}>
-                {/* {shift === "A" ? defectQtyTobeAddedShiftA : defectQtyTobeAddedShiftB } */}
-                {defectQty}
-              </Title>
-              <p
-                style={{
-                  position: "absolute",
-                  bottom: "10px",
-                  right: "10px",
-                  margin: 0,
-                }}
-              >
-                PC(S).
-              </p>
-            </div>
-          </Col>
-
-          {/* +/- Buttons */}
-          <Col span={2}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "15px",
-                height: "100%",
-              }}
-            >
-              <Button
-                style={{
-                  height: "70px", // เพิ่มขนาดปุ่ม
-                  width: "70px", // เพิ่มขนาดปุ่ม
-                  fontSize: "50px", // ขนาดตัวอักษร
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center", // จัดให้อยู่ตรงกลาง
-                }}
-                onClick={() => {
-                  setDefectQty((prev) => prev + 1);
-                  // shift === 'A' ? setDefectQtyToBeAddedShiftA(prev => prev + 1) : setDefectQtyToBeAddedShiftB(prev => prev + 1);
-                }}
-              >
-                +
-              </Button>
-              <Button
-                style={{
-                  height: "70px", // เพิ่มขนาดปุ่ม
-                  width: "70px", // เพิ่มขนาดปุ่ม
-                  fontSize: "50px", // ขนาดตัวอักษร
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center", // จัดให้อยู่ตรงกลาง
-                }}
-                onClick={() => {
-                  setDefectQty((prev) => (prev > 0 ? prev - 1 : 0));
-                  // shift === 'A' ? setDefectQtyToBeAddedShiftA(prev => prev - 1) : setDefectQtyToBeAddedShiftB(prev => prev - 1);
-                }}
-              >
-                −
-              </Button>
-            </div>
-          </Col>
-          <Col span={11}>
-            <div
-              style={{
-                marginLeft: "7px",
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "15px",
-              }}
-            >
-              {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
-                <Button
-                  style={{ height: "50px", fontSize: "50px" }}
-                  key={num}
-                  block
-                  onClick={() => handleKeypadClick(num)}
-                >
-                  {num}
-                </Button>
-              ))}
-              <Button
-                style={{ height: "50px", fontSize: "50px" }}
-                block
-                onClick={() => handleKeypadClick("delete")}
-              >
-                <img
-                  src="/assets/images/⌫.png"
-                  alt="Delete"
+                <AutoComplete
+                  // style={{ width: 200 }}
+                  allowClear
+                  options={pics.map((item) => ({
+                    value: item,
+                  }))}
+                  value={createForm.pic}
+                  placeholder=""
+                  filterOption={(inputValue, option) =>
+                    option!.value
+                      .toUpperCase()
+                      .indexOf(inputValue.toUpperCase()) !== -1
+                  }
                   style={{
-                    height: "55px",
-                    width: "55px",
-                    objectFit: "contain",
+                    border: "none",
+                    flex: 1,
+                    height: "32px",
+                    color: "black",
+                    // width: "100%",
+                  }}
+                  onChange={(value) => {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      pic: value,
+                    }));
+                    closeHistoryRecordTableVisible();
                   }}
                 />
-              </Button>
-
-              <Button
-                style={{ height: "50px", fontSize: "50px" }}
-                block
-                onClick={() => handleKeypadClick(0)}
-              >
-                0
-              </Button>
-              <Button
-                style={{ height: "50px", fontSize: "50px" }}
-                block
-                onClick={() => handleKeypadClick("clear")}
-              >
-                C
-              </Button>
-            </div>
-          </Col>
-        </Row>
-
-        {/* Comment */}
-        <Title level={5}>Comment</Title>
-        <TextArea
-          disabled
-          value={shift === "A" ? commentShiftA : commentShiftB}
-          onChange={handleSetComment}
-          placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
-          rows={3}
-          ref={commentInputRef}
-        />
-
-        {/* Footer */}
-        <Row
-          justify="space-between"
-          align="middle"
-          gutter={16}
-          style={{ marginTop: "15px", marginBottom: "15px" }}
-        >
-          <Col>
-            <Row>
-              <Button
-                type="link"
-                onClick={() => toggleHistoryRecordTableVisible()}
-              >
-                <span style={{ textDecoration: "underline" }}>
-                  History Record
-                </span>{" "}
-                (ประวัติการบันทึกข้อมูล) {historyRecordTableVisible ? "↑" : "↓"}
-              </Button>
-            </Row>
-            <Row>
-              <span style={{ color: "red", paddingLeft: "15px" }}>
-                (ตรวจสอบ แก้ไข และ ลบข้อมูลย้อนหลัง)
-              </span>
-            </Row>
-          </Col>
-          <Col>
-            <Row gutter={16}>
-              <Col>
-                <Button onClick={handleModalCancel} danger>
-                  Cancel
-                </Button>
-              </Col>
-              <Col>
-                <Button
-                  disabled={isLoading}
-                  type="primary"
-                  onClick={handleOnClickOk}
+              </Input.Group>
+            </Col>
+            <Col span={4}>
+              <div style={{ display: "flex" }}>
+                <Form.Item>
+                  <Button
+                    type="primary"
+                    danger={isVisibleOverUCL}
+                    onClick={showModal}
+                  >
+                    Action Record
+                  </Button>
+                  <PreviewPopup
+                    visible={previewModalVisible}
+                    onClose={handleCancel}
+                    input={input}
+                    shift={shift}
+                    username={username}
+                    date={selectedDate}
+                  />
+                </Form.Item>
+                <div
+                  style={{
+                    display: isVisibleOverUCL ? "block" : "none",
+                    color: "red",
+                    fontWeight: "bold",
+                  }}
                 >
-                  Save
-                </Button>
-              </Col>
-            </Row>
-          </Col>
-        </Row>
+                  ** กรุณาใส่รายละเอียด Action Record เนื่องจากจำนวน Defect
+                  เยอะเกินกว่าเป้า
+                </div>
+              </div>
+            </Col>
+          </Row>
 
-        <div ref={historyTableRef}>
-          <HistoryRecordTable
-            visible={historyRecordTableVisible}
-            input={{
-              month: convertFullDateToYearMonth(createForm.date),
-              line_name: createForm.line_name,
-              part_no: createForm.part_no,
-              shift: shift,
-              process: createForm.process,
-              sub_line: createForm.sub_line,
-              line_code_rx: input.line_code_rx,
-            }}
-            username={username}
+          {/* Defect Qty */}
+          <Title level={5}>Defect Q'ty (จำนวนของเสีย)</Title>
+          <Row style={{ marginBottom: "15px" }}>
+            <Col span={11}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "8px",
+                  padding: "24px",
+                  textAlign: "center",
+                  backgroundColor: "#fafafa",
+                  marginRight: "7px",
+                  height: "100%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Title level={1} style={{ margin: 0, fontSize: "150px" }}>
+                  {/* {shift === "A" ? defectQtyTobeAddedShiftA : defectQtyTobeAddedShiftB } */}
+                  {defectQty}
+                </Title>
+                <p
+                  style={{
+                    position: "absolute",
+                    bottom: "10px",
+                    right: "10px",
+                    margin: 0,
+                  }}
+                >
+                  PC(S).
+                </p>
+              </div>
+            </Col>
+
+            {/* +/- Buttons */}
+            <Col span={2}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "15px",
+                  height: "100%",
+                }}
+              >
+                <Button
+                  style={{
+                    height: "70px", // เพิ่มขนาดปุ่ม
+                    width: "70px", // เพิ่มขนาดปุ่ม
+                    fontSize: "50px", // ขนาดตัวอักษร
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center", // จัดให้อยู่ตรงกลาง
+                  }}
+                  onClick={() => {
+                    setDefectQty((prev) => prev + 1);
+                    // shift === 'A' ? setDefectQtyToBeAddedShiftA(prev => prev + 1) : setDefectQtyToBeAddedShiftB(prev => prev + 1);
+                  }}
+                >
+                  +
+                </Button>
+                <Button
+                  style={{
+                    height: "70px", // เพิ่มขนาดปุ่ม
+                    width: "70px", // เพิ่มขนาดปุ่ม
+                    fontSize: "50px", // ขนาดตัวอักษร
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center", // จัดให้อยู่ตรงกลาง
+                  }}
+                  onClick={() => {
+                    setDefectQty((prev) => (prev > 0 ? prev - 1 : 0));
+                    // shift === 'A' ? setDefectQtyToBeAddedShiftA(prev => prev - 1) : setDefectQtyToBeAddedShiftB(prev => prev - 1);
+                  }}
+                >
+                  −
+                </Button>
+              </div>
+            </Col>
+            <Col span={11}>
+              <div
+                style={{
+                  marginLeft: "7px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "15px",
+                }}
+              >
+                {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
+                  <Button
+                    style={{ height: "50px", fontSize: "50px" }}
+                    key={num}
+                    block
+                    onClick={() => handleKeypadClick(num)}
+                  >
+                    {num}
+                  </Button>
+                ))}
+                <Button
+                  style={{ height: "50px", fontSize: "50px" }}
+                  block
+                  onClick={() => handleKeypadClick("delete")}
+                >
+                  <img
+                    src="/assets/images/⌫.png"
+                    alt="Delete"
+                    style={{
+                      height: "55px",
+                      width: "55px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </Button>
+
+                <Button
+                  style={{ height: "50px", fontSize: "50px" }}
+                  block
+                  onClick={() => handleKeypadClick(0)}
+                >
+                  0
+                </Button>
+                <Button
+                  style={{ height: "50px", fontSize: "50px" }}
+                  block
+                  onClick={() => handleKeypadClick("clear")}
+                >
+                  C
+                </Button>
+              </div>
+            </Col>
+          </Row>
+
+          {/* Comment */}
+          <Title level={5}>Comment</Title>
+          <TextArea
+            disabled
+            value={shift === "A" ? commentShiftA : commentShiftB}
+            onChange={handleSetComment}
+            placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
+            rows={3}
+            ref={commentInputRef}
           />
-        </div>
+
+          {/* Footer */}
+          <Row
+            justify="space-between"
+            align="middle"
+            gutter={16}
+            style={{ marginTop: "15px", marginBottom: "15px" }}
+          >
+            <Col>
+              <Row>
+                <Button
+                  type="link"
+                  onClick={() => toggleHistoryRecordTableVisible()}
+                >
+                  <span style={{ textDecoration: "underline" }}>
+                    History Record
+                  </span>{" "}
+                  (ประวัติการบันทึกข้อมูล){" "}
+                  {historyRecordTableVisible ? "↑" : "↓"}
+                </Button>
+              </Row>
+              <Row>
+                <span style={{ color: "red", paddingLeft: "15px" }}>
+                  (ตรวจสอบ แก้ไข และ ลบข้อมูลย้อนหลัง)
+                </span>
+              </Row>
+            </Col>
+            <Col>
+              <Row gutter={16}>
+                <Col>
+                  <Button onClick={handleModalCancel} danger>
+                    Cancel
+                  </Button>
+                </Col>
+                <Col>
+                  <Button
+                    disabled={isLoading}
+                    type="primary"
+                    onClick={handleOnClickOk}
+                  >
+                    Save
+                  </Button>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+
+          <div ref={historyTableRef}>
+            <HistoryRecordTable
+              visible={historyRecordTableVisible}
+              input={{
+                month: convertFullDateToYearMonth(createForm.date),
+                line_name: createForm.line_name,
+                part_no: createForm.part_no,
+                shift: shift,
+                process: createForm.process,
+                sub_line: createForm.sub_line,
+                line_code_rx: input.line_code_rx,
+              }}
+              username={username}
+            />
+          </div>
+        </Spin>
       </Modal>
     );
   }

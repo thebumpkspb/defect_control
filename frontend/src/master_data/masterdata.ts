@@ -32,8 +32,8 @@ const defectType: DefectType[] = [
     value: "Other",
     hasDefectMode: true,
   },
-  { value: "M/C Set up", hasDefectMode: false },
-  { value: "Quality Test", hasDefectMode: false },
+  { value: "M/C Set up", hasDefectMode: true },
+  { value: "Quality Test", hasDefectMode: true },
 ];
 const defectTypeOutline: DefectType[] = [
   {

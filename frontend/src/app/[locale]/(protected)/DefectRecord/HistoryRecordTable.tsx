@@ -6,7 +6,7 @@ import {
   HistoryRecordsResultDetail,
   PChartRecordHistoryRecordsEditSaveRequest,
 } from "@/types/settingApi";
-import { AutoComplete, Flex, Table, Tag } from "antd";
+import { AutoComplete, Flex, Spin, Table, Tag } from "antd";
 import type { GetRef, TableProps } from "antd";
 import {
   Button,
@@ -724,6 +724,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
 
   const fetchSettingTargetTableView = async () => {
     console.log("input2:", input);
+    setIsLoading(true);
     try {
       const response = await pChartRecordHistoryRecordsView({
         line_name: input.line_name || "",
@@ -744,6 +745,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     } catch (error) {
       console.error("Error saving edits:", error);
     }
+    setIsLoading(false);
   };
 
   const triggerUpdateTableData = async () => {
@@ -758,7 +760,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     useState<HistoryRecordsEditResult>(defaultTableEditDropDownData);
   const [editForm, setEditForm] =
     useState<PChartRecordHistoryRecordsEditSaveRequest>(defalutEditForm);
-
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const startEdit = async (key: number, record: HistoryRecordsResultDetail) => {
     // do not let user edit blank item
     if (record.id === 0 && record.line === "") {
@@ -786,6 +788,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     });
 
     // fetch dropdown data
+    setIsLoading(true);
     try {
       const response = await pChartRecordHistoryRecordsEditView({
         id: record.id,
@@ -816,9 +819,10 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     } catch (error) {
       console.error("Error saving edits:", error);
     }
-
+    setIsLoading(false);
     // fetch filtered dropdown if id is not empty
     if (record.id) {
+      setIsLoading(true);
       await fetchFilteredTableEditDropDownData(
         record.no,
         record.date,
@@ -833,6 +837,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
         record.id,
         record.creator
       );
+      setIsLoading(false);
     }
   };
 
@@ -868,7 +873,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
       alert("กรุณากรอกข้อมูลก่อนบันทึก");
       return;
     }
-
+    setIsLoading(true);
     try {
       const response = await pChartRecordHistoryRecordsEditSave({
         id: editForm.id,
@@ -898,6 +903,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     } catch (error) {
       console.error("Error saving edits:", error);
     }
+    setIsLoading(false);
   };
 
   const deleteRow = async (key: number | null) => {
@@ -933,7 +939,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
       alert("ไม่สามารถลบแถวที่ไม่มีข้อมูลได้");
       return;
     }
-
+    setIsLoading(true);
     try {
       const response = await pChartRecordHistoryRecordsDelete({
         id: deletedItem.id,
@@ -958,6 +964,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     } catch (error) {
       console.error("Error delete:", error);
     }
+    setIsLoading(false);
   };
 
   const fetchFilteredTableEditDropDownData = async (
@@ -975,6 +982,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     creator: string
   ): Promise<HistoryRecordsEditResult[]> => {
     // fetch dropdown data
+    setIsLoading(true);
     try {
       const response = await pChartRecordHistoryRecordsEditViewChange({
         no: no,
@@ -1002,6 +1010,7 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
     } catch (error) {
       console.error("Error saving edits:", error);
     }
+    setIsLoading(false);
     return [];
   };
 
@@ -1032,16 +1041,18 @@ const HistoryRecordTable: React.FC<HistoryRecordTableProps> = ({
 
   return (
     <>
-      {visible && (
-        <Table
-          size="small"
-          columns={column}
-          dataSource={dataSource.history_records_result}
-          rowKey={(record) => record.id}
-          // width=
-          // ref={testRef}
-        />
-      )}
+      <Spin spinning={isLoading}>
+        {visible && (
+          <Table
+            size="small"
+            columns={column}
+            dataSource={dataSource.history_records_result}
+            rowKey={(record) => record.id}
+            // width=
+            // ref={testRef}
+          />
+        )}
+      </Spin>
     </>
   );
 };
