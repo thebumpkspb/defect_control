@@ -3965,6 +3965,8 @@ class P_Chart_Record_Manager:
         headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         # date_prod_qty = convert_month_year_to_date(data["month"])
         # first_date, last_date = get_first_and_last_date_of_month(date)
+        count_data = await self.crud.count_data_record(db=db, where_stmt=text_data)
+        # print("count_data:", count_data)
         defect_qty = await self.crud.get_defect_qty(
             db=db, first_date=first_date, last_date=last_date, where_stmt=text_data
         )
@@ -3986,7 +3988,7 @@ class P_Chart_Record_Manager:
                 + f"&shift={data['shift']}&date="
                 + first_date
             )
-        print("endpoint:", endpoint)
+        # print("endpoint:", endpoint)
         response_json = requests.get(endpoint, headers=headers).json()
         #!response_json["prod_qty"]
 
@@ -4002,11 +4004,16 @@ class P_Chart_Record_Manager:
             prod_actual += entry["actual_val"]
             if entry["actual_val"] != 0:
                 amount_prod_date += 1
-        if prod_actual == 0:
+        if count_data == 0:
+            p_bar = float(await self.crud.get_initial_pbar(db=db, where_stmt=text_data))
+        elif prod_actual == 0:
             p_bar = 0
         else:
             p_bar = round((defect_qty / prod_actual * 100), 2)
-
+        #!
+        if p_bar == None:
+            p_bar = 0
+        # print("SSp_bar:", p_bar)
         if amount_prod_date == 0:
             n_bar = 0
         else:

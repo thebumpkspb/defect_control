@@ -2860,3 +2860,88 @@ class P_Chart_Record_CRUD:
         #     )
         # amount_action_record = r[key_index["amount_action_record"]]
         return return_list
+
+    async def count_data_record(
+        self,
+        db: AsyncSession,
+        where_stmt: str | None = None,
+    ):
+        data = where_stmt.dict()
+        # date = data["date"]
+        month = data["month"]
+        date = convert_month_year_to_date(month)
+        line = data["line_name"]
+        part_no = data["part_no"]
+        process = data["process"]
+        sub_line = data["sub_line"]
+        shift = data["shift"].lower()
+        first_date, last_date = get_first_and_last_date_of_month(date)
+        line_id = self.get_line_id(line)
+        stmt = f"""
+        SELECT count(id) as count FROM public.pchart_defect_record
+            where line_id ={line_id} and date >='{first_date}' and date <='{last_date}'
+        """
+        # if part_no and part_no != "null":
+        #     stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"
+        # if sub_line and sub_line != "null":
+        #     stmt = stmt + f" and sub_line ='{sub_line}'"
+
+        res = await db.execute(text(stmt))
+        # return_list = []
+        return_list = None
+        for r in res:
+            key_index = r._key_to_index
+            return_list = r[key_index["count"]]
+        #     key_index = r._key_to_index
+        #     return_list.append(
+        #         {
+        #             "date": r[key_index["date"]],
+        #             "record_by": get_initials(r[key_index["record_by"]]),
+        #         }
+        #     )
+        # amount_action_record = r[key_index["amount_action_record"]]
+        return return_list
+
+    async def get_initial_pbar(
+        self,
+        db: AsyncSession,
+        where_stmt: str | None = None,
+    ):
+        data = where_stmt.dict()
+        # date = data["date"]
+        month = data["month"]
+        date = convert_month_year_to_date(month)
+        line = data["line_name"]
+        part_no = data["part_no"]
+        process = data["process"]
+        sub_line = data["sub_line"]
+        shift = data["shift"].lower()
+        # first_date, last_date = get_first_and_last_date_of_month(date)
+        first_date, last_date = get_first_and_last_date_of_month(
+            date=date, previous_month=True
+        )
+        line_id = self.get_line_id(line)
+        stmt = f"""
+        SELECT * FROM public.initial_pbar
+            where line_id ={line_id} and month_year ='{first_date}' 
+        """
+        # if part_no and part_no != "null":
+        #     stmt = stmt + f" and ( part_no is null or part_no='{part_no}' )"
+        # if sub_line and sub_line != "null":
+        #     stmt = stmt + f" and sub_line ='{sub_line}'"
+
+        res = await db.execute(text(stmt))
+        # return_list = []
+        return_list = None
+        for r in res:
+            key_index = r._key_to_index
+            return_list = r[key_index["p_bar"]]
+        #     key_index = r._key_to_index
+        #     return_list.append(
+        #         {
+        #             "date": r[key_index["date"]],
+        #             "record_by": get_initials(r[key_index["record_by"]]),
+        #         }
+        #     )
+        # amount_action_record = r[key_index["amount_action_record"]]
+        return return_list
