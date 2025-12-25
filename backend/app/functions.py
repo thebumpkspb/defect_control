@@ -628,3 +628,19 @@ def extract_fields_by_day(
 
 def exceptDefectTypeList():
     return ["Repeat", "M/C Set up", "Quality Test"]
+
+
+def get_month_start_end(date: datetime, date_only: bool = False):
+    _, last_day = calendar.monthrange(date.year, date.month)
+
+    if date_only:
+        start_date = date.replace(day=1).strftime("%Y-%m-%d")
+        end_date = date.replace(day=last_day).strftime("%Y-%m-%d")
+        return start_date, end_date
+
+    start_date = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    end_date = date.replace(
+        day=last_day, hour=23, minute=59, second=59, microsecond=999999
+    )
+
+    return start_date, end_date

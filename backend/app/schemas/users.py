@@ -57,8 +57,25 @@ class UserResponse(UserDetail):
     token_type: str | None = "Bearer"
 
 
+class UserResponseName(BaseModel):
+    user_uuid: str
+    first_primary: str | None = None
+    middle_primary: str | None = None
+    last_primary: str | None = None
+    first_secondary: str | None = None
+    middle_secondary: str | None = None
+    last_secondary: str | None = None
+    first_tertiary: str | None = None
+    middle_tertiary: str | None = None
+    last_tertiary: str | None = None
+
+
 class UsersResponse(BaseModel):
     users: List[UserResponse]
+
+
+class UsersResponseName(BaseModel):
+    users: List[UserResponseName]
 
 
 class UserUpdateRequest(User):

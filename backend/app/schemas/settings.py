@@ -98,6 +98,11 @@ class LinePartProcessesReceive(BaseModel):
 class OrganizeLevel(BaseModel):
     org_level: str | None = None
     org_name: str | None = None
+    line_id: int | None = None
+    section_id: int | None = None
+    section_code: str | None = None
+    upper_level: List[str] | None = None
+    group_type: str | None = None
 
 
 class OrganizeLevelResponse(BaseModel):
@@ -126,17 +131,6 @@ class PartLineResponse(BaseModel):
     parts: List[PartLine]
 
 
-class SubLines(BaseModel):
-    line_code_rx: str | None = None
-    part_no: str | None = None
-    process: str | None = None
-    rxno_part: str | None = None
-
-
-class SubLinesResponse(BaseModel):
-    sub_lines: List[SubLines]
-
-
 class LinePart(BaseModel):
     line_id: int | None = []
     part_no: List[str] = []
@@ -152,6 +146,10 @@ class PartSub(Part):
 
 class PartSubResponse(BaseModel):
     data: List[PartSub]
+
+
+class PartSubReceive(BaseModel):
+    part_no: List[str]
 
 
 class Position(BaseModel):
@@ -191,6 +189,15 @@ class ProcessLineResponse(BaseModel):
     data: List[ProcessLine]
 
 
+class ProductLine(BaseModel):
+    product_name: str | None = None
+    line_id: List[int] | None = None
+
+
+class ProductLineResponse(BaseModel):
+    data: List[ProductLine]
+
+
 class Section(BaseModel):
     section_id: int | None = None
     section_code: str | None = None
@@ -209,6 +216,17 @@ class SectionResponse(BaseModel):
     sections: List[Section]
 
 
+class SubLine(BaseModel):
+    line_code_rx: str | None = None
+    part_no: str | None = None
+    process: str | None = None
+    rxno_part: str | None = None
+
+
+class SubLineResponse(BaseModel):
+    sub_lines: List[SubLine]
+
+
 class Symbol(BaseModel):
     sc_symbol_id: int | None = None
     character: str | None = None
@@ -221,7 +239,7 @@ class SymbolResponse(BaseModel):
 
 
 class LineSection(Line, Section):
-    pass
+    section_type: str | None = None
 
 
 class LineSectionResponse(BaseModel):

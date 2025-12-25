@@ -18,20 +18,22 @@ from app.schemas.settings import (
     LinePartResponse,
     PartLineResponse,
     PartResponse,
+    PartSubReceive,
     PartSubResponse,
     PositionResponse,
     ProcessRecieve,
     ProcessResponse,
     ProcessLineResponse,
+    ProductLineResponse,
     SectionResponse,
     SymbolResponse,
     LineSectionResponse,
     ProcessLineSectionResponse,
-    SubLinesResponse,
+    SubLineResponse,
 )
 
 
-def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
+def settings_routers(db: AsyncGenerator, db_ms: AsyncGenerator) -> APIRouter:
     router = APIRouter()
     setting_manager = SettingsManager()
 
@@ -46,7 +48,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=CalendarResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_calendars(
         date: str = Query(default=None, description="YYYY-MM-DD"),
         db: AsyncSession = Depends(db),
@@ -60,7 +62,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=GroupPartsResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_group_parts(db: AsyncSession = Depends(db)):
         return GroupPartsResponse(groups=await setting_manager.get_group_parts(db=db))
 
@@ -86,13 +88,14 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=LineSectionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_lines_by_org(
         org_name: str,
         org_level: str | None = Query(
             default=None,
-            description="division | department | sub_department | section",
+            description="division | department | section | line",
         ),
+        req_dept: bool = False,
         db: AsyncSession = Depends(db),
     ):
         if org_level:
@@ -103,7 +106,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
                 )
         return LineSectionResponse(
             data=await setting_manager.get_lines_by_org(
-                org_name=org_name, org_level=org_level, db=db
+                org_name=org_name, org_level=org_level, req_dept=req_dept, db=db
             )
         )
 
@@ -112,10 +115,16 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=LinePartProcessResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
-    async def get_line_part_process(db: AsyncSession = Depends(db)):
+    @cache(expire=300)
+    async def get_line_part_process(
+        line_id: int | None = None,
+        part_no: str | None = None,
+        db: AsyncSession = Depends(db),
+    ):
         return LinePartProcessResponse(
-            data=await setting_manager.get_line_part_process(db=db)
+            data=await setting_manager.get_line_part_process(
+                line_id=line_id, part_no=part_no, db=db
+            )
         )
 
     @router.get(
@@ -123,7 +132,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=LinePartProcessesResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_line_part_processes(
         line_id: List[int] | None = Query(default=None),
         part_no: List[str] | None = Query(default=None),
@@ -176,7 +185,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=LineSectionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_line_sections(db: AsyncSession = Depends(db)):
         return LineSectionResponse(data=await setting_manager.get_line_sections(db=db))
 
@@ -185,11 +194,11 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=OrganizeLevelResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_organize_level(
         org_level: str | None = Query(
             default=None,
-            description="division | department | sub_department | section",
+            description="division | department | section | line",
         ),
         db: AsyncSession = Depends(db),
     ):
@@ -206,7 +215,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
     @router.get(
         "/parts", response_model=PartResponse, dependencies=[Depends(api_key_auth)]
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_parts(part_no: str | None = None, db: AsyncSession = Depends(db)):
         return PartResponse(
             parts=await setting_manager.get_parts(part_no=part_no, db=db)
@@ -217,7 +226,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=PartResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_parts_distinct_part_no(
         part_no: str | None = None, db: AsyncSession = Depends(db)
     ):
@@ -232,30 +241,10 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=PartLineResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
-    async def get_parts_by_line(
-        line_id: int,
-        process: str | None = None,
-        db: AsyncSession = Depends(db),
-        app_db: AsyncSession = Depends(app_db),
-    ):
+    @cache(expire=300)
+    async def get_parts_by_line(line_id: int, db: AsyncSession = Depends(db)):
         return PartLineResponse(
-            parts=await setting_manager.get_parts_by_line(line_id, process, db, app_db)
-        )
-
-    @router.get(
-        "/sub_lines_by_partline",
-        response_model=SubLinesResponse,
-        dependencies=[Depends(api_key_auth)],
-    )
-    # @cache(expire=300)
-    async def get_sub_lines_by_partline(
-        line_code_rx: str, part_no: str, db: AsyncSession = Depends(db)
-    ):
-        return SubLinesResponse(
-            sub_lines=await setting_manager.get_sub_lines_by_partline(
-                line_code_rx, part_no, db
-            )
+            parts=await setting_manager.get_parts_by_line(line_id, db)
         )
 
     @router.get(
@@ -263,12 +252,12 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=LinePartResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_parts_by_org(
         org_name: str,
         org_level: str | None = Query(
             default=None,
-            description="division | department | sub_department | section",
+            description="division | department | section | line",
         ),
         db: AsyncSession = Depends(db),
     ):
@@ -284,18 +273,18 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
             )
         )
 
-    @router.get(
+    @router.post(
         "/parts_substring_by_part_no",
         response_model=PartSubResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_parts_substring_by_part_no(
-        part_no: List[str] = Query(), db: AsyncSession = Depends(db)
+        data: PartSubReceive, db: AsyncSession = Depends(db)
     ):
         return PartSubResponse(
             data=await setting_manager.get_parts_substring_by_part_no(
-                part_no=part_no, db=db
+                part_no=data.part_no, db=db
             )
         )
 
@@ -304,7 +293,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=PositionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_positions(db: AsyncSession = Depends(db)):
         return PositionResponse(positions=await setting_manager.get_positions(db=db))
 
@@ -315,10 +304,14 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
     )
     # @cache(expire=300)
     async def get_processes(
-        process_id: int | None = None, db: AsyncSession = Depends(db)
+        process_id: int | None = None,
+        line_id: int | None = None,
+        db: AsyncSession = Depends(db),
     ):
         return ProcessResponse(
-            processes=await setting_manager.get_processes(process_id=process_id, db=db)
+            processes=await setting_manager.get_processes(
+                process_id=process_id, line_id=line_id, db=db
+            )
         )
 
     @router.post("/processes", dependencies=[Depends(api_key_auth)])
@@ -338,7 +331,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=ProcessLineResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_process_line(
         section_code: List[str] | None = Query(default=None),
         line_id: List[int] | None = Query(default=None),
@@ -361,7 +354,7 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=ProcessLineSectionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_process_line_section(
         section_code: List[str] | None = Query(default=None),
         line_id: List[int] | None = Query(default=None),
@@ -380,11 +373,20 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         )
 
     @router.get(
+        "/product_line",
+        response_model=ProductLineResponse,
+        dependencies=[Depends(api_key_auth)],
+    )
+    @cache(expire=300)
+    async def get_product_line(db: AsyncSession = Depends(db)):
+        return ProductLineResponse(data=await setting_manager.get_product_line(db=db))
+
+    @router.get(
         "/sections",
         response_model=SectionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_sections(indirect_only: bool = False, db: AsyncSession = Depends(db)):
         return SectionResponse(
             sections=await setting_manager.get_sections(
@@ -397,12 +399,12 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         response_model=SectionResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    # @cache(expire=300)
+    @cache(expire=300)
     async def get_sections_by_org(
         org_name: str,
         org_level: str | None = Query(
             default=None,
-            description="division | department | sub_department",
+            description="division | department",
         ),
         db: AsyncSession = Depends(db),
     ):
@@ -419,9 +421,26 @@ def settings_routers(db: AsyncGenerator, app_db: AsyncGenerator) -> APIRouter:
         )
 
     @router.get(
-        "/symbols", response_model=SymbolResponse, dependencies=[Depends(api_key_auth)]
+        "/sub_lines",
+        response_model=SubLineResponse,
+        dependencies=[Depends(api_key_auth)],
     )
     # @cache(expire=300)
+    async def get_sub_lines(
+        line_code_rx: str | None = Query(None),
+        part_no: str | None = Query(None),
+        db_ms: AsyncSession = Depends(db_ms),
+    ):
+        return SubLineResponse(
+            sub_lines=await setting_manager.get_sub_lines(
+                line_code_rx=line_code_rx, part_no=part_no, db=db_ms
+            )
+        )
+
+    @router.get(
+        "/symbols", response_model=SymbolResponse, dependencies=[Depends(api_key_auth)]
+    )
+    @cache(expire=300)
     async def get_symbols(db: AsyncSession = Depends(db)):
         return SymbolResponse(symbols=await setting_manager.get_symbols(db=db))
 

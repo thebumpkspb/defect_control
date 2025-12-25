@@ -71,33 +71,21 @@ class SettingsCRUD:
         rs = await db.execute(text(stmt))
         return rs
 
-    async def get_line_sub_parts(self, app_db: AsyncSession, line_id: str):
-        stmt = f"""SELECT DISTINCT ON (sub_part_no) id,
-                    line_id,
-                    sub_part_no,
-                    sub_part_name
-                FROM master_sub_part
-                
-                WHERE  line_id={line_id} and active='active'
-                ORDER BY sub_part_no"""
-        rs = await app_db.execute(text(stmt))
-        return rs
-
     async def get_line_part_process(
         self, db: AsyncSession, where_stmt: str | None = None
     ):
         stmt = f"""SELECT l.line_id,
                     l.line_name,
-                    LEFT(l.line_fullname, 6) AS section_code,
-                    lpp.part_no, 
-                    p.process_id, 
+                    CONCAT(LEFT(l.line_fullname, 6), ' - ', l.line_name) AS line_name,
+                    lpp.part_no,
+                    p.process_id,
                     p.process_name
                 FROM line_part_processes lpp
                 LEFT JOIN line l USING (line_id)
                 LEFT JOIN process p ON p.process_id = ANY(lpp.process_id)
                 JOIN UNNEST (lpp.process_id) WITH ORDINALITY AS t(value, idx) ON value = p.process_id
                 WHERE lpp.end_effective IS NULL {where_stmt if where_stmt is not None else ''}
-                ORDER BY section_code, part_no, idx"""
+                ORDER BY part_no, idx"""
         rs = await db.execute(text(stmt))
         return rs
 
@@ -179,89 +167,158 @@ class SettingsCRUD:
                     section_code,
                     section_name,
                     sub_section_name,
+                    CONCAT(section_code, ' - ', sub_section_name) AS section_code_name,
                     department,
                     sub_department,
                     division,
                     company,
-                    plant
+                    plant,
+                    s.group_type AS section_type
                 FROM line l
-                LEFT JOIN section USING (section_id)
+                -- LEFT JOIN section s USING (section_id)
+                FULL JOIN section s USING (section_id)
                 WHERE l.end_effective IS NULL {where_stmt if where_stmt is not None else ''}
                 ORDER BY line_id"""
         rs = await db.execute(text(stmt))
         return rs
 
-    async def get_organize_level(self, db: AsyncSession, where_stmt: str | None = None):
-        stmt = f"""WITH
-                    division AS (SELECT DISTINCT ON (division) 
-                            'division' AS org_level, 
-                            division AS org_name,
-                            section_id
-                        FROM line
-                            LEFT JOIN section USING (section_id)
-                        WHERE division IS NOT NULL
-                    ),
-                    department AS (SELECT DISTINCT ON (department) 
-                            'department' AS org_level,
-                            department AS org_name,
-                            section_id
-                        FROM line
-                            LEFT JOIN section USING (section_id)
-                        WHERE department IS NOT NULL
-                    ),
-                    sub_department AS (SELECT DISTINCT ON (sub_department) 
-                            'sub_department' AS org_level,
-                            sub_department AS org_name,
-                            section_id
-                        FROM line
-                            LEFT JOIN section USING (section_id)
-                        WHERE sub_department IS NOT NULL
-                    ),
-                    sub_section AS (SELECT DISTINCT ON (sub_section_name) 
-                            'section' AS org_level, 
-                            CONCAT(section_code, ' - ', sub_section_name) AS org_name,
-                            section_id
-                        FROM line
-                            LEFT JOIN section USING (section_id)
-                        WHERE sub_section_name IS NOT NULL
-                    ),
-                    section AS (SELECT DISTINCT ON (section_name) 
-                            'department' AS org_level,
-                            section_name AS org_name,
-                            section_id
-                        FROM line
-                            LEFT JOIN section USING (section_id)
-                        WHERE section_name IS NOT NULL
-                    )
-                    SELECT
-                        org_level,
-                        org_name
-                    FROM division
-                    {where_stmt if where_stmt is not None else ''}
-                    UNION ALL
-                    SELECT
-                        org_level,
-                        org_name
-                    FROM department
-                    {where_stmt if where_stmt is not None else ''}
-                    UNION ALL
-                    SELECT
-                        org_level,
-                        org_name
-                    FROM sub_department
-                    {where_stmt if where_stmt is not None else ''}
-                    UNION ALL
-                    SELECT
-                        org_level,
-                        org_name
-                    FROM section
-                    {where_stmt if where_stmt is not None else ''}
-                    UNION ALL
-                    SELECT 
-                        org_level,
-                        org_name
-                    FROM sub_section
-                    {where_stmt if where_stmt is not None else ''}"""
+    async def get_line_sections_2(
+        self, db: AsyncSession, where_stmt: str | None = None
+    ):
+        stmt = f"""SELECT line_id,
+                    line_name,
+                    line_fullname,
+                    line_code,
+                    work_center_code,
+                    process_code,
+                    line_group,
+                    l.group_type,
+                    CONCAT(section_code, ' - ', line_name) AS section_line,
+                    line_code_rx,
+                    section_id,
+                    section_code,
+                    COALESCE(sub_section_name, section_name) AS section_name,
+                    sub_section_name,
+                    CONCAT(section_code, ' - ', sub_section_name) AS section_code_name,
+                    COALESCE(sub_department, department) AS department,
+                    sub_department,
+                    division,
+                    company,
+                    plant,
+                    s.group_type AS section_type
+                FROM line l
+                FULL JOIN section s USING (section_id)
+                WHERE l.end_effective IS NULL 
+                AND s.end_effective IS NULL
+                {where_stmt if where_stmt is not None else ''}
+                ORDER BY line_id"""
+        rs = await db.execute(text(stmt))
+        return rs
+
+    async def get_organize_level(
+        self, db: AsyncSession, union_stmt: str, where_stmt: str | None = None
+    ):
+        stmt = f"""WITH DIVISION AS (
+                    SELECT DISTINCT
+                        ON (DIVISION) 'division' AS ORG_LEVEL,
+                        DIVISION AS ORG_NAME,
+                        NULL::INT AS LINE_ID,
+                        SECTION_ID,
+                        SECTION_CODE,
+                        ARRAY[''] AS UPPER_LEVEL,
+                        NULL AS GROUP_TYPE
+                    FROM SECTION
+                    WHERE
+                        DIVISION IS NOT NULL
+                        AND END_EFFECTIVE IS NULL
+                        AND DIVISION = 'EPD'
+                    ORDER BY ORG_NAME
+                ),
+                DEPARTMENT AS (
+                    SELECT DISTINCT
+                        ON (COALESCE(SUB_DEPARTMENT, DEPARTMENT)) 'department' AS ORG_LEVEL,
+                        COALESCE(SUB_DEPARTMENT, DEPARTMENT) AS ORG_NAME,
+                        NULL::INT AS LINE_ID,
+                        SECTION_ID,
+                        SECTION_CODE,
+                        CASE
+                        WHEN COALESCE(SUB_DEPARTMENT, DEPARTMENT) IN (
+                            'Alternator Product',
+                            'Manufacturing 1',
+                            'Starter Product & ECC, Motor & ADAS Product'
+                        ) THEN ARRAY['EPD', 'Direct', 'Assy Manu.']
+                        WHEN COALESCE(SUB_DEPARTMENT, DEPARTMENT) IN (
+                            'Parts Manufacturing 1 (Press, FG, DC)',
+                            'Parts Manufacturing 2 (Lathing)'
+                        ) THEN ARRAY['EPD', 'Direct', 'Part Manu.']
+                        WHEN GROUP_TYPE = 'DIR' THEN ARRAY['EPD', 'Direct']
+                        WHEN GROUP_TYPE = 'IND' THEN ARRAY['EPD', 'Indirect']
+                        ELSE ARRAY['EPD']
+                        END AS UPPER_LEVEL,
+                        GROUP_TYPE
+                    FROM SECTION
+                    WHERE
+                        DEPARTMENT IS NOT NULL
+                        AND END_EFFECTIVE IS NULL
+                        AND DIVISION = 'EPD'
+                    ORDER BY ORG_NAME
+                ),
+                LINE AS (
+                    SELECT DISTINCT 
+                        ON (LINE_NAME) 'line' AS ORG_LEVEL,
+                        LINE_NAME AS ORG_NAME,
+                        LINE_ID,
+                        SECTION_ID,
+                        SECTION_CODE,
+                        ARRAY[COALESCE(S.SUB_SECTION_NAME, S.SECTION_NAME)] AS UPPER_LEVEL,
+                        S.GROUP_TYPE
+                    FROM LINE L
+                        LEFT JOIN SECTION S USING (SECTION_ID)
+                    WHERE
+                        L.END_EFFECTIVE IS NULL
+                        AND S.END_EFFECTIVE IS NULL
+                        AND DIVISION = 'EPD'
+                    ORDER BY ORG_NAME
+                ),
+                SECTION AS (
+                    SELECT DISTINCT
+                        ON (
+                            CONCAT(
+                                SECTION_CODE,
+                                ' - ',
+                                COALESCE(SUB_SECTION_NAME, SECTION_NAME)
+                            )
+                        ) 'section' AS ORG_LEVEL,
+                        CONCAT(
+                            SECTION_CODE,
+                            ' - ',
+                            COALESCE(SUB_SECTION_NAME, SECTION_NAME)
+                        ) AS ORG_NAME,
+                        NULL::INT AS LINE_ID,
+                        SECTION_ID,
+                        SECTION_CODE,
+                        ARRAY[COALESCE(SUB_DEPARTMENT, DEPARTMENT)] AS UPPER_LEVEL,
+                        GROUP_TYPE
+                    FROM SECTION
+                    WHERE
+                        COALESCE(SUB_SECTION_NAME, SECTION_NAME) IS NOT NULL
+                        AND END_EFFECTIVE IS NULL
+                        AND DIVISION = 'EPD'
+                        AND GROUP_TYPE IN ('DIR', 'IND')
+                    ORDER BY ORG_NAME
+                )
+            SELECT * FROM DIVISION
+            {where_stmt if where_stmt is not None else ''}
+            {union_stmt}
+            UNION ALL
+            SELECT * FROM DEPARTMENT
+            {where_stmt if where_stmt is not None else ''}
+            UNION ALL
+            SELECT * FROM SECTION
+            {where_stmt if where_stmt is not None else ''}
+            UNION ALL
+            SELECT * FROM LINE
+            {where_stmt if where_stmt is not None else ''}"""
         rs = await db.execute(text(stmt))
         return rs
 
@@ -421,6 +478,7 @@ class SettingsCRUD:
                     section_code,
                     section_name,
                     sub_section_name,
+                    CONCAT(section_code, ' - ', sub_section_name) AS section_code_name,
                     department,
                     sub_department,
                     division,
@@ -431,6 +489,18 @@ class SettingsCRUD:
                 LEFT JOIN section USING (section_id)
                 WHERE p.end_effective IS NULL {where_stmt if where_stmt is not None else ''}
                 ORDER BY process_id"""
+        rs = await db.execute(text(stmt))
+        return rs
+
+    async def get_product_line(self, db: AsyncSession, where_stmt: str | None = None):
+        stmt = f"""SELECT COALESCE(sub_department, department) AS product_name,
+                    ARRAY_AGG(line_id) AS line_id
+                FROM line l
+                JOIN section s USING (section_id)
+                WHERE l.end_effective IS NULL
+                AND s.end_effective IS NULL
+                {where_stmt if where_stmt is not None else ''}
+                GROUP BY COALESCE(sub_department, department)"""
         rs = await db.execute(text(stmt))
         return rs
 
@@ -450,6 +520,16 @@ class SettingsCRUD:
                 WHERE end_effective IS NULL {where_stmt if where_stmt is not None else ''} 
                 ORDER BY section_id"""
         rs = await db.execute(text(stmt))
+        return rs
+
+    async def get_sub_lines(self, db: AsyncSession, where_stmt: str | None = None):
+        stmt = f""" SELECT  t1.RxNo AS rxno_part, t2.Code AS line_code_rx, t3.PartNo AS part_no, t1.process
+                FROM tbPartLine t1 
+                LEFT JOIN tbLine t2 ON t2.RxNo=t1.RxNo_Line
+                LEFT JOIN tbPart t3 ON t3.RxNo=t1.RxNo_Part
+                WHERE t1.ExpireDate  IS NULL {where_stmt if where_stmt is not None else ''} 
+                """
+        rs = db.execute(text(stmt))
         return rs
 
     async def get_symbols(self, db: AsyncSession, where_stmt: str | None = None):

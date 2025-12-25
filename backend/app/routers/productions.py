@@ -1,16 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-import json
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator, List
 
 
 from app.functions import api_key_auth
 from app.manager import ProductionsManager
-from app.schemas.productions import ProductionQtyResponse
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
 from app.functions import validate_date
 
 
-def productions_routers(db: Generator, db_common: AsyncGenerator) -> APIRouter:
+def productions_routers(
+    db_my: AsyncGenerator,
+    db_ms: AsyncGenerator,
+    db_common: AsyncGenerator,
+) -> APIRouter:
     router = APIRouter()
     prod_manager = ProductionsManager()
 
@@ -20,10 +23,14 @@ def productions_routers(db: Generator, db_common: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def get_prod_qty(
-        line_id: int,
+        line_id: List[int] = Query(None),
+        part_no: str = None,
+        process_name: str = None,
         shift: str = Query(description="A | B | All"),
+        part_line_id: str = None,
         date: str = Query(None, description="YYYY-MM-DD"),
-        db: AsyncSession = Depends(db),
+        db_my: AsyncSession = Depends(db_my),
+        db_ms: AsyncSession = Depends(db_ms),
         db_common: AsyncSession = Depends(db_common),
     ):
         if date:
@@ -32,38 +39,48 @@ def productions_routers(db: Generator, db_common: AsyncGenerator) -> APIRouter:
                     status_code=400,
                     detail="Incorrect date format, should be 'YYYY-MM-DD'",
                 )
-        else:
-            date = '2025-01-01'
 
-        with open("mock_prod_qty.json", encoding="utf8") as f:
-            mock_up = json.load(f)
-        if shift.lower() == "a":
-            if date[5:6] == "11":
-                data = mock_up[0]
-            elif date[5:6] == "12":
-                data = mock_up[3]
-            else:
-                data = mock_up[6]
-        elif shift.lower() == "b":
-            if date[5:6] == "11":
-                data = mock_up[1]
-            elif date[5:6] == "12":
-                data = mock_up[4]
-            else:
-                data = mock_up[7]
-        else:
-            if date[5:6] == "11":
-                data = mock_up[2]
-            elif date[5:6] == "12":
-                data = mock_up[5]
-            else:
-                data = mock_up[8]
-        return ProductionQtyResponse(prod_qty=data.get("prod_qty"))
+        return ProductionQtyResponse(
+            prod_qty=await prod_manager.get_prod_qty(
+                line_id,
+                part_no,
+                process_name,
+                shift,
+                part_line_id,
+                date,
+                db_my,
+                db_ms,
+                db_common,
+            )
+        )
 
-        # return ProductionQtyResponse(
-        #     prod_qty=await prod_manager.get_prod_qty(
-        #         line_id, shift, date, db, db_common
-        #     )
-        # )
+    @router.get(
+        "/prod_qty_acc",
+        response_model=ProductionQtyAccResponse,
+        dependencies=[Depends(api_key_auth)],
+    )
+    async def prod_qty_acc(
+        line_id: List[int] = Query(),
+        shift: str = Query(description="A | B | All"),
+        date: str = Query(None, description="YYYY-MM-DD"),
+        db_my: AsyncSession = Depends(db_my),
+        db_common: AsyncSession = Depends(db_common),
+    ):
+        if date:
+            if not validate_date(date):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Incorrect date format, should be 'YYYY-MM-DD'",
+                )
+
+        return ProductionQtyAccResponse(
+            prod_qty_acc=await prod_manager.get_prod_qty_acc(
+                line_id,
+                shift,
+                date,
+                db_my,
+                db_common,
+            )
+        )
 
     return router

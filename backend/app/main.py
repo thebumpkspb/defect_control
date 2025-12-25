@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.dependencies import (
     get_app_pg_async_db,
     get_common_pg_async_db,
+    get_prod_ms_db,
     get_epddev_pg_async_db,
     get_prod_my_db,
 )
@@ -65,7 +66,11 @@ app.add_middleware(
 # app.include_router(search_routers(get_common_pg_async_db), prefix="/api/search", tags=["Searching"])
 
 app.include_router(
-    productions_routers(get_prod_my_db, get_common_pg_async_db),
+    productions_routers(
+        get_prod_my_db,
+        get_prod_ms_db,
+        get_common_pg_async_db,
+    ),
     prefix="/api/prods",
     tags=["Productions"],
 )

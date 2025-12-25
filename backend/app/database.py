@@ -33,6 +33,11 @@ MY_SERVER_PROD = os.environ.get("MY_SERVER_PROD")
 MY_PORT_PROD = os.environ.get("MY_PORT_PROD")
 MY_DB_PROD = os.environ.get("MY_DB_PROD")
 
+MS_USER_PROD = os.environ.get("MS_USER_PROD")
+MS_PASS_PROD = urllib.parse.quote_plus(os.environ.get("MS_PASS_PROD"))
+MS_SERVER_PROD = os.environ.get("MS_SERVER_PROD")
+MS_PORT_PROD = os.environ.get("MS_PORT_PROD")
+MS_DB_PROD = os.environ.get("MS_DB_PROD")
 
 PG_ASYNC_SQLALCHEMY_DATABASE_URL_APP = f"postgresql+asyncpg://{PG_USER_APP}:{PG_PASS_APP}@{PG_SERVER_APP}:{PG_PORT_APP}/{PG_DB_APP}"
 app_pg_async_engine = create_async_engine(
@@ -66,4 +71,16 @@ prod_my_engine = create_engine(
 
 prod_my_session = sessionmaker(autocommit=False, autoflush=False, bind=prod_my_engine)
 
+MS_SQLALCHEMY_DATABASE_URL_PROD = f"mssql+pyodbc://{MS_USER_PROD}:{MS_PASS_PROD}@{MS_SERVER_PROD},{MS_PORT_PROD}/{MS_DB_PROD}?driver=ODBC+Driver+17+for+SQL+Server"
+prod_ms_engine = create_engine(
+    MS_SQLALCHEMY_DATABASE_URL_PROD,
+    echo=False,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,
+    pool_pre_ping=True,
+    connect_args={"timeout": 30},
+)
+prod_ms_session = sessionmaker(autocommit=False, autoflush=False, bind=prod_ms_engine)
 Base = declarative_base()

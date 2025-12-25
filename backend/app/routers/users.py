@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-
-# from fastapi_cache.decorator import cache
+from fastapi import APIRouter, Depends, Query
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator, List
 
-from app.functions import api_key_auth, call_request
+from app.functions import api_key_auth
 from app.manager import UsersManager
 from app.schemas.users import (
     UserCredential,
@@ -14,13 +13,8 @@ from app.schemas.users import (
     UserPassRequest,
     UserResponse,
     UsersResponse,
+    UsersResponseName,
 )
-
-import os
-from dotenv import load_dotenv
-
-BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE", "")
-FORGOT_PASSWORD_URL = os.environ.get("FORGOT_PASSWORD_URL", "")
 
 
 def users_routers(db: AsyncGenerator) -> APIRouter:
@@ -33,6 +27,15 @@ def users_routers(db: AsyncGenerator) -> APIRouter:
     # @cache(expire=15)
     async def get_users_all(db: AsyncSession = Depends(db)):
         return UsersResponse(users=await user_manager.get_users_all(db=db))
+
+    @router.get(
+        "/users_all_name",
+        response_model=UsersResponseName,
+        dependencies=[Depends(api_key_auth)],
+    )
+    # @cache(expire=15)
+    async def get_users_all_name(db: AsyncSession = Depends(db)):
+        return UsersResponseName(users=await user_manager.get_users_all_name(db=db))
 
     @router.get(
         "/users_by_user_uuid",
@@ -126,25 +129,12 @@ def users_routers(db: AsyncGenerator) -> APIRouter:
         )
         return f"Send reset password to {email} successfully"
 
-    # @router.post("/reset_password", dependencies=[Depends(api_key_auth)])
-    # async def post_reset_password(body: UserCredential, db: AsyncSession = Depends(db)):
-
-    #     email = await user_manager.post_reset_password(
-    #         credential=body.credential, db=db
-    #     )
-    #     return f"Send reset password to {email} successfully"
-
     @router.post("/reset_password", dependencies=[Depends(api_key_auth)])
-    def post_reset_password(body: UserCredential):
-        res = call_request(
-            method="POST",
-            url=FORGOT_PASSWORD_URL,
-            api_key=BACKEND_API_SERVICE,
-            data=body,
+    async def post_reset_password(body: UserCredential, db: AsyncSession = Depends(db)):
+        email = await user_manager.post_reset_password(
+            credential=body.credential, db=db
         )
-        if res.status_code != 200:
-            raise HTTPException(status_code=400, detail="Invalid request")
-        return f"{res.json()}"
+        return f"Send reset password to {email} successfully"
 
     @router.post("/reset_password_to_default", dependencies=[Depends(api_key_auth)])
     async def post_reset_password_to_default(

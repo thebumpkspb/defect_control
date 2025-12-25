@@ -15,6 +15,7 @@ from app.crud import UsersCRUD
 from app.schemas.users import (
     UserRegister,
     UserRequest,
+    UserResponseName,
     UserUpdateRequest,
     UserPassRequest,
     UserResponse,
@@ -86,10 +87,27 @@ class UsersManager:
                     token_type="Bearer",
                 )
             )
-        # if len(return_list) == 0:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_404_NOT_FOUND, detail="Users not found"
-        #     )
+        return return_list
+
+    async def get_users_all_name(self, db: AsyncSession = None):
+        res = await self.crud.get_users(db=db)
+        return_list = []
+        for r in res:
+            key_index = r._key_to_index
+            return_list.append(
+                UserResponseName(
+                    user_uuid=str(r[key_index["user_uuid"]]),
+                    first_primary=r[key_index["first_primary"]],
+                    middle_primary=r[key_index["middle_primary"]],
+                    last_primary=r[key_index["last_primary"]],
+                    first_secondary=r[key_index["first_secondary"]],
+                    middle_secondary=r[key_index["middle_secondary"]],
+                    last_secondary=r[key_index["last_secondary"]],
+                    first_tertiary=r[key_index["first_tertiary"]],
+                    middle_tertiary=r[key_index["middle_tertiary"]],
+                    last_tertiary=r[key_index["last_tertiary"]],
+                )
+            )
         return return_list
 
     async def get_users_by_user_uuid(
