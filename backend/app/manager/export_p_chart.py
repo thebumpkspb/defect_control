@@ -375,7 +375,7 @@ class Export_P_Chart_Manager:
             or not filters["part_no"]
             or filters["part_no"] == "null"
             or True
-        ):
+        ):  #!TODO: Fix this func for dynamics Shift -> ALL
             line_id = self.crud.get_line_id(filters["line_name"])
             # endpoint = (
             #     self.BACKEND_URL_SERVICE

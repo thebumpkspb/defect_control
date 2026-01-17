@@ -1082,7 +1082,7 @@ export default function PChartHeader() {
           </Col>
 
           {/* กล่อง 4 */}
-          <Col span={6}>
+          <Col span={4}>
             <Card
               style={{
                 textAlign: "left",
@@ -1126,7 +1126,7 @@ export default function PChartHeader() {
           </Col>
 
           {/* กล่อง 5 */}
-          <Col span={6}>
+          <Col span={4}>
             <Card
               style={{
                 textAlign: "left",
@@ -1164,6 +1164,50 @@ export default function PChartHeader() {
                   }}
                 >
                   ({defectDataSource.repeat_percent.toFixed(2)}%) pc(s.)
+                </Text>
+              </div>
+            </Card>
+          </Col>
+          <Col span={4}>
+            <Card
+              style={{
+                textAlign: "left",
+                backgroundColor: "#ffffff",
+                borderRadius: "8px",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: "22px",
+                  fontWeight: "normal",
+                  color: "black",
+                }}
+              >
+                Prod. Vol.
+              </Text>
+              <br />
+              <div style={{ display: "flex", alignItems: "baseline" }}>
+                <Text
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                    color: "black",
+                  }}
+                >
+                  {formatNumberWithCommas(
+                    defectDataSource.graph_daily_defect_summary.inline.prod_vol
+                  )}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "normal",
+                    color: "black",
+                    marginLeft: "5px",
+                  }}
+                >
+                  pc(s.)
                 </Text>
               </div>
             </Card>

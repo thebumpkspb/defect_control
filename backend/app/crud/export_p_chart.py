@@ -195,7 +195,7 @@ class Export_P_Chart_CRUD:
         """
         Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
         """
-        print("month: ", filters["month"])
+        # print("month: ", filters["month"])
         date_obj = datetime.datetime.strptime(filters["month"], "%B-%Y")
 
         first_day = date_obj.replace(day=1).strftime("%Y-%m-%d")
@@ -206,6 +206,10 @@ class Export_P_Chart_CRUD:
         where_master_part_no = ""
         where_record_part_no = ""
         where_record_sub_line = ""
+        if filters["shift"] == "All":
+            record_shift = "'A','B'"
+        else:
+            record_shift = f"'{filters['shift']}'"
         if filters["part_no"] and filters["part_no"] != "null":
             where_master_part_no = (
                 f" AND (part_no is null or part_no = '{filters['part_no']}')"
@@ -281,7 +285,7 @@ class Export_P_Chart_CRUD:
                                     pdr.process = pdrl.process and 
                                     pdr.defect_type = pdrl.defect_type and 
                                     pdr.id_defective_items= pdrl.id_defective_items and active='active' 
-                            where pdr.line_id={line_id} and pdr.process='{filters['process']}' and pdr.date >= '{first_day}' and pdr.date <='{last_day}'   and pdrl.shift='{filters['shift']}' and pdrl.active='active' {where_record_part_no} {where_record_sub_line}
+                            where pdr.line_id={line_id} and pdr.process='{filters['process']}' and pdr.date >= '{first_day}' and pdr.date <='{last_day}'   and pdrl.shift in ({record_shift}) and pdrl.active='active' {where_record_part_no} {where_record_sub_line}
                             group by pdr.line_id,pdr.date,pdr.part_no,pdr.process,pdr.defect_type,pdr.id_defective_items
                         ) t1 on t0.ref = t1. id_defective_items
                         left join approval_daily t2 using(date,line_id)

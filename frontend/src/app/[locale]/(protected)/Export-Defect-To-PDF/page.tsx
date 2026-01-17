@@ -423,7 +423,7 @@ export default function PChartHeader() {
                     </div>
                     <Radio.Group
                       options={[
-                        // { label: "All", value: "All" },
+                        { label: "All", value: "All" },
                         { label: "A", value: "A" },
                         { label: "B", value: "B" },
                       ]}
