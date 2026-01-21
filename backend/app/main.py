@@ -81,7 +81,7 @@ app.include_router(
     approval_routers(get_epddev_pg_async_db), prefix="/api/approval", tags=["Approval"]
 )
 app.include_router(
-    settings_routers(get_common_pg_async_db, get_epddev_pg_async_db),
+    settings_routers(get_common_pg_async_db, get_prod_ms_db),
     prefix="/api/settings",
     tags=["Settings"],
 )
@@ -117,7 +117,9 @@ app.include_router(
     tags=["P-Chart Record"],
 )
 app.include_router(
-    inline_outline_routers(get_epddev_pg_async_db),
+    inline_outline_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/inline_outline",
     tags=["Inline & Outline Defect Summary"],
 )

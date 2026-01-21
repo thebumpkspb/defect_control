@@ -36,6 +36,8 @@ from app.schemas.settings import (
 def settings_routers(db: AsyncGenerator, db_ms: AsyncGenerator) -> APIRouter:
     router = APIRouter()
     setting_manager = SettingsManager()
+    # print("db:", type(db))
+    # print("db_ms:", type(db_ms))
 
     @router.get("/edict", dependencies=[Depends(api_key_auth)])
     async def get_edict_setting():
@@ -77,6 +79,7 @@ def settings_routers(db: AsyncGenerator, db_ms: AsyncGenerator) -> APIRouter:
         rx_only: bool = False,
         db: AsyncSession = Depends(db),
     ):
+        print("get_lines db:", type(db))
         return LineResponse(
             lines=await setting_manager.get_lines(
                 line_id=line_id, rx_only=rx_only, db=db

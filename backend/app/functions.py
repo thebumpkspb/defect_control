@@ -5,12 +5,12 @@ import os
 import pytz
 import requests
 from dataclasses import is_dataclass, asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from starlette import status
-from typing import Any, List, Dict, get_origin, get_args, Union
+from typing import Any, List, Dict, get_origin, get_args, Union, Literal
 from dotenv import load_dotenv
 import re
 from collections import defaultdict
@@ -102,15 +102,15 @@ def api_key_auth(x_api_key: str = Depends(X_API_KEY)):
         )
 
 
-def get_month_start_end(date: datetime):
-    start_date = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+# def get_month_start_end(date: datetime):
+#     start_date = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    _, last_day = calendar.monthrange(date.year, date.month)
-    end_date = date.replace(
-        day=last_day, hour=23, minute=59, second=59, microsecond=999999
-    )
+#     _, last_day = calendar.monthrange(date.year, date.month)
+#     end_date = date.replace(
+#         day=last_day, hour=23, minute=59, second=59, microsecond=999999
+#     )
 
-    return start_date, end_date
+#     return start_date, end_date
 
 
 def validate_date(date_text):
@@ -630,17 +630,43 @@ def exceptDefectTypeList():
     return ["Repeat", "M/C Set up", "Quality Test"]
 
 
-def get_month_start_end(date: datetime, date_only: bool = False):
-    _, last_day = calendar.monthrange(date.year, date.month)
+def get_month_start_end(
+    date_obj: datetime,
+    type_: Literal["Daily", "Monthly", "Yearly"] = "Daily",
+    date_only: bool = False,
+):
+    _, last_day = calendar.monthrange(date_obj.year, date_obj.month)
+    if type_ == "Daily":
 
-    if date_only:
-        start_date = date.replace(day=1).strftime("%Y-%m-%d")
-        end_date = date.replace(day=last_day).strftime("%Y-%m-%d")
-        return start_date, end_date
+        if date_only:
+            start_date = date_obj.replace(day=1).strftime("%Y-%m-%d")
+            end_date = date_obj.replace(day=last_day).strftime("%Y-%m-%d")
+            return start_date, end_date
 
-    start_date = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    end_date = date.replace(
-        day=last_day, hour=23, minute=59, second=59, microsecond=999999
-    )
+        start_date = date_obj.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = date_obj.replace(
+            day=last_day, hour=23, minute=59, second=59, microsecond=999999
+        )
+
+    elif type_ == "Monthly":
+        year = date_obj.year
+
+        # Fiscal year April–March
+        if date_obj.month < 4:
+            start_date = date(year - 1, 4, 1)
+            end_date = date(year, 3, 31)
+        else:
+            start_date = date(year, 4, 1)
+            end_date = date(year + 1, 3, 31)
+
+    elif type_ == "Yearly":
+        year = date_obj.year
+        if date_obj.month < 4:
+            fy_end_year = year
+        else:
+            fy_end_year = year + 1
+
+        start_date = date(fy_end_year - 3, 4, 1)
+        end_date = date(fy_end_year, date_obj.month, last_day)
 
     return start_date, end_date

@@ -13,6 +13,7 @@ import os
 import calendar
 import math
 from typing import List
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
 
 # import urllib.parse
 from urllib.parse import urljoin, quote
@@ -29,7 +30,30 @@ from app.functions import (
 )
 
 load_dotenv()
-
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    OrganizeLevelResponse,
+    # LinePartResponse,
+    PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    SectionResponse,
+    # SymbolResponse,
+    LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 from app.schemas.inline_outline import (
     Department_Section_Result,
     Default_Defect_Summary_Result,
@@ -69,9 +93,17 @@ class Inline_Outline_Manager:
         self.crud = Inline_Outline_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
+
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
         # self.p_chart_record_manager = P_Chart_Record_Manager()
 
-    async def get_default_defect_summary(self):
+    async def get_default_defect_summary(
+        self,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         current_month = datetime.now().strftime("%B-%Y")
         current_year = int(datetime.now().strftime("%Y"))
@@ -112,52 +144,76 @@ class Inline_Outline_Manager:
             ]
 
         list_department = []
-
-        try:
-            ## get department from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/organize_level?org_level=department"
+        response = OrganizeLevelResponse(
+            data=await self.setting_manager.get_organize_level(
+                org_level="department", db=db_common_pg_async
             )
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["data"])):
+            if (
+                response_json["data"][i]["group_type"] == "DIR"
+                or response_json["data"][i]["group_type"] == None
+            ):
+                list_department.append(response_json["data"][i]["org_name"])
+        # try:
+        #     ## get department from api
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/organize_level?org_level=department"
+        #     )
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["data"])):
-                if (
-                    response_json["data"][i]["group_type"] == "DIR"
-                    or response_json["data"][i]["group_type"] == None
-                ):
-                    list_department.append(response_json["data"][i]["org_name"])
+        #     for i in range(0, len(response_json["data"])):
+        #         if (
+        #             response_json["data"][i]["group_type"] == "DIR"
+        #             or response_json["data"][i]["group_type"] == None
+        #         ):
+        #             list_department.append(response_json["data"][i]["org_name"])
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         list_section = []
-
-        try:
-            ## get section from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/organize_level?org_level=section"
+        response = OrganizeLevelResponse(
+            data=await self.setting_manager.get_organize_level(
+                org_level="section", db=db_common_pg_async
             )
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["data"])):
+            if (
+                response_json["data"][i]["group_type"] == "DIR"
+                or response_json["data"][i]["group_type"] == None
+            ):
+                list_section.append(response_json["data"][i]["org_name"])
+        # try:
+        #     ## get section from api
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/organize_level?org_level=section"
+        #     )
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["data"])):
-                if (
-                    response_json["data"][i]["group_type"] == "DIR"
-                    or response_json["data"][i]["group_type"] == None
-                ):
-                    list_section.append(response_json["data"][i]["org_name"])
+        #     for i in range(0, len(response_json["data"])):
+        #         if (
+        #             response_json["data"][i]["group_type"] == "DIR"
+        #             or response_json["data"][i]["group_type"] == None
+        #         ):
+        #             list_section.append(response_json["data"][i]["org_name"])
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         return_list = []
 
@@ -300,7 +356,12 @@ class Inline_Outline_Manager:
                 detail=f"Unable to get_default_defect_summary because {e}",
             )
 
-    async def post_department_change(self, text_data: str, db: AsyncSession = None):
+    async def post_department_change(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -316,53 +377,87 @@ class Inline_Outline_Manager:
         # print("section:", section)
         list_section = []
 
-        # try:
-        ## get section from api
-        endpoint = (
-            self.BACKEND_URL_SERVICE
-            + f"/api/settings/sections_by_org?org_name={quote(department)}&org_level=department"
+        response = SectionResponse(
+            sections=await self.setting_manager.get_sections_by_org(
+                org_name=department,
+                org_level="department",
+                db=db_common_pg_async,
+            )
         )
-        # print("endpoint:", endpoint)
-        # endpoint = quote(endpoint)
-        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-        response_json = requests.get(endpoint, headers=headers).json()
-
+        response_str = response.json()
+        response_json = json.loads(response_str)
         for i in range(0, len(response_json["sections"])):
             list_section.append(response_json["sections"][i]["section_code_name"])
 
-        # except Exception as e:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST,
-        #         detail=f"because {e}",
-        #     )
+        # # try:
+        # ## get section from api
+        # endpoint = (
+        #     self.BACKEND_URL_SERVICE
+        #     + f"/api/settings/sections_by_org?org_name={quote(department)}&org_level=department"
+        # )
+        # # print("endpoint:", endpoint)
+        # # endpoint = quote(endpoint)
+        # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        # response_json = requests.get(endpoint, headers=headers).json()
+
+        # for i in range(0, len(response_json["sections"])):
+        #     list_section.append(response_json["sections"][i]["section_code_name"])
+
+        # # except Exception as e:
+        # #     raise HTTPException(
+        # #         status_code=status.HTTP_400_BAD_REQUEST,
+        # #         detail=f"because {e}",
+        # #     )
 
         list_line = []
-
-        # try:
-        ## get line from api
         if section == "-":
-            endpoint = self.BACKEND_URL_SERVICE + (
-                f"/api/settings/lines_by_org?org_name={quote(department)}&org_level=department"
+            response = LineSectionResponse(
+                data=await self.setting_manager.get_lines_by_org(
+                    org_name=department,
+                    org_level="department",
+                    req_dept=False,
+                    db=db_common_pg_async,
+                )
             )
         else:
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + f"/api/settings/lines_by_org?org_name={quote(section)}&org_level=section"
+            response = LineSectionResponse(
+                data=await self.setting_manager.get_lines_by_org(
+                    org_name=section,
+                    org_level="section",
+                    req_dept=False,
+                    db=db_common_pg_async,
+                )
             )
-        # print("endpoint:", endpoint)
-
-        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-        # endpoint = quote(endpoint)
-        response_json = requests.get(endpoint, headers=headers).json()
-
+        response_str = response.json()
+        response_json = json.loads(response_str)
         for i in range(0, len(response_json["data"])):
             list_line.append(response_json["data"][i]["section_line"])
 
-        # except Exception as e:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST,
-        #         detail=f"because {e}",
+        # # try:
+        # ## get line from api
+        # if section == "-":
+        #     endpoint = self.BACKEND_URL_SERVICE + (
+        #         f"/api/settings/lines_by_org?org_name={quote(department)}&org_level=department"
         #     )
+        # else:
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + f"/api/settings/lines_by_org?org_name={quote(section)}&org_level=section"
+        #     )
+        # # print("endpoint:", endpoint)
+
+        # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        # # endpoint = quote(endpoint)
+        # response_json = requests.get(endpoint, headers=headers).json()
+
+        # for i in range(0, len(response_json["data"])):
+        #     list_line.append(response_json["data"][i]["section_line"])
+
+        # # except Exception as e:
+        # #     raise HTTPException(
+        # #         status_code=status.HTTP_400_BAD_REQUEST,
+        # #         detail=f"because {e}",
+        # #     )
 
         return_list = []
 
@@ -387,7 +482,14 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_department_change because {e}",
             )
 
-    async def post_general_information(self, text_data: str, db: AsyncSession = None):
+    async def post_general_information(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -401,21 +503,31 @@ class Inline_Outline_Manager:
         #!
         list_line = []
         list_line_id = []
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         # index_select = list_line.index(data["line_name"])
         # select_line_id = list_line_id[index_select]
@@ -448,6 +560,9 @@ class Inline_Outline_Manager:
             first_date=first_date,
             last_date=last_date,
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         print("res_p_bar_last_month:", res_p_bar_last_month)
         list_p_last_month = round(res_p_bar_last_month["p_bar"], 2)
@@ -460,6 +575,9 @@ class Inline_Outline_Manager:
             first_date=first_date,
             last_date=last_date,
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         print("res_p_bar_now_month:", res_p_bar_now_month)
         p_bar_now_month = round(res_p_bar_now_month["p_bar"], 2)
@@ -551,7 +669,14 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_general_information because {e}",
             )
 
-    async def post_defect_summary(self, text_data: str, db: AsyncSession = None):
+    async def post_defect_summary(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -579,37 +704,42 @@ class Inline_Outline_Manager:
                 sub_line=None,
             ),
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         general_information = general_information[0]
         # print("general_informationCC:", general_information)
         #!
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         target_control = 0.0
         ##get target_control from db
-        res, data = await self.crud.get_target_control(db=db, where_stmt=text_data)
-        end_time = time.time()
+        res, data = await self.crud.get_target_control(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration1: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         for r in res:
             key_index = r._key_to_index
 
             target_control = r[key_index["target_control"]]
             break
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration2: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         defect_percent = 0.0
         defect_status = True
@@ -630,17 +760,23 @@ class Inline_Outline_Manager:
             repeat_percent,
             list_prod_qty,
         ) = await self.crud.get_defect(
-            db=db, where_stmt=text_data, target=target_control
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
+            where_stmt=text_data,
+            target=target_control,
         )
         current_year = int(datetime.now().strftime("%Y"))
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration3: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        #!TODO: Slow
+        # start_time = time.time()
         # print("Start:", start_time)
         ##set graph_yearly_defect_summary
         list_axis_x_yearly = []
@@ -651,12 +787,26 @@ class Inline_Outline_Manager:
         result_list_defect_qty_yearly_process = {}
         list_process = ["Inline", "Outline", "Inspection"]
         ##get graph_yearly_defect_summary from db
+        # start_time = time.time()
+        # print("Start:", start_time)
         (
             list_axis_x_yearly,
             list_target_percent_yearly,
             list_defect_percent_yearly,
             list_defect_qty_yearly,
-        ) = await self.crud.get_graph_yearly_defect_summary(db=db, where_stmt=text_data)
+        ) = await self.crud.get_graph_yearly_defect_summary(
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
+            where_stmt=text_data,
+        )
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 4.5: {minutes} min {seconds:.2f} sec")
         for process in list_process:
             result_list_defect_qty_yearly = []
             for defect_qty in list_defect_qty_yearly[process]:
@@ -666,14 +816,15 @@ class Inline_Outline_Manager:
             result_list_defect_qty_yearly_process[process] = (
                 result_list_defect_qty_yearly
             )
-        end_time = time.time()
+
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration4: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         ##
         ##set graph_monthly_defect_summary
@@ -684,23 +835,35 @@ class Inline_Outline_Manager:
         result_list_defect_qty_monthly = []
         result_list_defect_qty_monthly_process = {}
         ##get graph_monthly_defect_summary from db
+        # start_time = time.time()
+        # print("Start:", start_time)
         (
             list_axis_x_monthly,
             list_target_percent_monthly,
             list_defect_percent_monthly,
             list_defect_qty_monthly,
         ) = await self.crud.get_graph_monthly_defect_summary(
-            db=db, where_stmt=text_data
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
+            where_stmt=text_data,
         )
-        end_time = time.time()
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # print(f"Duration 5.5: {minutes} min {seconds:.2f} sec")
+        # end_time = time.time()
+        # print("End:", end_time)
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration5: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
-        # print("Start:", start_time)
+        #!TODO: Slow
+
         for process in list_process:
             result_list_defect_qty_monthly = []
             for defect_qty in list_defect_qty_monthly[process]:
@@ -710,26 +873,35 @@ class Inline_Outline_Manager:
             result_list_defect_qty_monthly_process[process] = (
                 result_list_defect_qty_monthly
             )
-            ##
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 5.5: {minutes} min {seconds:.2f} sec")
+        ##
         ##set graph_defect_summary_by_type
         total = 0.0
         list_defect_by_type = []
         result_list_defect_by_type = []
         result_list_defect_by_type_process = {}
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration6: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
 
         ##get graph_defect_summary_by_type from db
         total, list_defect_by_type, sum_defect_qty = (
             await self.crud.get_graph_defect_summary_by_type(
-                db=db, where_stmt=text_data, prod_qty=list_prod_qty
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                where_stmt=text_data,
+                prod_qty=list_prod_qty,
             )
         )
         # print("total:", total)
@@ -754,14 +926,14 @@ class Inline_Outline_Manager:
                 k = 0
             ucl_list[i] = round(general_information.p_last_month + k, 2)
         # print("ucl_list:", ucl_list)
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration7: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         for process in list_process:
             result_list_defect_by_type = []
@@ -775,14 +947,14 @@ class Inline_Outline_Manager:
                 )
             result_list_defect_by_type_process[process] = result_list_defect_by_type
 
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration8: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         ##
         ##set graph_daily_defect_summary
@@ -804,17 +976,20 @@ class Inline_Outline_Manager:
             list_defect_percent_actual,
             list_defect_qty_daily,
         ) = await self.crud.get_graph_daily_defect_summary(
-            db=db, where_stmt=text_data, prod_qty=list_prod_qty
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            where_stmt=text_data,
+            prod_qty=list_prod_qty,
         )
 
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration9: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         for process in list_process:
             if result_list_defect_qty_daily_process.get(process) is None:
@@ -824,14 +999,14 @@ class Inline_Outline_Manager:
                     Defect_Qty_Detail(name=defect_qty[0], qty=defect_qty[1])
                 )
         # print("list_defect_qty_daily[Inline]:", list_defect_qty_daily["Inline"])
-        end_time = time.time()
+        # end_time = time.time()
         # print("End:", end_time)
-        duration = end_time - start_time
-        minutes = int(duration // 60)
-        seconds = duration % 60
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
 
         # print(f"Duration10: {minutes} min {seconds:.2f} sec")
-        start_time = time.time()
+        # start_time = time.time()
         # print("Start:", start_time)
         return_list = []
         yearly_defect_inline_summary = Yearly_Defect_Summary(
@@ -958,15 +1133,15 @@ class Inline_Outline_Manager:
                     ),
                 )
             )
-            end_time = time.time()
+            # end_time = time.time()
             # print("End:", end_time)
-            duration = end_time - start_time
-            minutes = int(duration // 60)
-            seconds = duration % 60
+            # duration = end_time - start_time
+            # minutes = int(duration // 60)
+            # seconds = duration % 60
 
             # print(f"Duration11: {minutes} min {seconds:.2f} sec")
-            start_time = time.time()
-            # print("Start:", start_time)
+            # # start_time = time.time()
+            # # print("Start:", start_time)
             if len(return_list) == 0:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -979,7 +1154,12 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_defect_summary because {e}",
             )
 
-    async def post_cause_of_abnormal(self, text_data: str, db: AsyncSession = None):
+    async def post_cause_of_abnormal(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -987,7 +1167,9 @@ class Inline_Outline_Manager:
             )
 
         ## get data cause_of_abnormal from db
-        rs, data = await self.crud.cause_of_abnormal(db=db, where_stmt=text_data)
+        rs, data = await self.crud.cause_of_abnormal(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         list_abnormal = []
         c = 0
@@ -1045,7 +1227,14 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_cause_of_abnormal because {e}",
             )
 
-    async def post_defect_pareto_chart(self, text_data: str, db: AsyncSession = None):
+    async def post_defect_pareto_chart(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -1059,7 +1248,7 @@ class Inline_Outline_Manager:
         list_defect_qty_inspection = []
         ## get_defect_qty_pareto_chart from db
         res_defect_pareto = await self.crud.get_defect_qty_pareto_chart(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for r in res_defect_pareto:
             key_index = r._key_to_index
@@ -1103,24 +1292,37 @@ class Inline_Outline_Manager:
 
         list_line = []
         list_line_id = []
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                #!!!!!Error
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            #!!!!!Error
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         #!!!!!Error
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         ## get defect_pareto_chart from db
-        rs, data = await self.crud.defect_pareto_chart(db=db, where_stmt=text_data)
+        rs, data = await self.crud.defect_pareto_chart(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         ## get select line id
         select_line_id = []
         for line_name in data["line"]:
@@ -1131,25 +1333,34 @@ class Inline_Outline_Manager:
         list_part_name = [[]] * len(select_line_id)
         c = 0
         for c in range(0, len(list_part_no)):
-
-            try:
-                ## get part_no, part_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/parts_by_line?line_id="
-                    + str(select_line_id[c])
+            response = PartLineResponse(
+                parts=await self.setting_manager.get_parts_by_line(
+                    str(select_line_id[c]), db_common_pg_async
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["parts"])):
+                list_part_no[c].append(response_json["parts"][i]["part_no"])
+                list_part_name[c].append(response_json["parts"][i]["part_name"])
+            # try:
+            #     ## get part_no, part_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/parts_by_line?line_id="
+            #         + str(select_line_id[c])
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["parts"])):
-                    list_part_no[c].append(response_json["parts"][i]["part_no"])
-                    list_part_name[c].append(response_json["parts"][i]["part_name"])
+            #     for i in range(0, len(response_json["parts"])):
+            #         list_part_no[c].append(response_json["parts"][i]["part_no"])
+            #         list_part_name[c].append(response_json["parts"][i]["part_name"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             c += 1
 
@@ -1171,29 +1382,48 @@ class Inline_Outline_Manager:
 
             index_select = list_part_no_all.index(r[key_index["part_no"]])
             select_part_name = list_part_name_all[index_select]
-
-            try:
-                ## get prod_qty from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?line_id="
-                    + str(r[key_index["line_id"]])
-                    + "&shift=All&date="
-                    + str(r[key_index["date"]])
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=str(r[key_index["line_id"]]),
+                    part_no=None,
+                    process_name=None,
+                    shift="All",
+                    part_line_id=None,
+                    date=str(r[key_index["date"]]),
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
-                # print("response_json:", response_json)
-                for i in range(0, len(response_json["prod_qty"])):
-                    if str(response_json["prod_qty"][i]["production_date"])[
-                        0:10
-                    ] == str(r[key_index["date"]]):
-                        prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["prod_qty"])):
+                if str(response_json["prod_qty"][i]["production_date"])[0:10] == str(
+                    r[key_index["date"]]
+                ):
+                    prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
+            # try:
+            #     ## get prod_qty from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/prods/prod_qty?line_id="
+            #         + str(r[key_index["line_id"]])
+            #         + "&shift=All&date="
+            #         + str(r[key_index["date"]])
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
+            #     # print("response_json:", response_json)
+            #     for i in range(0, len(response_json["prod_qty"])):
+            #         if str(response_json["prod_qty"][i]["production_date"])[
+            #             0:10
+            #         ] == str(r[key_index["date"]]):
+            #             prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
             ## get line name
             index_select = list_line_id.index(int(r[key_index["line_id"]]))
             line_name = list_line[index_select]
@@ -1208,6 +1438,7 @@ class Inline_Outline_Manager:
             ## get get_defect_qty from db
             res_defect = await self.crud.get_defect_qty(
                 db=db,
+                db_common_pg_async=db_common_pg_async,
                 date=date,
                 line=line,
                 part_no=part_no,
@@ -1291,7 +1522,10 @@ class Inline_Outline_Manager:
             )
 
     async def post_export_abnormal_occurrence(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -1300,7 +1534,9 @@ class Inline_Outline_Manager:
             )
 
         ## get cause_of_abnormal from db
-        rs, data = await self.crud.cause_of_abnormal(db=db, where_stmt=text_data)
+        rs, data = await self.crud.cause_of_abnormal(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         list_abnormal = []
         list_df = []
@@ -1399,7 +1635,14 @@ class Inline_Outline_Manager:
                 detail=f"Unable to post_export_abnormal_occurrence because {e}",
             )
 
-    async def post_export_description(self, text_data: str, db: AsyncSession = None):
+    async def post_export_description(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -1408,25 +1651,36 @@ class Inline_Outline_Manager:
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         ## get defect_pareto_chart from db
-        rs, data = await self.crud.defect_pareto_chart(db=db, where_stmt=text_data)
+        rs, data = await self.crud.defect_pareto_chart(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         select_line_id = []
         for line_name in data["line"]:
@@ -1438,25 +1692,34 @@ class Inline_Outline_Manager:
 
         c = 0
         for c in range(0, len(list_part_no)):
-
-            try:
-                ## get part_no, part_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/parts_by_line?line_id="
-                    + str(select_line_id[c])
+            response = PartLineResponse(
+                parts=await self.setting_manager.get_parts_by_line(
+                    str(select_line_id[c]), db_common_pg_async
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["parts"])):
+                list_part_no[c].append(response_json["parts"][i]["part_no"])
+                list_part_name[c].append(response_json["parts"][i]["part_name"])
+            # try:
+            #     ## get part_no, part_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/parts_by_line?line_id="
+            #         + str(select_line_id[c])
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["parts"])):
-                    list_part_no[c].append(response_json["parts"][i]["part_no"])
-                    list_part_name[c].append(response_json["parts"][i]["part_name"])
+            #     for i in range(0, len(response_json["parts"])):
+            #         list_part_no[c].append(response_json["parts"][i]["part_no"])
+            #         list_part_name[c].append(response_json["parts"][i]["part_name"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             c += 1
 
@@ -1481,29 +1744,48 @@ class Inline_Outline_Manager:
 
             index_select = list_part_no_all.index(r[key_index["part_no"]])
             select_part_name = list_part_name_all[index_select]
-
-            try:
-                ## get prod_qty from api
-                endpoint = (
-                    str(self.BACKEND_URL_SERVICE)
-                    + "/api/prods/prod_qty?line_id="
-                    + str(r[key_index["line_id"]])
-                    + "&shift=All&date="
-                    + str(r[key_index["date"]])
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=str(r[key_index["line_id"]]),
+                    part_no=None,
+                    process_name=None,
+                    shift="All",
+                    part_line_id=None,
+                    date=str(r[key_index["date"]]),
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["prod_qty"])):
+                if str(response_json["prod_qty"][i]["production_date"])[0:10] == str(
+                    r[key_index["date"]]
+                ):
+                    prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
+            # try:
+            #     ## get prod_qty from api
+            #     endpoint = (
+            #         str(self.BACKEND_URL_SERVICE)
+            #         + "/api/prods/prod_qty?line_id="
+            #         + str(r[key_index["line_id"]])
+            #         + "&shift=All&date="
+            #         + str(r[key_index["date"]])
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["prod_qty"])):
-                    if str(response_json["prod_qty"][i]["production_date"])[
-                        0:10
-                    ] == str(r[key_index["date"]]):
-                        prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
+            #     for i in range(0, len(response_json["prod_qty"])):
+            #         if str(response_json["prod_qty"][i]["production_date"])[
+            #             0:10
+            #         ] == str(r[key_index["date"]]):
+            #             prod_qty_all = float(response_json["prod_qty"][i]["actual_val"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
             # # print("test1-1")
             index_select = list_line_id.index(int(r[key_index["line_id"]]))
             line_name = list_line[index_select]
@@ -1518,6 +1800,7 @@ class Inline_Outline_Manager:
             ## get defect_qty from db
             res_defect = await self.crud.get_defect_qty(
                 db=db,
+                db_common_pg_async=db_common_pg_async,
                 date=date,
                 line=line,
                 part_no=part_no,
@@ -1613,6 +1896,9 @@ class Inline_Outline_Manager:
         first_date: str,
         last_date: str,
         db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
         if not text_data:
             raise HTTPException(
@@ -1639,25 +1925,55 @@ class Inline_Outline_Manager:
         if not defect_qty:
             defect_qty = 0
         if not data["part_no"] or data["part_no"] == "null":
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                # + "/api/prods/prod_qty?line_id="
-                + "/api/prods/prod_qty?"
-                # + str(select_line_id)
-                + line_id_api_str
-                + f"&shift={data['shift']}&date="
-                + first_date
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=select_line_id,
+                    part_no=None,
+                    process_name=None,
+                    shift=data["shift"],
+                    part_line_id=None,
+                    date=first_date,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
             )
         else:
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?part_line_id="
-                + str(data["sub_line"])
-                + f"&shift={data['shift']}&date="
-                + first_date
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=None,
+                    part_no=None,
+                    process_name=None,
+                    shift=data["shift"],
+                    part_line_id=str(data["sub_line"]),
+                    date=first_date,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
             )
-        print("endpoint:", endpoint)
-        response_json = requests.get(endpoint, headers=headers).json()
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        # if not data["part_no"] or data["part_no"] == "null":
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         # + "/api/prods/prod_qty?line_id="
+        #         + "/api/prods/prod_qty?"
+        #         # + str(select_line_id)
+        #         + line_id_api_str
+        #         + f"&shift={data['shift']}&date="
+        #         + first_date
+        #     )
+        # else:
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/prods/prod_qty?part_line_id="
+        #         + str(data["sub_line"])
+        #         + f"&shift={data['shift']}&date="
+        #         + first_date
+        #     )
+        # print("endpoint:", endpoint)
+        # response_json = requests.get(endpoint, headers=headers).json()
         #!response_json["prod_qty"]
 
         prod_actual = 0
@@ -1673,11 +1989,14 @@ class Inline_Outline_Manager:
             if entry["actual_val"] != 0:
                 amount_prod_date += 1
         if count_data == 0:
-            p_bar = float(
-                await self.crud.get_initial_pbar(
-                    db=db, select_line_id=select_line_id, where_stmt=text_data
-                )
+            p_bar = await self.crud.get_initial_pbar(
+                db=db, select_line_id=select_line_id, where_stmt=text_data
             )
+            if p_bar == None:
+                p_bar = 0.0
+            else:
+                p_bar = float(p_bar)
+
         elif prod_actual == 0:
             p_bar = 0
         else:

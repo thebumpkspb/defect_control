@@ -15,74 +15,128 @@ from app.functions import (
     transform_approval_data,
     exceptDefectTypeList,
 )
+import time
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    # OrganizeLevelResponse,
+    # LinePartResponse,
+    # PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    # SectionResponse,
+    # SymbolResponse,
+    # LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 
 load_dotenv()
-
+import json
 from typing import List
 
 
 class Inline_Outline_CRUD:
     def __init__(self):
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
+
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
 
-    def get_line_id(self, linename):
+    async def get_line_id(self, linename, db_common_pg_async):
         id_linename = None
         list_line = []
         list_line_id = []
         #!error
-        try:
-            ## get list_line_id, list_line_name from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-
-            response = requests.get(endpoint, headers=headers)
-            # print("endpoint:", endpoint)
-            # print(
-            #     " response.status_code:",
-            #     response.status_code,
-            # )
-            # print(
-            #     " response.content:",
-            #     response.content,
-            # )
-            response_json = response.json()
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        # print("type(db_common_pg_async):", db_common_pg_async)
+        # response = self.setting_manager.get_lines(rx_only=False, db=db_common_pg_async)
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # try:
+        #     ## get list_line_id, list_line_name from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+
+        #     response = requests.get(endpoint, headers=headers)
+        #     # print("endpoint:", endpoint)
+        #     # print(
+        #     #     " response.status_code:",
+        #     #     response.status_code,
+        #     # )
+        #     # print(
+        #     #     " response.content:",
+        #     #     response.content,
+        #     # )
+        #     response_json = response.json()
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         index_select = list_line.index(linename)
         id_linename = list_line_id[index_select]
 
         return id_linename
 
-    def get_list_line_id(self, list_linename):
+    async def get_list_line_id(self, list_linename, db_common_pg_async):
         id_linename = None
         list_id_linename = []
         list_line = []
         list_line_id = []
 
-        try:
-            ## get list_line_id, list_line_name from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get list_line_id, list_line_name from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         for linename in list_linename:
 
@@ -110,7 +164,12 @@ class Inline_Outline_CRUD:
 
         return data
 
-    async def get_target_control(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_target_control(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
         month = data["month"]
@@ -143,7 +202,9 @@ class Inline_Outline_CRUD:
 
         else:  # check filter = 'line'
 
-            line_id = self.get_line_id(line[0])
+            line_id = await self.get_line_id(
+                line[0], db_common_pg_async=db_common_pg_async
+            )
 
             ## query db
             where_stmt = (
@@ -161,12 +222,15 @@ class Inline_Outline_CRUD:
     async def get_defect(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        db_prod_ms: AsyncSession,
+        db_prod_my: AsyncSession,
         where_stmt: str | None = None,
         target: float | None = None,
     ):
         data = where_stmt.dict()
-
-        str_list_line_id = self.get_list_line_id(data["line"])
+        # print("get_defect db:", type(db_common_pg_async))
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         month = data["month"]
         department = data["department"]
@@ -232,20 +296,30 @@ class Inline_Outline_CRUD:
         ## get list_line_id, list_line_name from api
         list_line = []
         list_line_id = []
-        try:
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         list_prod_qty = [0] * day_in_month
 
@@ -253,37 +327,60 @@ class Inline_Outline_CRUD:
 
             index_select = list_line.index(line_name)
             select_line_id = list_line_id[index_select]
+            # print("line_id:", str(select_line_id))
+            # print("shift:", shift)
+            # print("date:", date_prod_qty)
 
-            try:
-                ## get prod_qty from api
-                # endpoint = (
-                #     self.BACKEND_URL_SERVICE
-                #     + "/api/prods/prod_qty?line_id="
-                #     + str(select_line_id)
-                #     + "&shift=All&date="
-                #     + date_prod_qty
-                # )
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?line_id="
-                    + str(select_line_id)
-                    + f"&shift={shift}&date="
-                    + date_prod_qty
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=[int(select_line_id)],
+                    shift=shift,
+                    date=date_prod_qty,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                    part_no=None,
+                    process_name=None,
+                    part_line_id=None,
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
-
-                for i in range(0, len(response_json["prod_qty"])):
-                    c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
-                    list_prod_qty[c - 1] = (
-                        list_prod_qty[c - 1]
-                        + response_json["prod_qty"][i]["actual_val"]
-                    )
-
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            print("response_json:", response_json)
+            for i in range(0, len(response_json["prod_qty"])):
+                c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+                list_prod_qty[c - 1] = (
+                    list_prod_qty[c - 1] + response_json["prod_qty"][i]["actual_val"]
                 )
+            # try:
+            #     ## get prod_qty from api
+            #     # endpoint = (
+            #     #     self.BACKEND_URL_SERVICE
+            #     #     + "/api/prods/prod_qty?line_id="
+            #     #     + str(select_line_id)
+            #     #     + "&shift=All&date="
+            #     #     + date_prod_qty
+            #     # )
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/prods/prod_qty?line_id="
+            #         + str(select_line_id)
+            #         + f"&shift={shift}&date="
+            #         + date_prod_qty
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
+
+        # for i in range(0, len(response_json["prod_qty"])):
+        #     c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+        #     list_prod_qty[c - 1] = (
+        #         list_prod_qty[c - 1] + response_json["prod_qty"][i]["actual_val"]
+        #     )
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         line = str(data["line"]).replace("[", "").replace("]", "")
 
@@ -382,13 +479,18 @@ class Inline_Outline_CRUD:
     async def get_graph_yearly_defect_summary(  #! need to revise for performance -> 4
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        db_prod_ms: AsyncSession,
+        db_prod_my: AsyncSession,
         where_stmt: str | None = None,
         prod_qty: float | None = None,
         defect_name: str | None = None,
     ):
+        # start_time = time.time()
+        # print("Start:", start_time)
         data = where_stmt.dict()
         shift = data["shift"]
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         month = data["month"]
         datetime_object = datetime.strptime(month + "-01", "%B-%Y-%d")
@@ -527,7 +629,9 @@ class Inline_Outline_CRUD:
                     c += 1
                 list_target_percent_yearly_process[process] = list_target_percent_yearly
         else:  # check filter = 'line'
-            line_id = self.get_line_id(line[0])
+            line_id = await self.get_line_id(
+                line[0], db_common_pg_async=db_common_pg_async
+            )
             where_stmt = (
                 "month_year in "
                 + str(tuple(list_year))
@@ -599,7 +703,15 @@ class Inline_Outline_CRUD:
                     list_target_percent_yearly[c] = target_percent
                     c += 1
                 list_target_percent_yearly_process[process] = list_target_percent_yearly
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 1: {minutes} min {seconds:.2f} sec")
 
+        # start_time = time.time()
+        # print("Start:", start_time)
         line = str(data["line"]).replace("[", "").replace("]", "")
         defect_type = []
         # print("list_target_percent_process_yearly:", list_target_percent_process_yearly)
@@ -652,6 +764,15 @@ class Inline_Outline_CRUD:
         rs = await db.execute(text(stmt))  #!
         df_defect_qty = pd.DataFrame(rs.all(), columns=rs.keys())
         df_defect_qty["date"] = pd.to_datetime(df_defect_qty["date"])
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 2: {minutes} min {seconds:.2f} sec")
+
+        # start_time = time.time()
+        # print("Start:", start_time)
         for process in list_process:
             df_defect_qty_process = df_defect_qty[(df_defect_qty["process"] == process)]
             # df_defect_qty_process.to_excel(f"test_df_defect_qty_process_{process}.xlsx")
@@ -800,135 +921,253 @@ class Inline_Outline_CRUD:
                     list_defect_qty_yearly.append([defect, copied_list])
             list_defect_percent_yearly_process[process] = list_defect_percent_yearly
             list_defect_qty_yearly_process[process] = list_defect_qty_yearly
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 3: {minutes} min {seconds:.2f} sec")
 
+        # start_time = time.time()
+        # print("Start:", start_time)
         list_line = []
         list_line_id = []
-
-        try:
-            ## get list_line_id, list_line_name from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get list_line_id, list_line_name from api
+        # endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         list_prod_qty = [0] * 3
         # print("list_year: ", list_year)
         # print("list_month: ", list_month)
         c = 0
         # print('data["line"]:', data["line"])
-        for year in list_year:
-            ## check last year
-            if c == len(list_year) - 1:
-                for month in list_month:
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 4: {minutes} min {seconds:.2f} sec")
 
-                    ## check fiscal year
-                    if month in ["January-", "February-", "March-"]:
-                        year = str(int(year) + 1)
+        # start_time = time.time()
+        # print("Start:", start_time)
 
-                    datetime_object = datetime.strptime(
-                        month + year + "-01", "%B-%Y-%d"
-                    )
-                    month_number_now = int(str(datetime_object)[5:7])
-                    date_prod_qty = datetime_object.strftime("%Y-%m-%d")
-                    # select_line_id_list=[]
-                    select_line_id = ""
-                    for line_name in data["line"]:
+        date_prod_qty = datetime_object.strftime("%Y-%m-%d")
+        select_line_id_list = []
+        for line_name in data["line"]:
 
-                        index_select = list_line.index(line_name)
-                        # select_line_id_list.append(list_line_id[index_select])
-                        select_line_id += f"&line_id={list_line_id[index_select]}"
-                        # select_line_id = list_line_id[index_select]
+            index_select = list_line.index(line_name)
+            # select_line_id_list.append(list_line_id[index_select])
+            # select_line_id += f"&line_id={list_line_id[index_select]}"
+            select_line_id_list.append(list_line_id[index_select])
+        response = ProductionQtyResponse(
+            prod_qty=await self.prod_manager.get_prod_qty(
+                line_id=select_line_id_list,
+                shift=shift,
+                date=date_prod_qty,
+                db_my=db_prod_my,
+                db_ms=db_prod_ms,
+                db_common=db_common_pg_async,
+                type_="Yearly",
+                part_no=None,
+                process_name=None,
+                part_line_id=None,
+            )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        # print("test:", response_json["prod_qty"])
+        # print("type(response_json)", type(response_json))
+        list_prod_qty = []
+        for i in response_json["prod_qty"]:
+            # print("i:", i)
+            # print("type(i):", type(i))
+            list_prod_qty.append(i["actual_val"])
 
-                    try:
-                        ## get prod_qty from api
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/prods/prod_qty?"
-                            + f"shift={shift}"
-                            + str(select_line_id)
-                            + "&date="
-                            + date_prod_qty
-                        )
-                        response_json = requests.get(
-                            endpoint, headers=headers
-                        ).json()  #!
+        # print("list_prod_qty:", list_prod_qty)
+        # #!TODO: Slow
+        # count = 1
+        # #!Break for data['month']
+        # for year in list_year:
+        #     ## check last year
+        #     if c == len(list_year) - 1:
+        #         for month in list_month:
+        #             print("count:", count)
+        #             count = count + 1
+        #             ## check fiscal year
+        #             if month in ["January-", "February-", "March-"]:
+        #                 year = str(int(year) + 1)
 
-                        for i in range(0, len(response_json["prod_qty"])):
-                            list_prod_qty[c] = (
-                                list_prod_qty[c]
-                                + response_json["prod_qty"][i]["actual_val"]
-                            )
+        #             datetime_object = datetime.strptime(
+        #                 month + year + "-01", "%B-%Y-%d"
+        #             )
+        #             month_number_now = int(str(datetime_object)[5:7])
+        #             date_prod_qty = datetime_object.strftime("%Y-%m-%d")
+        #             # select_line_id_list=[]
+        #             select_line_id = ""
+        #             #!TODO:
+        #             select_line_id_list = []
+        #             for line_name in data["line"]:
 
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
+        #                 index_select = list_line.index(line_name)
+        #                 # select_line_id_list.append(list_line_id[index_select])
+        #                 # select_line_id += f"&line_id={list_line_id[index_select]}"
+        #                 select_line_id_list.append(list_line_id[index_select])
+        #                 # select_line_id = list_line_id[index_select]
+        #             response = ProductionQtyResponse(
+        #                 prod_qty=await self.prod_manager.get_prod_qty(
+        #                     line_id=select_line_id_list,
+        #                     shift=shift,
+        #                     date=date_prod_qty,
+        #                     db_my=db_prod_my,
+        #                     db_ms=db_prod_ms,
+        #                     db_common=db_common_pg_async,
+        #                     part_no=None,
+        #                     process_name=None,
+        #                     part_line_id=None,
+        #                 )
+        #             )
+        #             response_str = response.json()
+        #             response_json = json.loads(response_str)
+        #             # print("response_json:", response_json)
+        #             for i in range(0, len(response_json["prod_qty"])):
+        #                 list_prod_qty[c] = (
+        #                     list_prod_qty[c]
+        #                     + response_json["prod_qty"][i]["actual_val"]
+        #                 )
+        #             # try:
+        #             #     ## get prod_qty from api
+        #             #     endpoint = (
+        #             #         self.BACKEND_URL_SERVICE
+        #             #         + "/api/prods/prod_qty?"
+        #             #         + f"shift={shift}"
+        #             #         + str(select_line_id)
+        #             #         + "&date="
+        #             #         + date_prod_qty
+        #             #     )
+        #             #     response_json = requests.get(
+        #             #         endpoint, headers=headers
+        #             #     ).json()  #!
 
-                    datetime_object = datetime.strptime(
-                        data["month"] + "-01", "%B-%Y-%d"
-                    )
-                    month_number_end = int(str(datetime_object)[5:7])
+        #             #     for i in range(0, len(response_json["prod_qty"])):
+        #             #         list_prod_qty[c] = (
+        #             #             list_prod_qty[c]
+        #             #             + response_json["prod_qty"][i]["actual_val"]
+        #             #         )
 
-                    if month_number_now == month_number_end:
-                        break
+        #             # except Exception as e:
+        #             #     raise HTTPException(
+        #             #         status_code=status.HTTP_400_BAD_REQUEST,
+        #             #         detail=f"because {e}",
+        #             #     )
 
-            else:
-                for month in list_month:
-                    ## check fiscal year
-                    if month in ["January-", "February-", "March-"]:
-                        year = str(int(year) + 1)
+        #             datetime_object = datetime.strptime(
+        #                 data["month"] + "-01", "%B-%Y-%d"
+        #             )
+        #             month_number_end = int(str(datetime_object)[5:7])
 
-                    datetime_object = datetime.strptime(
-                        month + year + "-01", "%B-%Y-%d"
-                    )
-                    date_prod_qty = datetime_object.strftime("%Y-%m-%d")
+        #             if month_number_now == month_number_end:
+        #                 break
 
-                    select_line_id = ""
-                    for line_name in data["line"]:
-                        index_select = list_line.index(line_name)
-                        # select_line_id_list.append(list_line_id[index_select])
-                        select_line_id += f"&line_id={list_line_id[index_select]}"
-                        # index_select = list_line.index(line_name)
-                        # select_line_id = list_line_id[index_select]
+        #     else:
+        #         for month in list_month:
+        #             print("count:", count)
+        #             count = count + 1
+        #             ## check fiscal year
+        #             if month in ["January-", "February-", "March-"]:
+        #                 year = str(int(year) + 1)
 
-                    try:
-                        ## get prod_qty from api
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/prods/prod_qty?"
-                            + f"shift={shift}"
-                            + str(select_line_id)
-                            + "&date="
-                            + date_prod_qty
-                        )
-                        # print("endpoint: ", endpoint)
-                        response_json = requests.get(
-                            endpoint, headers=headers
-                        ).json()  #!
+        #             datetime_object = datetime.strptime(
+        #                 month + year + "-01", "%B-%Y-%d"
+        #             )
+        #             date_prod_qty = datetime_object.strftime("%Y-%m-%d")
 
-                        for i in range(0, len(response_json["prod_qty"])):
-                            list_prod_qty[c] = (
-                                list_prod_qty[c]
-                                + response_json["prod_qty"][i]["actual_val"]
-                            )
+        #             select_line_id = ""
+        #             for line_name in data["line"]:
+        #                 index_select = list_line.index(line_name)
+        #                 # select_line_id_list.append(list_line_id[index_select])
+        #                 select_line_id += f"&line_id={list_line_id[index_select]}"
+        #                 # index_select = list_line.index(line_name)
+        #                 # select_line_id = list_line_id[index_select]
+        #             response = ProductionQtyResponse(
+        #                 prod_qty=await self.prod_manager.get_prod_qty(
+        #                     line_id=list_line_id,
+        #                     shift=shift,
+        #                     date=date_prod_qty,
+        #                     db_my=db_prod_my,
+        #                     db_ms=db_prod_ms,
+        #                     db_common=db_common_pg_async,
+        #                     part_no=None,
+        #                     process_name=None,
+        #                     part_line_id=None,
+        #                 )
+        #             )
+        #             response_str = response.json()
+        #             response_json = json.loads(response_str)
+        #             for i in range(0, len(response_json["prod_qty"])):
+        #                 list_prod_qty[c] = (
+        #                     list_prod_qty[c]
+        #                     + response_json["prod_qty"][i]["actual_val"]
+        #                 )
+        #             # try:
+        #             #     ## get prod_qty from api
+        #             #     endpoint = (
+        #             #         self.BACKEND_URL_SERVICE
+        #             #         + "/api/prods/prod_qty?"
+        #             #         + f"shift={shift}"
+        #             #         + str(select_line_id)
+        #             #         + "&date="
+        #             #         + date_prod_qty
+        #             #     )
+        #             #     # print("endpoint: ", endpoint)
+        #             #     response_json = requests.get(
+        #             #         endpoint, headers=headers
+        #             #     ).json()  #!
 
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
-                c += 1
+        #             #     for i in range(0, len(response_json["prod_qty"])):
+        #             #         list_prod_qty[c] = (
+        #             #             list_prod_qty[c]
+        #             #             + response_json["prod_qty"][i]["actual_val"]
+        #             #         )
 
+        #             # except Exception as e:
+        #             #     raise HTTPException(
+        #             #         status_code=status.HTTP_400_BAD_REQUEST,
+        #             #         detail=f"because {e}",
+        #             #     )
+        #         c += 1
+        # print("list_prod_qty:", list_prod_qty)
+        # #!TODO: Slow
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 5: {minutes} min {seconds:.2f} sec")
+
+        # start_time = time.time()
+        # print("Start:", start_time)
         ## calculate defect_percent_yearly
         for process in list_process:
             for i in range(0, len(list_prod_qty)):
@@ -943,7 +1182,12 @@ class Inline_Outline_CRUD:
                         * 100,
                         2,
                     )
-
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # minutes = int(duration // 60)
+        # seconds = duration % 60
+        # print("End:", end_time)
+        # print(f"Duration 6: {minutes} min {seconds:.2f} sec")
         return (
             list_axis_x_yearly,
             list_target_percent_yearly_process,
@@ -954,13 +1198,16 @@ class Inline_Outline_CRUD:
     async def get_graph_monthly_defect_summary(  #! need to revise for performance -> 5
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        db_prod_ms: AsyncSession,
+        db_prod_my: AsyncSession,
         where_stmt: str | None = None,
         prod_qty: float | None = None,
         defect_name: str | None = None,
     ):
         data = where_stmt.dict()
         shift = data["shift"]
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         list_axis_x_monthly = []
         list_target_percent_monthly = []
@@ -1122,7 +1369,7 @@ class Inline_Outline_CRUD:
                 )
         else:  # check filter = 'line'
 
-            line_id = self.get_line_id(line[0])
+            line_id = await self.get_line_id(line[0], db_common_pg_async)
             where_stmt = (
                 "month_year in "
                 + str(tuple(list_month))
@@ -1412,61 +1659,122 @@ class Inline_Outline_CRUD:
 
         list_line = []
         list_line_id = []
-
-        try:
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()  #!
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()  #!
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         list_prod_qty = [0] * 12
+        print("list_month2:", list_month)
+        date_prod_qty = datetime_object.strftime("%Y-%m-%d")
+        select_line_id_list = []
+        for line_name in data["line"]:
 
-        c = 0
-        for month in list_month:
+            index_select = list_line.index(line_name)
+            # select_line_id_list.append(list_line_id[index_select])
+            # select_line_id += f"&line_id={list_line_id[index_select]}"
+            select_line_id_list.append(list_line_id[index_select])
+        response = ProductionQtyResponse(
+            prod_qty=await self.prod_manager.get_prod_qty(
+                line_id=select_line_id_list,
+                shift=shift,
+                date=date_prod_qty,
+                db_my=db_prod_my,
+                db_ms=db_prod_ms,
+                db_common=db_common_pg_async,
+                type_="Monthly",
+                part_no=None,
+                process_name=None,
+                part_line_id=None,
+            )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        # print("test2:", response_json["prod_qty"])
+        # print("type(test)2", type(response_json))
+        list_prod_qty = []
+        for i in response_json["prod_qty"]:
+            # print("i2:", i)
+            # print("type(i)2:", type(i))
+            list_prod_qty.append(i["actual_val"])
 
-            datetime_object = datetime.strptime(month + "-01", "%B-%Y-%d")
-            date_prod_qty = datetime_object.strftime("%Y-%m-%d")
+        # print("list_prod_qty2:", list_prod_qty)
+        # c = 0
+        # for month in list_month:
 
-            select_line_id = ""
-            for line_name in data["line"]:
+        #     datetime_object = datetime.strptime(month + "-01", "%B-%Y-%d")
+        #     date_prod_qty = datetime_object.strftime("%Y-%m-%d")
 
-                # index_select = list_line.index(line_name)
-                # select_line_id = list_line_id[index_select]
-                index_select = list_line.index(line_name)
-                select_line_id += f"&line_id={list_line_id[index_select]}"
+        #     select_line_id = ""
+        #     for line_name in data["line"]:
 
-            try:
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?"
-                    + f"shift={shift}"
-                    + str(select_line_id)
-                    + "&date="
-                    + date_prod_qty
-                )
-                response_json = requests.get(endpoint, headers=headers).json()  #!
+        #         # index_select = list_line.index(line_name)
+        #         # select_line_id = list_line_id[index_select]
+        #         index_select = list_line.index(line_name)
+        #         select_line_id += f"&line_id={list_line_id[index_select]}"
+        #     response = ProductionQtyResponse(
+        #         prod_qty=await self.prod_manager.get_prod_qty(
+        #             line_id=list_line_id,
+        #             shift=shift,
+        #             date=date_prod_qty,
+        #             db_my=db_prod_my,
+        #             db_ms=db_prod_ms,
+        #             db_common=db_common_pg_async,
+        #             part_no=None,
+        #             process_name=None,
+        #             part_line_id=None,
+        #         )
+        #     )
+        #     response_str = response.json()
+        #     response_json = json.loads(response_str)
+        #     for i in range(0, len(response_json["prod_qty"])):
+        #         list_prod_qty[c] = (
+        #             list_prod_qty[c] + response_json["prod_qty"][i]["actual_val"]
+        #         )
 
-                for i in range(0, len(response_json["prod_qty"])):
-                    list_prod_qty[c] = (
-                        list_prod_qty[c] + response_json["prod_qty"][i]["actual_val"]
-                    )
+        #     # try:
+        #     #     endpoint = (
+        #     #         self.BACKEND_URL_SERVICE
+        #     #         + "/api/prods/prod_qty?"
+        #     #         + f"shift={shift}"
+        #     #         + str(select_line_id)
+        #     #         + "&date="
+        #     #         + date_prod_qty
+        #     #     )
+        #     #     response_json = requests.get(endpoint, headers=headers).json()  #!
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
-            c += 1
+        #     #     for i in range(0, len(response_json["prod_qty"])):
+        #     #         list_prod_qty[c] = (
+        #     #             list_prod_qty[c] + response_json["prod_qty"][i]["actual_val"]
+        #     #         )
 
+        #     # except Exception as e:
+        #     #     raise HTTPException(
+        #     #         status_code=status.HTTP_400_BAD_REQUEST,
+        #     #         detail=f"because {e}",
+        #     #     )
+        #     c += 1
+        print("list_prod_qty_monthly:", list_prod_qty)
         ## calculate defect_percent_monthly
         for process in list_process:
             for i in range(0, len(list_prod_qty)):
@@ -1577,12 +1885,13 @@ class Inline_Outline_CRUD:
     async def get_graph_daily_defect_summary(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         prod_qty: float | None = None,
     ):
         data = where_stmt.dict()
         shift = data["shift"]
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         list_axis_x_daily = []
         list_axis_y_lift = ["0.00", "25.00", "50.00", "75.00", "100.00", "125.00"]
@@ -1836,12 +2145,13 @@ class Inline_Outline_CRUD:
     async def get_graph_defect_summary_by_type(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         prod_qty: float | None = None,
     ):
         data = where_stmt.dict()
         shift = data["shift"]
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         total = 0.0
         total_process = {}
@@ -1949,10 +2259,15 @@ class Inline_Outline_CRUD:
 
         return total_process, list_defect_by_type_process, sum_defect_qty_process
 
-    async def cause_of_abnormal(self, db: AsyncSession, where_stmt: str | None = None):
+    async def cause_of_abnormal(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         month = data["month"]
         line = str(data["line"]).replace("[", "").replace("]", "")
@@ -2002,10 +2317,13 @@ class Inline_Outline_CRUD:
         return rs, data
 
     async def get_defect_qty_pareto_chart(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
         month = data["month"]
         line = str(data["line"]).replace("[", "").replace("]", "")
         shift = data["shift"].lower()
@@ -2043,11 +2361,14 @@ class Inline_Outline_CRUD:
         return rs
 
     async def defect_pareto_chart(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
-        str_list_line_id = self.get_list_line_id(data["line"])
+        str_list_line_id = await self.get_list_line_id(data["line"], db_common_pg_async)
 
         month = data["month"]
         line = str(data["line"]).replace("[", "").replace("]", "")
@@ -2088,6 +2409,7 @@ class Inline_Outline_CRUD:
     async def get_defect_qty(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         date: str | None = None,
         line: str | None = None,
         part_no: str | None = None,
@@ -2098,7 +2420,7 @@ class Inline_Outline_CRUD:
         shift = shift.lower()
         if shift == None:
             shift = "all"
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(line, db_common_pg_async)
         # query db
         where_stmt = (
             "date = '"
