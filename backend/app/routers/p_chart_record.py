@@ -38,7 +38,12 @@ from app.schemas.p_chart_record import (
 )
 
 
-def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
+def p_chart_record_routers(
+    db: AsyncGenerator,
+    db_common_pg_async: AsyncGenerator,
+    db_prod_ms: AsyncGenerator,
+    db_prod_my: AsyncGenerator,
+) -> APIRouter:
     router = APIRouter()
     p_chart_record_manager = P_Chart_Record_Manager()
 
@@ -48,7 +53,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def general_information(
-        text_data: General_Information, db: AsyncSession = Depends(db)
+        text_data: General_Information,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
+        db_prod_ms: AsyncSession = Depends(db_prod_ms),
+        db_prod_my: AsyncSession = Depends(db_prod_my),
     ):
         """
         Example\n
@@ -58,7 +67,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return General_Information_Result_Response(
             general_information_result=await p_chart_record_manager.post_general_information(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         )
 
@@ -68,7 +81,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def p_chart_record_graph(
-        text_data: General_Information, db: AsyncSession = Depends(db)
+        text_data: General_Information,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -78,7 +93,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return P_Chart_Graph_Result_Response(
             p_chart_graph_result=await p_chart_record_manager.post_p_chart_record_graph(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -88,7 +103,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def p_chart_record_table(
-        text_data: General_Information, db: AsyncSession = Depends(db)
+        text_data: General_Information,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
+        db_prod_ms: AsyncSession = Depends(db_prod_ms),
+        db_prod_my: AsyncSession = Depends(db_prod_my),
     ):
         """
         Example\n
@@ -98,7 +117,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return P_Chart_Record_Table_Result_Response(
             p_chart_record_table_result=await p_chart_record_manager.post_p_chart_record_table(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         )
 
@@ -108,7 +131,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def add_new_record_view(
-        text_data: Add_New_Record, db: AsyncSession = Depends(db)
+        text_data: Add_New_Record,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -116,7 +141,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_New_Record_View_Result_Response(
             add_new_record_view_result=await p_chart_record_manager.post_add_new_record_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -126,7 +151,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def add_new_record_view_defect_by_part(
-        text_data: Add_New_Record_View_By_Part, db: AsyncSession = Depends(db)
+        text_data: Add_New_Record_View_By_Part,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -134,7 +161,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_New_Record_View_By_Part_Result_Response(
             add_new_record_view_defect_by_part_result=await p_chart_record_manager.post_add_new_record_view_defect_by_part(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -144,7 +171,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def change_new_record_view(
-        text_data: Change_Add_New_Record, db: AsyncSession = Depends(db)
+        text_data: Change_Add_New_Record,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
 
@@ -153,7 +182,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_New_Record_View_Result_Response(
             add_new_record_view_result=await p_chart_record_manager.post_change_new_record_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -163,7 +192,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def add_new_record_save(
-        text_data: Add_New_Record_Result, db: AsyncSession = Depends(db)
+        text_data: Add_New_Record_Result,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example
@@ -172,7 +203,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_New_Record_Result_Response(
             add_new_record_result=await p_chart_record_manager.post_add_new_record_save(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -182,7 +213,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def abnormal_occurrence_view(
-        text_data: General_Information, db: AsyncSession = Depends(db)
+        text_data: General_Information,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example
@@ -192,7 +225,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Abnormal_Occurrence_View_Result_Response(
             abnormal_occurrence_view_result=await p_chart_record_manager.post_abnormal_occurrence_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -220,7 +253,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def abnormal_occurrence_edit_save(
-        text_data: Abnormal_Occurrence_View_Result, db: AsyncSession = Depends(db)
+        text_data: Abnormal_Occurrence_View_Result,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -228,7 +263,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Abnormal_Occurrence_View_Result_Response(
             abnormal_occurrence_view_result=await p_chart_record_manager.post_abnormal_occurrence_edit_save(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -276,7 +311,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def abnormal_occurrence_add_row_ok(
-        text_data: Abnormal_Occurrence_View_Result, db: AsyncSession = Depends(db)
+        text_data: Abnormal_Occurrence_View_Result,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -284,7 +321,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Abnormal_Occurrence_View_Result_Response(
             abnormal_occurrence_view_result=await p_chart_record_manager.post_abnormal_occurrence_add_row_ok(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -294,7 +331,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def history_records_view(
-        text_data: General_Information, db: AsyncSession = Depends(db)
+        text_data: General_Information,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -302,7 +341,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return History_Records_Result_Response(
             history_records_result=await p_chart_record_manager.post_history_records_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -312,7 +351,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def history_records_edit_view(
-        text_data: History_Records, db: AsyncSession = Depends(db)
+        text_data: History_Records,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -320,7 +361,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return History_Records_Edit_Result_Response(
             history_records_edit_result=await p_chart_record_manager.post_history_records_edit_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -330,7 +371,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def history_records_edit_view_change(
-        text_data: History_Records, db: AsyncSession = Depends(db)
+        text_data: History_Records,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -338,7 +381,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return History_Records_Edit_Result_Response(
             history_records_edit_result=await p_chart_record_manager.post_history_records_edit_view_change(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -348,7 +391,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def history_records_edit_save(
-        text_data: History_Records, db: AsyncSession = Depends(db)
+        text_data: History_Records,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -356,7 +401,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return History_Records_Result_Response(
             history_records_result=await p_chart_record_manager.post_history_records_edit_save(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -366,7 +411,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def history_records_delete(
-        text_data: History_Records, db: AsyncSession = Depends(db)
+        text_data: History_Records,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -374,7 +421,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         """
         return History_Records_Response(
             history_records=await p_chart_record_manager.post_history_records_delete(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -384,7 +431,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def check_over_ucl_target(
-        text_data: Check_Over_UCL_Target, db: AsyncSession = Depends(db)
+        text_data: Check_Over_UCL_Target,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
+        db_prod_ms: AsyncSession = Depends(db_prod_ms),
+        db_prod_my: AsyncSession = Depends(db_prod_my),
     ):
         """
         Example\n
@@ -401,7 +452,11 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
 
         return Check_Over_UCL_Target_Response(
             check_over_ucl_target=await p_chart_record_manager.check_over_ucl_target(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         )
 
@@ -411,7 +466,9 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def get_amount_action_record(
-        text_data: Get_Amount_Action_Record, db: AsyncSession = Depends(db)
+        text_data: Get_Amount_Action_Record,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example\n
@@ -428,7 +485,7 @@ def p_chart_record_routers(db: AsyncGenerator) -> APIRouter:
 
         return Get_Amount_Action_Record_Response(
             get_amount_action_record=await p_chart_record_manager.get_amount_action_record(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 

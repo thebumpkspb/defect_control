@@ -28,6 +28,7 @@ from app.functions import (
 import requests
 import json
 from app.schemas.p_chart_record import General_Information, General_Information_Result
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
 
 # from collections import defaultdict
 
@@ -36,9 +37,12 @@ class Export_P_Chart_Manager:
     def __init__(self):
         self.crud = Export_P_Chart_CRUD()
         self.utils = Export_P_Chart_Utils()
-        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
-        self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        # self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
+        # self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import ProductionsManager
+
         self.p_chart_record_manager = P_Chart_Record_Manager()
+        self.prod_manager = ProductionsManager()
 
     def combine_json_list_defect_graph(self, data, skip_keys={}):
         Defect_Graph = namedtuple("Defect_Graph", ["id", "defect_name", "value"])
@@ -236,7 +240,12 @@ class Export_P_Chart_Manager:
         return result
 
     async def fetch_pchart_defect_records_service(
-        self, filters: Dict, db: AsyncSession = None
+        self,
+        filters: Dict,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
         """
         Service function to fetch records from `pchart_defect_record` table and generate an Excel report, then convert it to a PDF.
@@ -282,7 +291,9 @@ class Export_P_Chart_Manager:
         equation_image = current_directory + "/app/utils/export_p_chart/equation.png"
         equation_image2 = current_directory + "/app/utils/export_p_chart/equation2.png"
 
-        records = await self.crud.fetch_filtered_records(db=db, filters=filters)
+        records = await self.crud.fetch_filtered_records(
+            db=db, db_common_pg_async=db_common_pg_async, filters=filters
+        )
         general_information = (
             await self.p_chart_record_manager.post_general_information(
                 text_data=General_Information(
@@ -294,6 +305,9 @@ class Export_P_Chart_Manager:
                     sub_line=filters["sub_line"],
                 ),
                 db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         )
         general_information = general_information[0]
@@ -376,7 +390,9 @@ class Export_P_Chart_Manager:
             or filters["part_no"] == "null"
             or True
         ):  #!TODO: Fix this func for dynamics Shift -> ALL
-            line_id = self.crud.get_line_id(filters["line_name"])
+            line_id = await self.crud.get_line_id(
+                linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+            )
             # endpoint = (
             #     self.BACKEND_URL_SERVICE
             #     + "/api/prods/prod_qty?line_id="
@@ -387,23 +403,56 @@ class Export_P_Chart_Manager:
             if (not filters["part_no"] or filters["part_no"] == "null") or filters[
                 "process"
             ] == "Outline":
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?line_id="
-                    + str(line_id)
-                    + f"&shift={filters['shift']}"
-                    + f"&date={date_str}"
+                response = ProductionQtyResponse(
+                    prod_qty=await self.prod_manager.get_prod_qty(
+                        line_id=str(line_id),
+                        part_no=None,
+                        process_name=None,
+                        shift=filters["shift"],
+                        part_line_id=None,
+                        date=date_str,
+                        db_my=db_prod_my,
+                        db_ms=db_prod_ms,
+                        db_common=db_common_pg_async,
+                    )
                 )
             else:
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?part_line_id="
-                    + str(filters["sub_line"])
-                    + f"&shift={filters['shift']}"
-                    + f"&date={date_str}"
+                response = ProductionQtyResponse(
+                    prod_qty=await self.prod_manager.get_prod_qty(
+                        line_id=None,
+                        part_no=None,
+                        process_name=None,
+                        shift=filters["shift"],
+                        part_line_id=filters["sub_line"],
+                        date=date_str,
+                        db_my=db_prod_my,
+                        db_ms=db_prod_ms,
+                        db_common=db_common_pg_async,
+                    )
                 )
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
+            response_str = response.json()
+            response_json = json.loads(response_str)
+
+            # if (not filters["part_no"] or filters["part_no"] == "null") or filters[
+            #     "process"
+            # ] == "Outline":
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/prods/prod_qty?line_id="
+            #         + str(line_id)
+            #         + f"&shift={filters['shift']}"
+            #         + f"&date={date_str}"
+            #     )
+            # else:
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/prods/prod_qty?part_line_id="
+            #         + str(filters["sub_line"])
+            #         + f"&shift={filters['shift']}"
+            #         + f"&date={date_str}"
+            #     )
+            # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            # response_json = requests.get(endpoint, headers=headers).json()
 
             for i in range(0, len(response_json["prod_qty"])):
                 c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
@@ -411,7 +460,9 @@ class Export_P_Chart_Manager:
 
             list_prod_qty = list_prod_qty + [sum(list_prod_qty)]
 
-            defect_outline = await self.crud.get_defect_outline(db=db, filters=filters)
+            defect_outline = await self.crud.get_defect_outline(
+                db=db, db_common_pg_async=db_common_pg_async, filters=filters
+            )
             print("defect_outline:", defect_outline)
             defect_table_list = transform_defect_data_to_defect_table(
                 defect_outline, day_in_month
@@ -490,7 +541,9 @@ class Export_P_Chart_Manager:
             print("2pchart_graph:", pchart_graph)
             #!
         else:
-            table = await self.crud.fetch_filtered_table(db=db, filters=filters)
+            table = await self.crud.fetch_filtered_table(
+                db=db, db_common_pg_async=db_common_pg_async, filters=filters
+            )
             result_table = []
             for r in table:
                 key_index = r._key_to_index
@@ -812,7 +865,9 @@ class Export_P_Chart_Manager:
 
         len_abnormal = 0
         if filters["process"] != "Outline":
-            abnormal = await self.crud.fetch_filtered_abnormal(db=db, filters=filters)
+            abnormal = await self.crud.fetch_filtered_abnormal(
+                db=db, db_common_pg_async=db_common_pg_async, filters=filters
+            )
             for r in abnormal:
                 key_index = r._key_to_index
 

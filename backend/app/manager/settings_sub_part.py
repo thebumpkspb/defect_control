@@ -21,6 +21,31 @@ from app.crud.settings_sub_part import Settings_SubPart_CRUD
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    OrganizeLevelResponse,
+    # LinePartResponse,
+    PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    SectionResponse,
+    # SymbolResponse,
+    LineSectionResponse,
+    # ProcessLineSectionResponse,
+    SubLineResponse,
+)
 
 
 class Settings_SubPart_Manager:
@@ -28,8 +53,19 @@ class Settings_SubPart_Manager:
         self.crud = Settings_SubPart_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
 
-    async def post_table_view(self, text_data: str, db: AsyncSession = None):
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
+
+    async def post_table_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -40,31 +76,44 @@ class Settings_SubPart_Manager:
         line_name = data["line_name"]
         line_code_rx = data["line_code_rx"]
         if line_code_rx:
-            try:
-                ## get line, line_id from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + f"/api/settings/sub_lines?line_code_rx={line_code_rx}"
+            response = SubLineResponse(
+                sub_lines=await self.setting_manager.get_sub_lines(
+                    line_code_rx=line_code_rx, part_no=None, db=db_prod_ms
                 )
-                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-                response_json = requests.get(endpoint, headers=headers).json()
-                print("response_json:", response_json)
-                process_dict = {
-                    item["rxno_part"]: item["process"]
-                    for item in response_json["sub_lines"]
-                }
-                print("process_dict:", process_dict)
-                # for i in range(0, len(response_json["sub_lines"])):
-                #     list_line.append(response_json["sub_lines"][i]["section_line"])
-                #     list_line_id.append(response_json["sub_lines"][i]["line_id"])
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            process_dict = {
+                item["rxno_part"]: item["process"]
+                for item in response_json["sub_lines"]
+            }
+            # try:
+            #     ## get line, line_id from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + f"/api/settings/sub_lines?line_code_rx={line_code_rx}"
+            #     )
+            #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            #     response_json = requests.get(endpoint, headers=headers).json()
+            #     print("response_json:", response_json)
+            #     process_dict = {
+            #         item["rxno_part"]: item["process"]
+            #         for item in response_json["sub_lines"]
+            #     }
+            #     print("process_dict:", process_dict)
+            #     # for i in range(0, len(response_json["sub_lines"])):
+            #     #     list_line.append(response_json["sub_lines"][i]["section_line"])
+            #     #     list_line_id.append(response_json["sub_lines"][i]["line_id"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
         ## get data from db
-        res, data = await self.crud.table_view(db=db, where_stmt=text_data)
+        res, data = await self.crud.table_view(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         # try:
@@ -120,26 +169,40 @@ class Settings_SubPart_Manager:
         #     )
         #     return return_list
 
-    async def post_table_edit_view(self, text_data: str, db: AsyncSession = None):
+    async def post_table_edit_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -147,7 +210,9 @@ class Settings_SubPart_Manager:
             )
 
         ## get data from db
-        res, data = await self.crud.table_edit_view(db=db, where_stmt=text_data)
+        res, data = await self.crud.table_edit_view(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -161,37 +226,59 @@ class Settings_SubPart_Manager:
                 if data["line_name"] != "-":
                     index_select = list_line.index(data["line_name"])
                     select_line_id = list_line_id[index_select]
-
-                    try:
-                        ## get part_no, part_name from api
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/settings/parts_by_line?line_id="
-                            + str(select_line_id)
+                    response = PartLineResponse(
+                        parts=await self.setting_manager.get_parts_by_line(
+                            line_id=str(select_line_id),
+                            process=None,
+                            app_db=db,
+                            db=db_common_pg_async,
                         )
-                        response_json = requests.get(endpoint, headers=headers).json()
+                    )
+                    response_str = response.json()
+                    response_json = json.loads(response_str)
+                    for i in range(0, len(response_json["parts"])):
+                        list_part_no.append(response_json["parts"][i]["part_no"])
+                        list_part_name.append(response_json["parts"][i]["part_name"])
 
-                        for i in range(0, len(response_json["parts"])):
-                            list_part_no.append(response_json["parts"][i]["part_no"])
-                            list_part_name.append(
-                                response_json["parts"][i]["part_name"]
-                            )
-
-                            list_parts.append(
-                                {
-                                    "part_no": list_part_no[i],
-                                    "part_name": list_part_name[i],
-                                }
-                            )
-
-                        index_select = list_part_no.index(r[key_index["part_no"]])
-                        select_part_name = list_part_name[index_select]
-
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
+                        list_parts.append(
+                            {
+                                "part_no": list_part_no[i],
+                                "part_name": list_part_name[i],
+                            }
                         )
+
+                    index_select = list_part_no.index(r[key_index["part_no"]])
+                    select_part_name = list_part_name[index_select]
+                    # try:
+                    #     ## get part_no, part_name from api
+                    #     endpoint = (
+                    #         self.BACKEND_URL_SERVICE
+                    #         + "/api/settings/parts_by_line?line_id="
+                    #         + str(select_line_id)
+                    #     )
+                    #     response_json = requests.get(endpoint, headers=headers).json()
+
+                    #     for i in range(0, len(response_json["parts"])):
+                    #         list_part_no.append(response_json["parts"][i]["part_no"])
+                    #         list_part_name.append(
+                    #             response_json["parts"][i]["part_name"]
+                    #         )
+
+                    #         list_parts.append(
+                    #             {
+                    #                 "part_no": list_part_no[i],
+                    #                 "part_name": list_part_name[i],
+                    #             }
+                    #         )
+
+                    #     index_select = list_part_no.index(r[key_index["part_no"]])
+                    #     select_part_name = list_part_name[index_select]
+
+                    # except Exception as e:
+                    #     raise HTTPException(
+                    #         status_code=status.HTTP_400_BAD_REQUEST,
+                    #         detail=f"because {e}",
+                    #     )
 
                 else:
                     select_part_name = r[key_index["part_no"]]
@@ -257,27 +344,39 @@ class Settings_SubPart_Manager:
             return return_list
 
     async def post_table_edit_view_line_name_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         list_line = []
         list_line_id = []
-
-        try:
-            # get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     # get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -299,30 +398,49 @@ class Settings_SubPart_Manager:
                 index_select = list_line.index(res["line_name"])
                 select_line_id = list_line_id[index_select]
 
-                try:
-                    ## get part_no, part_name from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                    list_part_name.append(response_json["parts"][i]["part_name"])
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
-                        list_part_name.append(response_json["parts"][i]["part_name"])
-
-                        list_parts.append(
-                            {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                        )
-
-                    select_part_name = list_part_name[0]
-
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
+                    list_parts.append(
+                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                     )
+
+                select_part_name = list_part_name[0]
+                # try:
+                #     ## get part_no, part_name from api
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
+
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
+                #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+                #         list_parts.append(
+                #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                #         )
+
+                #     select_part_name = list_part_name[0]
+
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
             else:
                 select_part_name = "-"
@@ -353,7 +471,13 @@ class Settings_SubPart_Manager:
             )
             return return_list
 
-    async def post_table_edit_save(self, text_data: str, db: AsyncSession = None):
+    async def post_table_edit_save(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        # table_edit_save: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -361,7 +485,12 @@ class Settings_SubPart_Manager:
             )
 
         ## get data from db
-        res = await self.crud.table_edit_save(db=db, where_stmt=text_data)
+        res = await self.crud.table_edit_save(
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            # table_edit_save=table_edit_save,
+            where_stmt=text_data,
+        )
         return_list = []
 
         try:
@@ -394,7 +523,12 @@ class Settings_SubPart_Manager:
                 detail=f"Unable to post_table_edit_save because {e}",
             )
 
-    async def post_table_delete(self, text_data: str, db: AsyncSession = None):
+    async def post_table_delete(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -402,7 +536,9 @@ class Settings_SubPart_Manager:
             )
 
         ## get data from db
-        res = await self.crud.table_delete(db=db, where_stmt=text_data)
+        res = await self.crud.table_delete(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -432,26 +568,40 @@ class Settings_SubPart_Manager:
                 detail=f"Unable to post_table_delete because {e}",
             )
 
-    async def post_add_row_view(self, text_data: str, db: AsyncSession = None):
+    async def post_add_row_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -465,36 +615,60 @@ class Settings_SubPart_Manager:
         list_part_no = []
         list_part_name = []
         list_parts = []
-
+        print("res:", res)
+        # print("type(db_common_pg_async):", type(db_common_pg_async))
         if res["line_name"] != "-":
             index_select = list_line.index(res["line_name"])
             select_line_id = list_line_id[index_select]
-
-            try:
-                ## get part_no, part_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/parts_by_line?line_id="
-                    + str(select_line_id)
+            print("str(select_line_id):", str(select_line_id))
+            response = PartLineResponse(
+                parts=await self.setting_manager.get_parts_by_line(
+                    line_id=str(select_line_id),
+                    process=None,
+                    app_db=db,
+                    db=db_common_pg_async,
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            print("response_json:", response_json)
+            for i in range(0, len(response_json["parts"])):
+                list_part_no.append(response_json["parts"][i]["part_no"])
+                list_part_name.append(response_json["parts"][i]["part_name"])
 
-                for i in range(0, len(response_json["parts"])):
-                    list_part_no.append(response_json["parts"][i]["part_no"])
-                    list_part_name.append(response_json["parts"][i]["part_name"])
-
-                    list_parts.append(
-                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                    )
-
+                list_parts.append(
+                    {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                )
+            if res["part_no"] == "" or res["part_no"] == None:
+                select_part_name = ""
+            else:
                 index_select = list_part_no.index(res["part_no"])
                 select_part_name = list_part_name[index_select]
+            # try:
+            #     ## get part_no, part_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/parts_by_line?line_id="
+            #         + str(select_line_id)
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            #     for i in range(0, len(response_json["parts"])):
+            #         list_part_no.append(response_json["parts"][i]["part_no"])
+            #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+            #         list_parts.append(
+            #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+            #         )
+
+            #     index_select = list_part_no.index(res["part_no"])
+            #     select_part_name = list_part_name[index_select]
+
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
         else:
             select_part_name = res["part_no"]
@@ -549,27 +723,39 @@ class Settings_SubPart_Manager:
             return return_list
 
     async def post_add_row_view_line_name_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -588,31 +774,49 @@ class Settings_SubPart_Manager:
             if res["line_name"] != "-":
                 index_select = list_line.index(res["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    ## get part_no, part_name from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                    list_part_name.append(response_json["parts"][i]["part_name"])
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
-                        list_part_name.append(response_json["parts"][i]["part_name"])
-
-                        list_parts.append(
-                            {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                        )
-
-                    select_part_name = list_part_name[0]
-
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
+                    list_parts.append(
+                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                     )
+
+                select_part_name = list_part_name[0]
+                # try:
+                #     ## get part_no, part_name from api
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
+
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
+                #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+                #         list_parts.append(
+                #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                #         )
+
+                #     select_part_name = list_part_name[0]
+
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
             else:
                 select_part_name = "-"
@@ -643,7 +847,12 @@ class Settings_SubPart_Manager:
             )
             return return_list
 
-    async def post_add_row_ok(self, text_data: str, db: AsyncSession = None):
+    async def post_add_row_ok(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -651,7 +860,9 @@ class Settings_SubPart_Manager:
             )
 
         ## get data from db
-        res = await self.crud.add_row_ok(db=db, where_stmt=text_data)
+        res = await self.crud.add_row_ok(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:

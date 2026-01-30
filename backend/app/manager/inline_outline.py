@@ -1335,7 +1335,11 @@ class Inline_Outline_Manager:
         for c in range(0, len(list_part_no)):
             response = PartLineResponse(
                 parts=await self.setting_manager.get_parts_by_line(
-                    str(select_line_id[c]), db_common_pg_async
+                    # str(select_line_id[c]), db_common_pg_async
+                    line_id=str(select_line_id[c]),
+                    process=None,
+                    app_db=db,
+                    db=db_common_pg_async,
                 )
             )
             response_str = response.json()
@@ -1694,7 +1698,11 @@ class Inline_Outline_Manager:
         for c in range(0, len(list_part_no)):
             response = PartLineResponse(
                 parts=await self.setting_manager.get_parts_by_line(
-                    str(select_line_id[c]), db_common_pg_async
+                    # str(select_line_id[c]), db_common_pg_async
+                    line_id=str(select_line_id[c]),
+                    process=None,
+                    app_db=db,
+                    db=db_common_pg_async,
                 )
             )
             response_str = response.json()

@@ -12,6 +12,30 @@ import datetime
 import calendar
 import psycopg2
 import os
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    # OrganizeLevelResponse,
+    # LinePartResponse,
+    # PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    # SectionResponse,
+    # SymbolResponse,
+    # LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 
 # from datetime import datetime
 
@@ -20,10 +44,15 @@ load_dotenv()
 
 class Export_P_Chart_CRUD:
     def __init__(self):
-        self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
-        self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        # self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
+        # self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
 
-    def get_line_id(self, linename: str) -> str:
+        self.setting_manager = SettingsManager()
+
+    async def get_line_id(
+        self, linename: str, db_common_pg_async: AsyncSession = None
+    ) -> str:
         """
         Fetch the line ID corresponding to the provided line name.
 
@@ -36,18 +65,25 @@ class Export_P_Chart_CRUD:
         Raises:
             HTTPException: If the API call fails or the line name is not found.
         """
-        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-
-        try:
-            response = requests.get(endpoint, headers=headers)
-            response.raise_for_status()  # Raise an error for bad HTTP status codes
-            data = response.json()
-        except requests.RequestException as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"API request failed: {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        data = json.loads(response_str)
+        # endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+
+        # try:
+        #     response = requests.get(endpoint, headers=headers)
+        #     response.raise_for_status()  # Raise an error for bad HTTP status codes
+        #     data = response.json()
+        # except requests.RequestException as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"API request failed: {e}",
+        #     )
 
         # Build lists of section names and corresponding line IDs
         lines = data.get("lines", [])
@@ -66,7 +102,7 @@ class Export_P_Chart_CRUD:
         return str(list_line_id[index_select])
 
     async def fetch_filtered_records(
-        self, db: AsyncSession, filters: Dict
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
     ) -> List[Dict]:
         """
         Fetch filtered records from the `pchart_defect_record` table.
@@ -79,7 +115,9 @@ class Export_P_Chart_CRUD:
             if filters.get("month"):
                 query += " AND month = '" + filters["month"] + "' "
             if filters.get("line_name"):
-                line_id = self.get_line_id(filters["line_name"])
+                line_id = await self.get_line_id(
+                    linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+                )
                 query += " AND line_id = '" + str(line_id) + "' "
             if filters.get("shift"):
                 query += " AND shift = '" + filters["shift"] + "' "
@@ -101,7 +139,9 @@ class Export_P_Chart_CRUD:
         except Exception as e:
             raise RuntimeError(f"Database query failed: {str(e)}")
 
-    async def fetch_filtered_graph_records(self, db: AsyncSession, filters: Dict):
+    async def fetch_filtered_graph_records(
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
+    ):
         """
         Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
         """
@@ -117,7 +157,9 @@ class Export_P_Chart_CRUD:
             if filters.get("month"):
                 query += " AND month = '" + filters["month"] + "' "
             if filters.get("line_name"):
-                line_id = self.get_line_id(filters["line_name"])
+                line_id = await self.get_line_id(
+                    linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+                )
                 query += " AND line_id = '" + str(line_id) + "' "
             if filters.get("shift"):
                 # query += " AND shift = '" + filters["shift"] + "' "
@@ -145,7 +187,9 @@ class Export_P_Chart_CRUD:
             # print(f"Error fetching data: {e}")
             raise
 
-    async def fetch_filtered_table(self, db: AsyncSession, filters: Dict):
+    async def fetch_filtered_table(
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
+    ):
         """
         Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
         """
@@ -161,7 +205,9 @@ class Export_P_Chart_CRUD:
             if filters.get("month"):
                 query += " AND month = '" + filters["month"] + "' "
             if filters.get("line_name"):
-                line_id = self.get_line_id(filters["line_name"])
+                line_id = await self.get_line_id(
+                    linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+                )
                 query += " AND line_id = '" + str(line_id) + "' "
             if filters.get("shift"):
                 # query += " AND shift = '" + filters["shift"] + "' "
@@ -191,7 +237,9 @@ class Export_P_Chart_CRUD:
             # print ( f"Error fetching data: {e}" )
             raise
 
-    async def get_defect_outline(self, db: AsyncSession, filters: Dict):
+    async def get_defect_outline(
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
+    ):
         """
         Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
         """
@@ -202,7 +250,9 @@ class Export_P_Chart_CRUD:
         last_day = date_obj.replace(
             day=calendar.monthrange(date_obj.year, date_obj.month)[1]
         ).strftime("%Y-%m-%d")
-        line_id = self.get_line_id(filters["line_name"])
+        line_id = await self.get_line_id(
+            linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+        )
         where_master_part_no = ""
         where_record_part_no = ""
         where_record_sub_line = ""
@@ -326,7 +376,9 @@ class Export_P_Chart_CRUD:
             # print ( f"Error fetching data: {e}" )
             raise
 
-    async def fetch_filtered_abnormal(self, db: AsyncSession, filters: Dict):
+    async def fetch_filtered_abnormal(
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
+    ):
         """
         Fetch a single filtered record from the `pchart_report_graph` table and return it as a dictionary.
         """
@@ -364,7 +416,9 @@ class Export_P_Chart_CRUD:
                     )
 
             if filters.get("line_name"):
-                line_id = self.get_line_id(filters["line_name"])
+                line_id = await self.get_line_id(
+                    linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+                )
                 query += " AND line_id = '" + str(line_id) + "' "
             if filters.get("shift"):
                 query += " AND shift in (" + shift + ") "
@@ -390,7 +444,7 @@ class Export_P_Chart_CRUD:
             raise RuntimeError(f"Database query failed: {str(e)}")
 
     async def fetch_filtered_master_target_line(
-        self, db: AsyncSession, filters: Dict
+        self, db: AsyncSession, db_common_pg_async: AsyncSession, filters: Dict
     ) -> List[Dict]:
         """
         Fetch filtered records from the `pchart_defect_record` table.
@@ -403,7 +457,9 @@ class Export_P_Chart_CRUD:
             if filters.get("month"):
                 query += " AND month_year = '" + filters["month"] + "' "
             if filters.get("line_name"):
-                line_id = self.get_line_id(filters["line_name"])
+                line_id = await self.get_line_id(
+                    linename=filters["line_name"], db_common_pg_async=db_common_pg_async
+                )
                 query += " AND line_id = '" + str(line_id) + "' "
             if filters.get("part_no"):
                 query += (

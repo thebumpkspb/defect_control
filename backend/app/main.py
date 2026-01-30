@@ -81,7 +81,7 @@ app.include_router(
     approval_routers(get_epddev_pg_async_db), prefix="/api/approval", tags=["Approval"]
 )
 app.include_router(
-    settings_routers(get_common_pg_async_db, get_prod_ms_db),
+    settings_routers(get_common_pg_async_db, get_prod_ms_db, get_epddev_pg_async_db),
     prefix="/api/settings",
     tags=["Settings"],
 )
@@ -91,28 +91,38 @@ app.include_router(
 )
 
 app.include_router(
-    settings_target_routers(get_epddev_pg_async_db),
+    settings_target_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/settings_target",
     tags=["Settings Target"],
 )
 app.include_router(
-    settings_target_org_routers(get_epddev_pg_async_db),
+    settings_target_org_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/settings_target_org",
     tags=["Settings Target Org"],
 )
 app.include_router(
-    settings_defect_mode_routers(get_epddev_pg_async_db),
+    settings_defect_mode_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/settings_defect_mode",
     tags=["Settings Defect Mode"],
 )
 app.include_router(
-    settings_subpart_routers(get_epddev_pg_async_db),
+    settings_subpart_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/settings_sub_part",
     tags=["Settings Sub Part"],
 )
 
 app.include_router(
-    p_chart_record_routers(get_epddev_pg_async_db),
+    p_chart_record_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/p_chart_record",
     tags=["P-Chart Record"],
 )
@@ -124,7 +134,9 @@ app.include_router(
     tags=["Inline & Outline Defect Summary"],
 )
 app.include_router(
-    export_p_chart_routers(get_epddev_pg_async_db),
+    export_p_chart_routers(
+        get_epddev_pg_async_db, get_common_pg_async_db, get_prod_ms_db, get_prod_my_db
+    ),
     prefix="/api/export_p_chart",
     tags=["Export P-Chart"],
 )

@@ -7,7 +7,30 @@ from dotenv import load_dotenv
 import requests
 import json
 import os
-
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    # OrganizeLevelResponse,
+    # LinePartResponse,
+    # PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    # SectionResponse,
+    # SymbolResponse,
+    # LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 from app.functions import (
     convert_month_year_to_date,
     get_first_and_last_date_of_month,
@@ -22,27 +45,42 @@ class P_Chart_Record_CRUD:
     def __init__(self):
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
 
-    def get_line_id(self, linename):
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
+
+    async def get_line_id(self, linename, db_common_pg_async: AsyncSession):
         id_linename = None
         list_line = []
         list_line_id = []
-
-        try:
-            ## get list_line_id, list_line_name from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # try:
+        #     ## get list_line_id, list_line_name from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         index_select = list_line.index(linename)
         id_linename = list_line_id[index_select]
@@ -50,7 +88,10 @@ class P_Chart_Record_CRUD:
         return id_linename
 
     async def general_information(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -60,7 +101,9 @@ class P_Chart_Record_CRUD:
         shift = data["shift"]
         process = data["process"]
         sub_line = data["sub_line"]
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -131,7 +174,10 @@ class P_Chart_Record_CRUD:
         return rs, select_target_control, data
 
     async def p_chart_record_graph(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -142,7 +188,9 @@ class P_Chart_Record_CRUD:
         process = data["process"]
         sub_line = data["sub_line"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -175,7 +223,10 @@ class P_Chart_Record_CRUD:
         return rs, data
 
     async def p_chart_record_table(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -184,7 +235,9 @@ class P_Chart_Record_CRUD:
         process = data["process"]
         sub_line = data["sub_line"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -213,6 +266,7 @@ class P_Chart_Record_CRUD:
     async def record_data_general_information(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         data_save: str | None = None,
     ):
@@ -246,7 +300,9 @@ class P_Chart_Record_CRUD:
             str(last_month) + "-" + str(year), "%m-%Y"
         ).strftime("%B-%Y")
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         p_bar_last = 0.0
         where_stmt = (
@@ -360,6 +416,7 @@ class P_Chart_Record_CRUD:
     async def p_chart_record_table_qty_defective_items(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         data_search: str | None = None,
     ):
@@ -375,7 +432,9 @@ class P_Chart_Record_CRUD:
         defect_type = data_search["defect_type"]
         defective_items = data_search["defective_items"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -439,6 +498,7 @@ class P_Chart_Record_CRUD:
     async def p_chart_record_table_qty_all_defective_items(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         data_search: str | None = None,
     ):
@@ -453,7 +513,9 @@ class P_Chart_Record_CRUD:
         # defect_type = data_search["defect_type"]
         # defective_items = data_search["defective_items"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -518,7 +580,10 @@ class P_Chart_Record_CRUD:
         return rs
 
     async def p_chart_record_table_p_bar_last_month(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -546,7 +611,9 @@ class P_Chart_Record_CRUD:
         )
 
         p_bar = 0
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -575,7 +642,10 @@ class P_Chart_Record_CRUD:
         return p_bar
 
     async def p_chart_record_table_p_bar_last_month_All(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -602,7 +672,9 @@ class P_Chart_Record_CRUD:
             "%B-%Y"
         )
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -638,6 +710,7 @@ class P_Chart_Record_CRUD:
     async def save_pchart_report_graph(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         graph_data: str | None = None,
     ):
@@ -654,7 +727,9 @@ class P_Chart_Record_CRUD:
 
         status = True
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -709,6 +784,7 @@ class P_Chart_Record_CRUD:
     async def save_pchart_report_table(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         graph_data: str | None = None,
     ):
@@ -725,7 +801,9 @@ class P_Chart_Record_CRUD:
 
         status = True
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -784,6 +862,7 @@ class P_Chart_Record_CRUD:
     async def add_new_record_view(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
         defect_mode: str | None = None,
     ):
@@ -796,7 +875,9 @@ class P_Chart_Record_CRUD:
         defect_type = data["defect_type"]
         defective_items = defect_mode
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -887,7 +968,10 @@ class P_Chart_Record_CRUD:
         return rs, data, sum_A, sum_B
 
     async def add_new_record_view_defect_mode(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -899,7 +983,9 @@ class P_Chart_Record_CRUD:
         if defect_type == "Repeat NG":
             defect_type = "Repeat"
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -926,7 +1012,10 @@ class P_Chart_Record_CRUD:
         return rs
 
     async def add_new_record_view_defect_mode_by_part(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -938,7 +1027,9 @@ class P_Chart_Record_CRUD:
         if defect_type == "Repeat NG":
             defect_type = "Repeat"
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -959,7 +1050,10 @@ class P_Chart_Record_CRUD:
         return rs
 
     async def change_new_record_view(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -970,7 +1064,9 @@ class P_Chart_Record_CRUD:
         defect_type = data["defect_type"]
         defective_items = data["defect_mode"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -1057,13 +1153,20 @@ class P_Chart_Record_CRUD:
 
         return rs, data, sum_A, sum_B
 
-    async def get_sub_part(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_sub_part(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
         line_name = data["line_name"]
         process = data["process"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -1087,7 +1190,10 @@ class P_Chart_Record_CRUD:
         return rs
 
     async def add_new_record_save(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
         # print("data:", data)
@@ -1116,7 +1222,9 @@ class P_Chart_Record_CRUD:
 
         ########
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -1206,7 +1314,9 @@ class P_Chart_Record_CRUD:
 
         status = True
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -1398,7 +1508,10 @@ class P_Chart_Record_CRUD:
         return data, qty_shift_a_sum, qty_shift_b_sum
 
     async def abnormal_occurrence_view(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -1409,7 +1522,9 @@ class P_Chart_Record_CRUD:
         process = data["process"]
         sub_line = data["sub_line"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         datetime_object = datetime.strptime(month + "-01", "%B-%Y-%d")
         month = str(datetime_object)[:7]
@@ -1461,7 +1576,10 @@ class P_Chart_Record_CRUD:
 
     # TODO: Need to check
     async def abnormal_occurrence_edit_save(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -1495,7 +1613,9 @@ class P_Chart_Record_CRUD:
         await db.execute(text(stmt))
         await db.commit()
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -1592,7 +1712,10 @@ class P_Chart_Record_CRUD:
         return data
 
     async def abnormal_occurrence_add_row_ok(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -1619,7 +1742,9 @@ class P_Chart_Record_CRUD:
 
         status = True
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -1685,7 +1810,10 @@ class P_Chart_Record_CRUD:
         return data
 
     async def history_records_view(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -1714,7 +1842,9 @@ class P_Chart_Record_CRUD:
         d_start = datetime.strptime(month + "-01", "%B-%Y-%d")
         d_end = datetime.strptime(month + "-" + str(day_in_month), "%B-%Y-%d")
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -1749,12 +1879,15 @@ class P_Chart_Record_CRUD:
         return rs, data
 
     async def history_records_edit_view(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
         date = data["date"]
-        line = data["line"]
+        line_name = data["line"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -1762,7 +1895,9 @@ class P_Chart_Record_CRUD:
         defect_type = data["defect_type"]
         defect_mode = data["defect_mode"]
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -1844,13 +1979,16 @@ class P_Chart_Record_CRUD:
         return data
 
     async def history_records_edit_save(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
         id = data["id"]
         date = data["date"]
-        line = data["line"]
+        line_name = data["line"]
         part_no = data["part_no"]
         pic = data["pic"]
         update_pic = f"'{pic}'" if pic != None else "NULL"
@@ -1880,7 +2018,9 @@ class P_Chart_Record_CRUD:
 
             ref_id = r[key_index["ref"]]
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check new record ??
         ## query db
@@ -2260,7 +2400,10 @@ class P_Chart_Record_CRUD:
         return data
 
     async def history_records_view_edit_save(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
@@ -2286,7 +2429,9 @@ class P_Chart_Record_CRUD:
         d_start = datetime.strptime(month + "-01", "%Y-%m-%d")
         d_end = datetime.strptime(month + "-" + str(day_in_month), "%Y-%m-%d")
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -2313,12 +2458,15 @@ class P_Chart_Record_CRUD:
         return rs
 
     async def history_records_delete(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
 
         date = data["date"]
-        line = data["line"]
+        line_name = data["line"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2329,7 +2477,9 @@ class P_Chart_Record_CRUD:
         creator = data["creator"]
         id = data["id"]
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         id_defective_items = None
@@ -2461,17 +2611,22 @@ class P_Chart_Record_CRUD:
         return data
 
     async def get_defect_qty_by_date(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
         date = data["date"]
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
         shift = data["shift"]
         shift = shift.lower()
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         where_stmt = ""
         if part_no and part_no != "null":
             where_stmt = where_stmt + f" and part_no='{part_no}'"
@@ -2507,11 +2662,14 @@ class P_Chart_Record_CRUD:
         }
 
     async def get_amount_action_record(
-        self, db: AsyncSession, where_stmt: str | None = None
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
         date = data["date"]
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2521,7 +2679,9 @@ class P_Chart_Record_CRUD:
         else:
             shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         stmt = f"""SELECT count(id) as amount_action_record FROM public.abnormal_occurrence
         where line_id='{line_id}' and part_no='{part_no}' and process='{process}' and sub_line='{sub_line}' and date='{date}' and shift in ({shift})
         """
@@ -2542,12 +2702,17 @@ class P_Chart_Record_CRUD:
             "amount_action_record": amount_action_record,
         }
 
-    async def get_record_by(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_record_by(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         # date = data["date"]
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2558,7 +2723,9 @@ class P_Chart_Record_CRUD:
         # else:
         #     shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         where_stmt = ""
         if part_no:
             where_stmt = where_stmt + f" AND part_no='{part_no}'"
@@ -2601,11 +2768,16 @@ class P_Chart_Record_CRUD:
             # amount_action_record = r[key_index["amount_action_record"]]
         return return_list
 
-    async def get_review_by_tl(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_review_by_tl(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2616,7 +2788,9 @@ class P_Chart_Record_CRUD:
         else:
             shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         where_stmt = ""
         if part_no:
             where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
@@ -2661,11 +2835,16 @@ class P_Chart_Record_CRUD:
             )
         return return_list
 
-    async def get_review_by_mgr(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_review_by_mgr(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2676,7 +2855,9 @@ class P_Chart_Record_CRUD:
         else:
             shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         where_stmt = ""
         if part_no:
             where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
@@ -2735,11 +2916,16 @@ class P_Chart_Record_CRUD:
         # print("return_list:", return_list)
         return return_list
 
-    async def get_review_by_gm(self, db: AsyncSession, where_stmt: str | None = None):
+    async def get_review_by_gm(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2750,7 +2936,9 @@ class P_Chart_Record_CRUD:
         else:
             shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         where_stmt = ""
         if part_no:
             where_stmt = where_stmt + f" AND (part_no is null or part_no='{part_no}')"
@@ -2812,6 +3000,7 @@ class P_Chart_Record_CRUD:
     async def get_defect_qty(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         first_date: str,
         last_date: str,
         where_stmt: str | None = None,
@@ -2820,7 +3009,7 @@ class P_Chart_Record_CRUD:
         # date = data["date"]
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2831,7 +3020,9 @@ class P_Chart_Record_CRUD:
         # else:
         #     shift = f"'{shift}'"
 
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         stmt = f"""
         SELECT sum(qty_shift_{shift}) as defect_qty FROM public.pchart_defect_record
         where line_id={str(line_id)} 
@@ -2864,19 +3055,22 @@ class P_Chart_Record_CRUD:
     async def count_data_record(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
         # date = data["date"]
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
         shift = data["shift"].lower()
         first_date, last_date = get_first_and_last_date_of_month(date)
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         stmt = f"""
         SELECT count(id) as count FROM public.pchart_defect_record
             where line_id ={line_id} and date >='{first_date}' and date <='{last_date}'
@@ -2905,13 +3099,14 @@ class P_Chart_Record_CRUD:
     async def get_initial_pbar(
         self,
         db: AsyncSession,
+        db_common_pg_async: AsyncSession,
         where_stmt: str | None = None,
     ):
         data = where_stmt.dict()
         # date = data["date"]
         month = data["month"]
         date = convert_month_year_to_date(month)
-        line = data["line_name"]
+        line_name = data["line_name"]
         part_no = data["part_no"]
         process = data["process"]
         sub_line = data["sub_line"]
@@ -2920,7 +3115,9 @@ class P_Chart_Record_CRUD:
         first_date, last_date = get_first_and_last_date_of_month(
             date=date, previous_month=True
         )
-        line_id = self.get_line_id(line)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         stmt = f"""
         SELECT * FROM public.initial_pbar
             where line_id ={line_id} and month_year ='{first_date}' 

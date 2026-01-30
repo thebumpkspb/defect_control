@@ -22,79 +22,49 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    OrganizeLevelResponse,
+    # LinePartResponse,
+    PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    SectionResponse,
+    # SymbolResponse,
+    LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
+
 
 class Settings_Defect_Mode_Manager:
     def __init__(self):
         self.crud = Settings_Defect_Mode_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
 
-    async def post_table_view(self, text_data: str, db: AsyncSession = None):
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
 
-        if not text_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
-            )
-
-        ## get data from db
-        res, data = await self.crud.table_view(db=db, where_stmt=text_data)
-        return_list = []
-
-        try:
-            c = 0
-            for r in res:
-                c += 1
-                key_index = r._key_to_index
-
-                return_list.append(
-                    Setting_Table_Result(
-                        id=r[key_index["id"]],
-                        # id = c,
-                        line_name=data["line_name"],
-                        process=r[key_index["process"]],
-                        part_no=r[key_index["part_no"]],
-                        part_name=r[key_index["part_name"]],
-                        defect_type=r[key_index["defect_type"]],
-                        defect_mode=r[key_index["defect_mode"]],
-                        category=r[key_index["category"]],
-                        target_by_piece=r[key_index["target_by_piece"]],
-                        master_defect_index=r[key_index["master_defect_index"]],
-                    )
-                )
-            if len(return_list) == 0:
-                return_list.append(
-                    Setting_Table_Result(
-                        id=0,
-                        line_name="",
-                        process="",
-                        part_no="",
-                        part_name="",
-                        defect_type="",
-                        category=[],
-                        target_by_piece=None,
-                        master_defect_index=0,
-                    )
-                )
-            return return_list
-
-        except:
-            return_list.append(
-                Setting_Table_Result(
-                    id=0,
-                    line_name="",
-                    process="",
-                    part_no="",
-                    part_name="",
-                    defect_type="",
-                    category=[],
-                    target_by_piece=None,
-                    master_defect_index=0,
-                )
-            )
-            return return_list
-
-    async def post_table_view_action_record(
-        self, text_data: str, db: AsyncSession = None
+    async def post_table_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -103,8 +73,8 @@ class Settings_Defect_Mode_Manager:
             )
 
         ## get data from db
-        res, data = await self.crud.table_view_action_record(
-            db=db, where_stmt=text_data
+        res, data = await self.crud.table_view(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         return_list = []
 
@@ -161,27 +131,12 @@ class Settings_Defect_Mode_Manager:
             )
             return return_list
 
-    async def post_table_edit_view(self, text_data: str, db: AsyncSession = None):
-
-        list_line = []
-        list_line_id = []
-        data = text_data.dict()
-        part_no = data["part_no"]
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+    async def post_table_view_action_record(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -189,7 +144,110 @@ class Settings_Defect_Mode_Manager:
             )
 
         ## get data from db
-        res, data = await self.crud.table_edit_view(db=db, where_stmt=text_data)
+        res, data = await self.crud.table_view_action_record(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
+        return_list = []
+
+        try:
+            c = 0
+            for r in res:
+                c += 1
+                key_index = r._key_to_index
+
+                return_list.append(
+                    Setting_Table_Result(
+                        id=r[key_index["id"]],
+                        # id = c,
+                        line_name=data["line_name"],
+                        process=r[key_index["process"]],
+                        part_no=r[key_index["part_no"]],
+                        part_name=r[key_index["part_name"]],
+                        defect_type=r[key_index["defect_type"]],
+                        defect_mode=r[key_index["defect_mode"]],
+                        category=r[key_index["category"]],
+                        target_by_piece=r[key_index["target_by_piece"]],
+                        master_defect_index=r[key_index["master_defect_index"]],
+                    )
+                )
+            if len(return_list) == 0:
+                return_list.append(
+                    Setting_Table_Result(
+                        id=0,
+                        line_name="",
+                        process="",
+                        part_no="",
+                        part_name="",
+                        defect_type="",
+                        category=[],
+                        target_by_piece=None,
+                        master_defect_index=0,
+                    )
+                )
+            return return_list
+
+        except:
+            return_list.append(
+                Setting_Table_Result(
+                    id=0,
+                    line_name="",
+                    process="",
+                    part_no="",
+                    part_name="",
+                    defect_type="",
+                    category=[],
+                    target_by_piece=None,
+                    master_defect_index=0,
+                )
+            )
+            return return_list
+
+    async def post_table_edit_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
+
+        list_line = []
+        list_line_id = []
+        data = text_data.dict()
+        part_no = data["part_no"]
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
+            )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
+
+        if not text_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
+            )
+
+        ## get data from db
+        res, data = await self.crud.table_edit_view(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -198,38 +256,63 @@ class Settings_Defect_Mode_Manager:
 
                 index_select = list_line.index(data["line_name"])
                 select_line_id = list_line_id[index_select]
-
-                try:
-                    ## get part_no, part_name from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                list_part_no = []
+                list_part_name = []
+                list_parts = []
 
-                    list_part_no = []
-                    list_part_name = []
-                    list_parts = []
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                    list_part_name.append(response_json["parts"][i]["part_name"])
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
-                        list_part_name.append(response_json["parts"][i]["part_name"])
-
-                        list_parts.append(
-                            {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                        )
-                    if part_no:
-                        index_select = list_part_no.index(r[key_index["part_no"]])
-                        select_part_name = list_part_name[index_select]
-                    else:
-                        select_part_name = ""
-
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
+                    list_parts.append(
+                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                     )
+                if part_no:
+                    index_select = list_part_no.index(r[key_index["part_no"]])
+                    select_part_name = list_part_name[index_select]
+                else:
+                    select_part_name = ""
+                # try:
+                #     ## get part_no, part_name from api
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
+
+                #     list_part_no = []
+                #     list_part_name = []
+                #     list_parts = []
+
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
+                #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+                #         list_parts.append(
+                #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                #         )
+                #     if part_no:
+                #         index_select = list_part_no.index(r[key_index["part_no"]])
+                #         select_part_name = list_part_name[index_select]
+                #     else:
+                #         select_part_name = ""
+
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
                 return_list.append(
                     Setting_Table_Edit_Result(
@@ -307,27 +390,39 @@ class Settings_Defect_Mode_Manager:
             return return_list
 
     async def post_table_edit_view_line_name_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -348,28 +443,46 @@ class Settings_Defect_Mode_Manager:
             list_part_name = []
             list_parts = []
 
-            try:
-                ## get part_no, part_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/parts_by_line?line_id="
-                    + str(select_line_id)
+            response = PartLineResponse(
+                parts=await self.setting_manager.get_parts_by_line(
+                    line_id=str(select_line_id),
+                    process=None,
+                    app_db=db,
+                    db=db_common_pg_async,
                 )
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["parts"])):
+                list_part_no.append(response_json["parts"][i]["part_no"])
+                list_part_name.append(response_json["parts"][i]["part_name"])
 
-                for i in range(0, len(response_json["parts"])):
-                    list_part_no.append(response_json["parts"][i]["part_no"])
-                    list_part_name.append(response_json["parts"][i]["part_name"])
-
-                    list_parts.append(
-                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                    )
-
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
+                list_parts.append(
+                    {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                 )
+
+            # try:
+            #     ## get part_no, part_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/parts_by_line?line_id="
+            #         + str(select_line_id)
+            #     )
+            #     response_json = requests.get(endpoint, headers=headers).json()
+
+            #     for i in range(0, len(response_json["parts"])):
+            #         list_part_no.append(response_json["parts"][i]["part_no"])
+            #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+            #         list_parts.append(
+            #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+            #         )
+
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
             return_list.append(
                 Setting_Table_Edit_Result(
                     line_name=[res["line_name"]],
@@ -394,7 +507,12 @@ class Settings_Defect_Mode_Manager:
             )
             return return_list
 
-    async def post_table_edit_save(self, text_data: str, db: AsyncSession = None):
+    async def post_table_edit_save(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -402,7 +520,9 @@ class Settings_Defect_Mode_Manager:
             )
 
         ## get data from db
-        res = await self.crud.table_edit_save(db=db, where_stmt=text_data)
+        res = await self.crud.table_edit_save(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -465,7 +585,12 @@ class Settings_Defect_Mode_Manager:
                 detail=f"Unable to post_table_re_index because {e}",
             )
 
-    async def post_table_delete(self, text_data: str, db: AsyncSession = None):
+    async def post_table_delete(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -473,7 +598,9 @@ class Settings_Defect_Mode_Manager:
             )
 
         ## get data from db
-        res = await self.crud.table_delete(db=db, where_stmt=text_data)
+        res = await self.crud.table_delete(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -502,26 +629,41 @@ class Settings_Defect_Mode_Manager:
                 detail=f"Unable to post_table_delete because {e}",
             )
 
-    async def post_add_row_view(self, text_data: str, db: AsyncSession = None):
+    async def post_add_row_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         list_line = []
         list_line_id = []
 
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -535,35 +677,61 @@ class Settings_Defect_Mode_Manager:
         index_select = list_line.index(res["line_name"])
         select_line_id = list_line_id[index_select]
 
-        try:
-            ## get part_no, part_name from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/parts_by_line?line_id="
-                + str(select_line_id)
+        response = PartLineResponse(
+            parts=await self.setting_manager.get_parts_by_line(
+                line_id=str(select_line_id),
+                process=None,
+                app_db=db,
+                db=db_common_pg_async,
             )
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        list_part_no = []
+        list_part_name = []
+        list_parts = []
 
-            list_part_no = []
-            list_part_name = []
-            list_parts = []
+        for i in range(0, len(response_json["parts"])):
+            list_part_no.append(response_json["parts"][i]["part_no"])
+            list_part_name.append(response_json["parts"][i]["part_name"])
 
-            for i in range(0, len(response_json["parts"])):
-                list_part_no.append(response_json["parts"][i]["part_no"])
-                list_part_name.append(response_json["parts"][i]["part_name"])
-
-                list_parts.append(
-                    {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                )
-
+            list_parts.append(
+                {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+            )
+        if res["part_no"] == "" or res["part_no"] == None:
+            select_part_name = ""
+        else:
             index_select = list_part_no.index(res["part_no"])
             select_part_name = list_part_name[index_select]
+        # try:
+        #     ## get part_no, part_name from api
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/parts_by_line?line_id="
+        #         + str(select_line_id)
+        #     )
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        #     list_part_no = []
+        #     list_part_name = []
+        #     list_parts = []
+
+        #     for i in range(0, len(response_json["parts"])):
+        #         list_part_no.append(response_json["parts"][i]["part_no"])
+        #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+        #         list_parts.append(
+        #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+        #         )
+
+        #     index_select = list_part_no.index(res["part_no"])
+        #     select_part_name = list_part_name[index_select]
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         try:
             return_list.append(
@@ -622,28 +790,41 @@ class Settings_Defect_Mode_Manager:
             return return_list
 
     async def post_add_row_view_line_name_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         list_line = []
         list_line_id = []
         data = text_data.dict()
         process = data["process"]
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if not text_data:
             raise HTTPException(
@@ -662,7 +843,9 @@ class Settings_Defect_Mode_Manager:
             list_part_name = []
             list_parts = []
             if process and process == "Outline":
-                result = await self.crud.get_sub_part(db=db, where_stmt=text_data)
+                result = await self.crud.get_sub_part(
+                    db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+                )
                 for r in result:
                     key_index = r._key_to_index
 
@@ -673,29 +856,46 @@ class Settings_Defect_Mode_Manager:
                         }
                     )
             else:
-                try:
-                    ## get part_no, part_name from api
-
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                    list_part_name.append(response_json["parts"][i]["part_name"])
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
-                        list_part_name.append(response_json["parts"][i]["part_name"])
-
-                        list_parts.append(
-                            {"part_no": list_part_no[i], "part_name": list_part_name[i]}
-                        )
-
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
+                    list_parts.append(
+                        {"part_no": list_part_no[i], "part_name": list_part_name[i]}
                     )
+                # try:
+                #     ## get part_no, part_name from api
+
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
+
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
+                #         list_part_name.append(response_json["parts"][i]["part_name"])
+
+                #         list_parts.append(
+                #             {"part_no": list_part_no[i], "part_name": list_part_name[i]}
+                #         )
+
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
             return_list.append(
                 Add_Row_View_Result(
@@ -722,7 +922,12 @@ class Settings_Defect_Mode_Manager:
             )
             return return_list
 
-    async def post_add_row_ok(self, text_data: str, db: AsyncSession = None):
+    async def post_add_row_ok(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -730,7 +935,9 @@ class Settings_Defect_Mode_Manager:
             )
 
         ## get data from db
-        res = await self.crud.add_row_ok(db=db, where_stmt=text_data)
+        res = await self.crud.add_row_ok(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:

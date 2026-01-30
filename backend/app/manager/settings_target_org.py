@@ -20,6 +20,31 @@ from app.crud.settings_target_org import Settings_Target_Org_CRUD
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    OrganizeLevelResponse,
+    # LinePartResponse,
+    PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    SectionResponse,
+    # SymbolResponse,
+    LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 
 
 class Settings_Target_Org_Manager:
@@ -27,6 +52,11 @@ class Settings_Target_Org_Manager:
         self.crud = Settings_Target_Org_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
+
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
 
     async def post_table_view(self, text_data: str, db: AsyncSession = None):
 
@@ -80,7 +110,12 @@ class Settings_Target_Org_Manager:
             )
             return return_list
 
-    async def post_table_edit_view(self, text_data: str, db: AsyncSession = None):
+    async def post_table_edit_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -115,29 +150,41 @@ class Settings_Target_Org_Manager:
             level = "section"
         elif list_target_level[0] == "Line":
             level = "line"
-
-        try:
-            ## get org_name from api
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/organize_level?org_level="
-                + level
+        response = OrganizeLevelResponse(
+            data=await self.setting_manager.get_organize_level(
+                org_level=level, db=db_common_pg_async
             )
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["data"])):
+            if (
+                response_json["data"][i]["group_type"] == "DIR"
+                or response_json["data"][i]["group_type"] == None
+            ):
+                list_target_name.append(response_json["data"][i]["org_name"])
+        # try:
+        #     ## get org_name from api
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/organize_level?org_level="
+        #         + level
+        #     )
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["data"])):
-                if (
-                    response_json["data"][i]["group_type"] == "DIR"
-                    or response_json["data"][i]["group_type"] == None
-                ):
-                    list_target_name.append(response_json["data"][i]["org_name"])
+        #     for i in range(0, len(response_json["data"])):
+        #         if (
+        #             response_json["data"][i]["group_type"] == "DIR"
+        #             or response_json["data"][i]["group_type"] == None
+        #         ):
+        #             list_target_name.append(response_json["data"][i]["org_name"])
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         return_list = []
 
@@ -179,7 +226,10 @@ class Settings_Target_Org_Manager:
             return return_list
 
     async def post_table_edit_view_target_level_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -203,29 +253,41 @@ class Settings_Target_Org_Manager:
                 level = "section"
             elif res["target_level"] == "Line":
                 level = "line"
-
-            try:
-                ## get org_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/organize_level?org_level="
-                    + level
+            response = OrganizeLevelResponse(
+                data=await self.setting_manager.get_organize_level(
+                    org_level=level, db=db_common_pg_async
                 )
-                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["data"])):
+                if (
+                    response_json["data"][i]["group_type"] == "DIR"
+                    or response_json["data"][i]["group_type"] == None
+                ):
+                    list_target_name.append(response_json["data"][i]["org_name"])
+            # try:
+            #     ## get org_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/organize_level?org_level="
+            #         + level
+            #     )
+            #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["data"])):
-                    if (
-                        response_json["data"][i]["group_type"] == "DIR"
-                        or response_json["data"][i]["group_type"] == None
-                    ):
-                        list_target_name.append(response_json["data"][i]["org_name"])
+            #     for i in range(0, len(response_json["data"])):
+            #         if (
+            #             response_json["data"][i]["group_type"] == "DIR"
+            #             or response_json["data"][i]["group_type"] == None
+            #         ):
+            #             list_target_name.append(response_json["data"][i]["org_name"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             return_list.append(
                 Setting_Table_Edit_Result(
@@ -335,7 +397,12 @@ class Settings_Target_Org_Manager:
                 detail=f"Unable to post_table_delete because {e}",
             )
 
-    async def post_add_row_view(self, text_data: str, db: AsyncSession = None):
+    async def post_add_row_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -357,29 +424,41 @@ class Settings_Target_Org_Manager:
                 level = "section"
             elif res["target_level"] == "Line":
                 level = "line"
-
-            try:
-                ## get org_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/organize_level?org_level="
-                    + level
+            response = OrganizeLevelResponse(
+                data=await self.setting_manager.get_organize_level(
+                    org_level=level, db=db_common_pg_async
                 )
-                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["data"])):
+                if (
+                    response_json["data"][i]["group_type"] == "DIR"
+                    or response_json["data"][i]["group_type"] == None
+                ):
+                    list_target_name.append(response_json["data"][i]["org_name"])
+            # try:
+            #     ## get org_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/organize_level?org_level="
+            #         + level
+            #     )
+            #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["data"])):
-                    if (
-                        response_json["data"][i]["group_type"] == "DIR"
-                        or response_json["data"][i]["group_type"] == None
-                    ):
-                        list_target_name.append(response_json["data"][i]["org_name"])
+            #     for i in range(0, len(response_json["data"])):
+            #         if (
+            #             response_json["data"][i]["group_type"] == "DIR"
+            #             or response_json["data"][i]["group_type"] == None
+            #         ):
+            #             list_target_name.append(response_json["data"][i]["org_name"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             return_list.append(
                 Add_Row_View_Result(
@@ -417,7 +496,10 @@ class Settings_Target_Org_Manager:
             return return_list
 
     async def post_add_row_view_target_level_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -442,29 +524,41 @@ class Settings_Target_Org_Manager:
                 level = "section"
             elif res["target_level"] == "Line":
                 level = "line"
-
-            try:
-                ## get org_name from api
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/settings/organize_level?org_level="
-                    + level
+            response = OrganizeLevelResponse(
+                data=await self.setting_manager.get_organize_level(
+                    org_level=level, db=db_common_pg_async
                 )
-                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-                response_json = requests.get(endpoint, headers=headers).json()
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["data"])):
+                if (
+                    response_json["data"][i]["group_type"] == "DIR"
+                    or response_json["data"][i]["group_type"] == None
+                ):
+                    list_target_name.append(response_json["data"][i]["org_name"])
+            # try:
+            #     ## get org_name from api
+            #     endpoint = (
+            #         self.BACKEND_URL_SERVICE
+            #         + "/api/settings/organize_level?org_level="
+            #         + level
+            #     )
+            #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            #     response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["data"])):
-                    if (
-                        response_json["data"][i]["group_type"] == "DIR"
-                        or response_json["data"][i]["group_type"] == None
-                    ):
-                        list_target_name.append(response_json["data"][i]["org_name"])
+            #     for i in range(0, len(response_json["data"])):
+            #         if (
+            #             response_json["data"][i]["group_type"] == "DIR"
+            #             or response_json["data"][i]["group_type"] == None
+            #         ):
+            #             list_target_name.append(response_json["data"][i]["org_name"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             return_list.append(
                 Add_Row_View_Result(

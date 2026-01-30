@@ -26,6 +26,7 @@ from app.schemas.settings import (
     Symbol,
     LineSection,
     SubLine,
+    SubLineResponse,
 )
 from app.crud import SettingsCRUD
 from app.functions import is_empty_or_none
@@ -446,25 +447,87 @@ class SettingsManager:
             )
         return return_list
 
-    async def get_parts_by_line(self, line_id: int, db: AsyncSession = None):
-        where_stmt = f" AND line_id = {line_id}"
-        res = await self.crud.get_line_parts(where_stmt=where_stmt, db=db)
+    async def get_parts_by_line(
+        self,
+        line_id: int,
+        process: str,
+        db: AsyncSession = None,
+        app_db: AsyncSession = None,
+    ):
         return_list = []
-        for r in res:
-            key_index = r._key_to_index
-            return_list.append(
-                PartLine(
-                    part_id=r[key_index["part_id"]],
-                    part_no=r[key_index["pno"]],
-                    part_no_suffix=r[key_index["part_no_suffix"]],
-                    part_name=r[key_index["part_name"]],
-                    part_model=r[key_index["part_model"]],
-                    part_type=r[key_index["part_type"]],
-                    product_id=r[key_index["product_id"]],
-                    line_id=r[key_index["line_id"]],
+        if process != "Outline":
+            where_stmt = f" AND line_id = {line_id}"
+            res = await self.crud.get_line_parts(where_stmt=where_stmt, db=db)
+
+            for r in res:
+                key_index = r._key_to_index
+                return_list.append(
+                    PartLine(
+                        part_id=r[key_index["part_id"]],
+                        part_no=r[key_index["pno"]],
+                        part_no_suffix=r[key_index["part_no_suffix"]],
+                        part_name=r[key_index["part_name"]],
+                        part_model=r[key_index["part_model"]],
+                        part_type=r[key_index["part_type"]],
+                        product_id=r[key_index["product_id"]],
+                        line_id=r[key_index["line_id"]],
+                    )
                 )
+        elif process == "Outline":
+
+            res = await self.crud.get_line_sub_parts(
+                app_db=app_db, line_id=str(line_id)
             )
+            return_list = []
+            for r in res:
+                key_index = r._key_to_index
+                return_list.append(
+                    PartLine(
+                        part_id=r[key_index["id"]],
+                        part_no=r[key_index["sub_part_no"]],
+                        part_no_suffix=None,
+                        part_name=r[key_index["sub_part_name"]],
+                        part_model=None,
+                        part_type=None,
+                        product_id=None,
+                        line_id=r[key_index["line_id"]],
+                    )
+                )
         return return_list
+
+    async def get_sub_lines_by_partline(
+        self, line_code_rx: str, part_no: str, db: AsyncSession = None
+    ):
+        # where_stmt = f" AND line_id = {line_id}"
+        # res = await self.crud.get_line_parts(where_stmt=where_stmt, db=db)
+        # return_list = []
+        # try:
+        ## get list_line_id, list_line_name from api
+        # print("self.BACKEND_URL_SERVICE:", self.BACKEND_URL_SERVICE)
+        # endpoint = (
+        #     self.BACKEND_URL_SERVICE
+        #     + f"/api/settings/sub_lines?line_code_rx={line_code_rx}&part_no={part_no}"
+        # )
+
+        # headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        # sub_lines = requests.get(endpoint, headers=headers).json()["sub_lines"]
+        sub_lines_res = SubLineResponse(
+            sub_lines=await self.get_sub_lines(
+                line_code_rx=line_code_rx, part_no=part_no, db=db
+            )
+        )
+        sub_lines_str = sub_lines_res.json()
+        sub_lines_json = json.loads(sub_lines_str)
+        sub_lines = sub_lines_json["sub_lines"]
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
+        # for r in res:
+        # key_index = r._key_to_index
+        # return_list.append(SubLines(part_no="aa", process="ss", rxno_part="123"))
+        return sub_lines
 
     async def get_parts_by_org(
         self, org_name: str, org_level: str | None, db: AsyncSession = None

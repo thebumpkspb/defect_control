@@ -9,7 +9,12 @@ from app.functions import api_key_auth
 from app.manager import Export_P_Chart_Manager
 
 
-def export_p_chart_routers(db: AsyncGenerator) -> APIRouter:
+def export_p_chart_routers(
+    db: AsyncGenerator,
+    db_common_pg_async: AsyncGenerator,
+    db_prod_ms: AsyncGenerator,
+    db_prod_my: AsyncGenerator,
+) -> APIRouter:
     router = APIRouter()
     export_p_chart_manager = Export_P_Chart_Manager()
 
@@ -33,6 +38,9 @@ def export_p_chart_routers(db: AsyncGenerator) -> APIRouter:
             None, description="Filter records updated before this date"
         ),
         db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
+        db_prod_ms: AsyncSession = Depends(db_prod_ms),
+        db_prod_my: AsyncSession = Depends(db_prod_my),
     ):
         """
         Endpoint to query `pchart_defect_record` table with filter options.
@@ -53,7 +61,11 @@ def export_p_chart_routers(db: AsyncGenerator) -> APIRouter:
             }
             # print("filters:", filters)
             records = await export_p_chart_manager.fetch_pchart_defect_records_service(
-                filters=filters, db=db
+                filters=filters,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
             now = datetime.now()
 

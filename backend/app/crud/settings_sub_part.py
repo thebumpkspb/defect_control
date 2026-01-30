@@ -6,6 +6,30 @@ from dotenv import load_dotenv
 import requests
 import json
 import os
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    # OrganizeLevelResponse,
+    # LinePartResponse,
+    # PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    # SectionResponse,
+    # SymbolResponse,
+    # LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 
 load_dotenv()
 
@@ -14,36 +38,56 @@ class Settings_SubPart_CRUD:
     def __init__(self):
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
 
-    def get_line_id(self, linename):
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
+
+    async def get_line_id(self, linename, db_common_pg_async: AsyncSession):
         id_linename = None
         list_line = []
         list_line_id = []
-
-        try:
-            ## get list_line_id, list_line_name from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
-        print("get_line_id")
-        print("list_line:", list_line)
-        print("linename:", linename)
+        )
+        print("type(db_common_pg_async):", type(db_common_pg_async))
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get list_line_id, list_line_name from api
+        #     endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        #     headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
+        # print("get_line_id")
+        # print("list_line:", list_line)
+        # print("linename:", linename)
         index_select = list_line.index(linename)
         id_linename = list_line_id[index_select]
 
         return str(id_linename)
 
-    async def table_view(self, db: AsyncSession, where_stmt: str | None = None):
+    async def table_view(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
         line_name = data["line_name"]
@@ -55,7 +99,9 @@ class Settings_SubPart_CRUD:
         ## query db
         where_stmt = " active = 'active' "
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## check filter
         if line_name != "":
@@ -75,7 +121,12 @@ class Settings_SubPart_CRUD:
         # print("stmt: ", stmt)
         return rs, data
 
-    async def table_edit_view(self, db: AsyncSession, where_stmt: str | None = None):
+    async def table_edit_view(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         print("data:", data)
         line_name = data["line_name"]
@@ -87,7 +138,9 @@ class Settings_SubPart_CRUD:
         sub_part_name = data["sub_part_name"]
         unit_consumption = data["unit_consumption"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
         line_id_str = str(line_id) if line_id else "0"
         print("line_id:", line_id)
         print("line_id_str:", line_id_str)
@@ -124,7 +177,12 @@ class Settings_SubPart_CRUD:
 
         return data
 
-    async def table_edit_save(self, db: AsyncSession, where_stmt: str | None = None):
+    async def table_edit_save(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
         print("data:", data)
         line_name = data["line_name"]
@@ -139,7 +197,9 @@ class Settings_SubPart_CRUD:
         creator = data["creator"]
         id = data["id"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         status = True
 
@@ -197,7 +257,12 @@ class Settings_SubPart_CRUD:
 
         return data
 
-    async def table_delete(self, db: AsyncSession, where_stmt: str | None = None):
+    async def table_delete(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
         line_name = data["line_name"]
@@ -209,7 +274,9 @@ class Settings_SubPart_CRUD:
         sub_part_name = data["sub_part_name"]
         unit_consumption = data["unit_consumption"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         ## query db
         where_stmt = (
@@ -250,7 +317,12 @@ class Settings_SubPart_CRUD:
 
         return data
 
-    async def add_row_ok(self, db: AsyncSession, where_stmt: str | None = None):
+    async def add_row_ok(
+        self,
+        db: AsyncSession,
+        db_common_pg_async: AsyncSession,
+        where_stmt: str | None = None,
+    ):
         data = where_stmt.dict()
 
         line_name = data["line_name"]
@@ -264,7 +336,9 @@ class Settings_SubPart_CRUD:
         unit_consumption = data["unit_consumption"]
         creator = data["creator"]
 
-        line_id = self.get_line_id(line_name)
+        line_id = await self.get_line_id(
+            linename=line_name, db_common_pg_async=db_common_pg_async
+        )
 
         status = True
 

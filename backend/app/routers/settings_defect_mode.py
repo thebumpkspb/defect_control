@@ -23,7 +23,12 @@ from app.schemas.settings_defect_mode import (
 )
 
 
-def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
+def settings_defect_mode_routers(
+    db: AsyncGenerator,
+    db_common_pg_async: AsyncGenerator,
+    db_prod_ms: AsyncGenerator,
+    db_prod_my: AsyncGenerator,
+) -> APIRouter:
     router = APIRouter()
     settings_defect_mode_manager = Settings_Defect_Mode_Manager()
 
@@ -33,7 +38,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_view(
-        text_data: Setting_Table, db: AsyncSession = Depends(db)
+        text_data: Setting_Table,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example
@@ -42,7 +49,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Result_Response(
             setting_table_result=await settings_defect_mode_manager.post_table_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -52,7 +59,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_view(
-        text_data: Setting_Table, db: AsyncSession = Depends(db)
+        text_data: Setting_Table,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example
@@ -61,7 +70,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Result_Response(
             setting_table_result=await settings_defect_mode_manager.post_table_view_action_record(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -71,7 +80,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_edit_view(
-        text_data: Setting_Table_Edit, db: AsyncSession = Depends(db)
+        text_data: Setting_Table_Edit,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -79,7 +90,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Edit_Result_Response(
             setting_table_edit_result=await settings_defect_mode_manager.post_table_edit_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -89,7 +100,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_edit_view_line_name_change(
-        text_data: Setting_Table, db: AsyncSession = Depends(db)
+        text_data: Setting_Table,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -97,7 +110,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Edit_Result_Response(
             setting_table_edit_result=await settings_defect_mode_manager.post_table_edit_view_line_name_change(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -107,7 +120,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_edit_save(
-        text_data: Setting_Table_Edit_Save, db: AsyncSession = Depends(db)
+        text_data: Setting_Table_Edit_Save,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -115,7 +130,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Edit_Save_Response(
             setting_table_edit_save=await settings_defect_mode_manager.post_table_edit_save(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -143,7 +158,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_table_delete(
-        text_data: Setting_Table_Result, db: AsyncSession = Depends(db)
+        text_data: Setting_Table_Result,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -151,7 +168,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Setting_Table_Result_Response(
             setting_table_result=await settings_defect_mode_manager.post_table_delete(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -161,7 +178,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_add_row_view(
-        text_data: Add_Row_View, db: AsyncSession = Depends(db)
+        text_data: Add_Row_View,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -169,7 +188,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_Row_View_Result_Response(
             add_row_view_result=await settings_defect_mode_manager.post_add_row_view(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -179,7 +198,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_add_row_view_line_name_change(
-        text_data: Add_Row_View, db: AsyncSession = Depends(db)
+        text_data: Add_Row_View,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example \n
@@ -187,7 +208,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_Row_View_Result_Response(
             add_row_view_result=await settings_defect_mode_manager.post_add_row_view_line_name_change(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 
@@ -197,7 +218,9 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         dependencies=[Depends(api_key_auth)],
     )
     async def setting_add_row_ok(
-        text_data: Add_Row_Ok_Result, db: AsyncSession = Depends(db)
+        text_data: Add_Row_Ok_Result,
+        db: AsyncSession = Depends(db),
+        db_common_pg_async: AsyncSession = Depends(db_common_pg_async),
     ):
         """
         Example
@@ -207,7 +230,7 @@ def settings_defect_mode_routers(db: AsyncGenerator) -> APIRouter:
         """
         return Add_Row_Ok_Result_Response(
             add_row_ok_result=await settings_defect_mode_manager.post_add_row_ok(
-                text_data=text_data, db=db
+                text_data=text_data, db=db, db_common_pg_async=db_common_pg_async
             )
         )
 

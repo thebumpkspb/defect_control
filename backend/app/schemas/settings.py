@@ -131,6 +131,17 @@ class PartLineResponse(BaseModel):
     parts: List[PartLine]
 
 
+class SubLines(BaseModel):
+    line_code_rx: str | None = None
+    part_no: str | None = None
+    process: str | None = None
+    rxno_part: str | None = None
+
+
+class SubLinesResponse(BaseModel):
+    sub_lines: List[SubLines]
+
+
 class LinePart(BaseModel):
     line_id: int | None = []
     part_no: List[str] = []

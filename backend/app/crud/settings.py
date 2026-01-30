@@ -52,6 +52,18 @@ class SettingsCRUD:
         rs = await db.execute(text(stmt))
         return rs
 
+    async def get_line_sub_parts(self, app_db: AsyncSession, line_id: str):
+        stmt = f"""SELECT DISTINCT ON (sub_part_no) id,
+                    line_id,
+                    sub_part_no,
+                    sub_part_name
+                FROM master_sub_part
+                
+                WHERE  line_id={line_id} and active='active'
+                ORDER BY sub_part_no"""
+        rs = await app_db.execute(text(stmt))
+        return rs
+
     async def get_line_parts(self, db: AsyncSession, where_stmt: str | None = None):
         stmt = f"""SELECT DISTINCT ON (lp.pno) lp.line_id,
                     lp.pno,

@@ -30,10 +30,13 @@ from app.schemas.settings import (
     LineSectionResponse,
     ProcessLineSectionResponse,
     SubLineResponse,
+    SubLinesResponse,
 )
 
 
-def settings_routers(db: AsyncGenerator, db_ms: AsyncGenerator) -> APIRouter:
+def settings_routers(
+    db: AsyncGenerator, db_ms: AsyncGenerator, app_db: AsyncGenerator
+) -> APIRouter:
     router = APIRouter()
     setting_manager = SettingsManager()
     # print("db:", type(db))
@@ -239,15 +242,47 @@ def settings_routers(db: AsyncGenerator, db_ms: AsyncGenerator) -> APIRouter:
             )
         )
 
+    # @router.get(
+    #     "/parts_by_line",
+    #     response_model=PartLineResponse,
+    #     dependencies=[Depends(api_key_auth)],
+    # )
+    # @cache(expire=300)
+    # async def get_parts_by_line(line_id: int, db: AsyncSession = Depends(db)):
+    #     return PartLineResponse(
+    #         parts=await setting_manager.get_parts_by_line(line_id, db)
+    #     )
     @router.get(
         "/parts_by_line",
         response_model=PartLineResponse,
         dependencies=[Depends(api_key_auth)],
     )
-    @cache(expire=300)
-    async def get_parts_by_line(line_id: int, db: AsyncSession = Depends(db)):
+    # @cache(expire=300)
+    async def get_parts_by_line(
+        line_id: int,
+        process: str | None = None,
+        db: AsyncSession = Depends(db),
+        app_db: AsyncSession = Depends(app_db),
+    ):
         return PartLineResponse(
-            parts=await setting_manager.get_parts_by_line(line_id, db)
+            parts=await setting_manager.get_parts_by_line(line_id, process, db, app_db)
+        )
+
+    @router.get(
+        "/sub_lines_by_partline",
+        response_model=SubLinesResponse,
+        dependencies=[Depends(api_key_auth)],
+    )
+    # @cache(expire=300)
+    async def get_sub_lines_by_partline(
+        line_code_rx: str,
+        part_no: str | None = None,
+        db_ms: AsyncSession = Depends(db_ms),
+    ):
+        return SubLinesResponse(
+            sub_lines=await setting_manager.get_sub_lines_by_partline(
+                line_code_rx, part_no, db_ms
+            )
         )
 
     @router.get(

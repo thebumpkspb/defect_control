@@ -44,6 +44,31 @@ from app.functions import (
 )
 from app.crud.p_chart_record import P_Chart_Record_CRUD
 from app.utils.logger import get_logger
+from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+from app.schemas.settings import (
+    # CalendarResponse,
+    # GroupPartsResponse,
+    # LinePartProcessResponse,
+    # LinePartProcessesReceive,
+    # LinePartProcessesResponse,
+    LineResponse,
+    OrganizeLevelResponse,
+    # LinePartResponse,
+    PartLineResponse,
+    # PartResponse,
+    # PartSubReceive,
+    # PartSubResponse,
+    # PositionResponse,
+    # ProcessRecieve,
+    # ProcessResponse,
+    # ProcessLineResponse,
+    # ProductLineResponse,
+    SectionResponse,
+    # SymbolResponse,
+    LineSectionResponse,
+    # ProcessLineSectionResponse,
+    # SubLineResponse,
+)
 
 logger = get_logger(__name__)
 
@@ -53,8 +78,20 @@ class P_Chart_Record_Manager:
         self.crud = P_Chart_Record_CRUD()
         self.BACKEND_API_SERVICE = os.environ.get("BACKEND_API_SERVICE")
         self.BACKEND_URL_SERVICE = os.environ.get("BACKEND_URL_SERVICE")
+        from app.manager import SettingsManager
+        from app.manager import ProductionsManager
 
-    async def post_general_information(self, text_data: str, db: AsyncSession = None):
+        self.setting_manager = SettingsManager()
+        self.prod_manager = ProductionsManager()
+
+    async def post_general_information(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -63,28 +100,38 @@ class P_Chart_Record_Manager:
         # data=text_data.dict()
         ## get data general_information from db
         res, select_target_control, data = await self.crud.general_information(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         # print("select_target_control:", select_target_control)
         # print("res:", res)
         #!
         list_line = []
         list_line_id = []
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
@@ -103,6 +150,9 @@ class P_Chart_Record_Manager:
             first_date=first_date,
             last_date=last_date,
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         print("res_p_bar_last_month:", res_p_bar_last_month)
         list_p_last_month = round(res_p_bar_last_month["p_bar"], 2)
@@ -115,6 +165,9 @@ class P_Chart_Record_Manager:
             first_date=first_date,
             last_date=last_date,
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         print("res_p_bar_now_month:", res_p_bar_now_month)
         p_bar_now_month = round(res_p_bar_now_month["p_bar"], 2)
@@ -205,7 +258,12 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to post_general_information because {e}",
             )
 
-    async def post_p_chart_record_graph(self, text_data: str, db: AsyncSession = None):
+    async def post_p_chart_record_graph(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -215,7 +273,9 @@ class P_Chart_Record_Manager:
         pchart_graph = ""
 
         ## get p_chart_record_graph data from db
-        res, data = await self.crud.p_chart_record_graph(db=db, where_stmt=text_data)
+        res, data = await self.crud.p_chart_record_graph(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for r in res:
             key_index = r._key_to_index
 
@@ -377,12 +437,17 @@ class P_Chart_Record_Manager:
             )
 
     async def p_chart_record_table_qty_all_defective_items(
-        self, where_stmt: str, data_search: str | None = None, db: AsyncSession = None
+        self,
+        where_stmt: str,
+        data_search: str | None = None,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
         start_date = data_search["start_date"]
         end_date = data_search["end_date"]
         res = await self.crud.p_chart_record_table_qty_all_defective_items(
             db=db,
+            db_common_pg_async=db_common_pg_async,
             where_stmt=where_stmt,
             data_search={
                 "start_date": start_date,
@@ -425,7 +490,12 @@ class P_Chart_Record_Manager:
         #     )
 
     async def post_p_chart_record_table_All(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
 
         if not text_data:
@@ -441,21 +511,31 @@ class P_Chart_Record_Manager:
         list_line = []
         list_line_id = []
         # # print("1")
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -468,7 +548,9 @@ class P_Chart_Record_Manager:
         # print("Start:", start_time)
         # # print("2")
         ## get p_chart_record_table data from db
-        res, data = await self.crud.p_chart_record_table(db=db, where_stmt=text_data)
+        res, data = await self.crud.p_chart_record_table(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
@@ -538,7 +620,9 @@ class P_Chart_Record_Manager:
         list_review_by_tl = [""] * day_in_month
         list_review_by_mgr = [""] * day_in_month
         list_review_by_gm = [""] * day_in_month
-        res_record_by = await self.crud.get_record_by(db=db, where_stmt=text_data)
+        res_record_by = await self.crud.get_record_by(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -552,20 +636,24 @@ class P_Chart_Record_Manager:
             c = int(str(res_record_by[i]["date"])[8:10])
             list_record_by[c - 1] = res_record_by[i]["record_by"]
 
-        res_review_by_tl = await self.crud.get_review_by_tl(db=db, where_stmt=text_data)
+        res_review_by_tl = await self.crud.get_review_by_tl(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         # # print("res_review_by_tl:", type(res_review_by_tl))
         for i in range(0, len(res_review_by_tl)):
             c = int(str(res_review_by_tl[i]["date"])[8:10])
             list_review_by_tl[c - 1] = res_review_by_tl[i]["review_by_tl"]
 
         res_review_by_mgr = await self.crud.get_review_by_mgr(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for i in range(0, len(res_review_by_mgr)):
             c = int(str(res_review_by_mgr[i]["date"])[8:10])
             list_review_by_mgr[c - 1] = res_review_by_mgr[i]["review_by_mgr"]
 
-        res_review_by_gm = await self.crud.get_review_by_gm(db=db, where_stmt=text_data)
+        res_review_by_gm = await self.crud.get_review_by_gm(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_review_by_gm)):
             c = int(str(res_review_by_gm[i]["date"])[8:10])
             list_review_by_gm[c - 1] = res_review_by_gm[i]["review_by_gm"]
@@ -578,38 +666,73 @@ class P_Chart_Record_Manager:
         # print(f"Duration4: {minutes} min {seconds:.2f} sec")
         start_time = time.time()
         # print("Start:", start_time)
-        try:
-            ## get prod_qty shift=All from api
-            if data["shift"] == "All":
-                if (not data_part_no) or data_process == "Outline":
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/prods/prod_qty?line_id="
-                        + str(select_line_id)
-                        + "&shift=All&date="
-                        + date_prod_qty
+        if data["shift"] == "All":
+            if (not data_part_no) or data_process == "Outline":
+                response = ProductionQtyResponse(
+                    prod_qty=await self.prod_manager.get_prod_qty(
+                        line_id=str(select_line_id),
+                        part_no=None,
+                        process_name=None,
+                        shift="All",
+                        part_line_id=None,
+                        date=date_prod_qty,
+                        db_my=db_prod_my,
+                        db_ms=db_prod_ms,
+                        db_common=db_common_pg_async,
                     )
-                else:
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/prods/prod_qty?part_line_id="
-                        + str(sub_line)
-                        + "&shift=All&date="
-                        + date_prod_qty
+                )
+
+            else:
+                response = ProductionQtyResponse(
+                    prod_qty=await self.prod_manager.get_prod_qty(
+                        line_id=None,
+                        part_no=None,
+                        process_name=None,
+                        shift="All",
+                        part_line_id=str(sub_line),
+                        date=date_prod_qty,
+                        db_my=db_prod_my,
+                        db_ms=db_prod_ms,
+                        db_common=db_common_pg_async,
                     )
-                response_json = requests.get(endpoint, headers=headers).json()
+                )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["prod_qty"])):
+            c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+            list_prod_qty_all[c - 1] = response_json["prod_qty"][i]["actual_val"]
+        # try:
+        #     ## get prod_qty shift=All from api
+        #     if data["shift"] == "All":
+        #         if (not data_part_no) or data_process == "Outline":
+        #             endpoint = (
+        #                 self.BACKEND_URL_SERVICE
+        #                 + "/api/prods/prod_qty?line_id="
+        #                 + str(select_line_id)
+        #                 + "&shift=All&date="
+        #                 + date_prod_qty
+        #             )
+        #         else:
+        #             endpoint = (
+        #                 self.BACKEND_URL_SERVICE
+        #                 + "/api/prods/prod_qty?part_line_id="
+        #                 + str(sub_line)
+        #                 + "&shift=All&date="
+        #                 + date_prod_qty
+        #             )
+        #         response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["prod_qty"])):
-                    c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
-                    list_prod_qty_all[c - 1] = response_json["prod_qty"][i][
-                        "actual_val"
-                    ]
+        #         for i in range(0, len(response_json["prod_qty"])):
+        #             c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+        #             list_prod_qty_all[c - 1] = response_json["prod_qty"][i][
+        #                 "actual_val"
+        #             ]
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
         end_time = time.time()
         # print("End:", end_time)
         duration = end_time - start_time
@@ -736,6 +859,7 @@ class P_Chart_Record_Manager:
 
         df_qty = await self.p_chart_record_table_qty_all_defective_items(
             db=db,
+            db_common_pg_async=db_common_pg_async,
             where_stmt=text_data,
             data_search={"start_date": s_date, "end_date": e_date},
         )
@@ -987,6 +1111,9 @@ class P_Chart_Record_Manager:
                 sub_line=data["sub_line"],
             ),
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         print("general_information:", general_information)
         # print("res_p_bar_last_month:", res_p_bar_last_month)
@@ -1072,6 +1199,7 @@ class P_Chart_Record_Manager:
             if i == day_in_month_graph - 1:
                 await self.crud.record_data_general_information(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     data_save={
                         "shift": "All",
@@ -1085,6 +1213,7 @@ class P_Chart_Record_Manager:
 
                 await self.crud.save_pchart_report_graph(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     graph_data={
                         "defect": defect_table_graph_all,
@@ -1108,6 +1237,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -1140,6 +1270,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -1225,7 +1356,12 @@ class P_Chart_Record_Manager:
             )
 
     async def post_p_chart_record_table_A(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
 
         if not text_data:
@@ -1238,23 +1374,35 @@ class P_Chart_Record_Manager:
         data_part_no = data["part_no"]
         list_line = []
         list_line_id = []
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
         ## get p_chart_record_table data from db
-        res, data = await self.crud.p_chart_record_table(db=db, where_stmt=text_data)
+        res, data = await self.crud.p_chart_record_table(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
         print("select_line_id:", select_line_id)
@@ -1313,57 +1461,98 @@ class P_Chart_Record_Manager:
         list_review_by_tl = [""] * day_in_month
         list_review_by_mgr = [""] * day_in_month
         list_review_by_gm = [""] * day_in_month
-        res_record_by = await self.crud.get_record_by(db=db, where_stmt=text_data)
+        res_record_by = await self.crud.get_record_by(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_record_by)):
             c = int(str(res_record_by[i]["date"])[8:10])
             list_record_by[c - 1] = res_record_by[i]["record_by"]
 
-        res_review_by_tl = await self.crud.get_review_by_tl(db=db, where_stmt=text_data)
+        res_review_by_tl = await self.crud.get_review_by_tl(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_review_by_tl)):
             c = int(str(res_review_by_tl[i]["date"])[8:10])
             list_review_by_tl[c - 1] = res_review_by_tl[i]["review_by_tl"]
         # # print("list_review_by_tl:", list_review_by_tl)
 
         res_review_by_mgr = await self.crud.get_review_by_mgr(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for i in range(0, len(res_review_by_mgr)):
             c = int(str(res_review_by_mgr[i]["date"])[8:10])
             list_review_by_mgr[c - 1] = res_review_by_mgr[i]["review_by_mgr"]
 
-        res_review_by_gm = await self.crud.get_review_by_gm(db=db, where_stmt=text_data)
+        res_review_by_gm = await self.crud.get_review_by_gm(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_review_by_gm)):
             c = int(str(res_review_by_gm[i]["date"])[8:10])
             list_review_by_gm[c - 1] = res_review_by_gm[i]["review_by_gm"]
-        try:
-            ## get prod_qty shift=A from api\
-            if (not data_part_no) or data_process == "Outline":
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?line_id="
-                    + str(select_line_id)
-                    + "&shift=A&date="
-                    + date_prod_qty
-                )
-            else:
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?part_line_id="
-                    + str(sub_line)
-                    + "&shift=A&date="
-                    + date_prod_qty
-                )
-            response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["prod_qty"])):
-                c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
-                list_prod_qty_a[c - 1] = response_json["prod_qty"][i]["actual_val"]
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        if (not data_part_no) or data_process == "Outline":
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=str(select_line_id),
+                    part_no=None,
+                    process_name=None,
+                    shift="A",
+                    part_line_id=None,
+                    date=date_prod_qty,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
             )
+
+        else:
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=None,
+                    part_no=None,
+                    process_name=None,
+                    shift="A",
+                    part_line_id=str(sub_line),
+                    date=date_prod_qty,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
+            )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["prod_qty"])):
+            c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+            list_prod_qty_a[c - 1] = response_json["prod_qty"][i]["actual_val"]
+        # try:
+        #     ## get prod_qty shift=A from api\
+        #     if (not data_part_no) or data_process == "Outline":
+        #         endpoint = (
+        #             self.BACKEND_URL_SERVICE
+        #             + "/api/prods/prod_qty?line_id="
+        #             + str(select_line_id)
+        #             + "&shift=A&date="
+        #             + date_prod_qty
+        #         )
+        #     else:
+        #         endpoint = (
+        #             self.BACKEND_URL_SERVICE
+        #             + "/api/prods/prod_qty?part_line_id="
+        #             + str(sub_line)
+        #             + "&shift=A&date="
+        #             + date_prod_qty
+        #         )
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["prod_qty"])):
+        #         c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+        #         list_prod_qty_a[c - 1] = response_json["prod_qty"][i]["actual_val"]
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if now_month != current_month:
 
@@ -1462,6 +1651,7 @@ class P_Chart_Record_Manager:
 
         df_qty = await self.p_chart_record_table_qty_all_defective_items(
             db=db,
+            db_common_pg_async=db_common_pg_async,
             where_stmt=text_data,
             data_search={"start_date": s_date, "end_date": e_date},
         )
@@ -1670,6 +1860,9 @@ class P_Chart_Record_Manager:
                 sub_line=data["sub_line"],
             ),
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         list_p_bar_a = [general_information[0].p_last_month] * day_in_month_graph
         list_line_target = [general_information[0].target_control] * day_in_month_graph
@@ -1746,6 +1939,7 @@ class P_Chart_Record_Manager:
             if i == day_in_month_graph - 1:
                 await self.crud.record_data_general_information(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     data_save={
                         "shift": "A",
@@ -1759,6 +1953,7 @@ class P_Chart_Record_Manager:
 
                 await self.crud.save_pchart_report_graph(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     graph_data={
                         "defect": defect_table_graph_a,
@@ -1781,6 +1976,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -1810,6 +2006,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -1878,7 +2075,12 @@ class P_Chart_Record_Manager:
             )
 
     async def post_p_chart_record_table_B(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
 
         if not text_data:
@@ -1891,25 +2093,36 @@ class P_Chart_Record_Manager:
         data_part_no = data["part_no"]
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         ## get p_chart_record_table data from db
-        res, data = await self.crud.p_chart_record_table(db=db, where_stmt=text_data)
+        res, data = await self.crud.p_chart_record_table(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         index_select = list_line.index(data["line_name"])
         select_line_id = list_line_id[index_select]
@@ -1971,57 +2184,96 @@ class P_Chart_Record_Manager:
         list_review_by_tl = [""] * day_in_month
         list_review_by_mgr = [""] * day_in_month
         list_review_by_gm = [""] * day_in_month
-        res_record_by = await self.crud.get_record_by(db=db, where_stmt=text_data)
+        res_record_by = await self.crud.get_record_by(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_record_by)):
             c = int(str(res_record_by[i]["date"])[8:10])
             list_record_by[c - 1] = res_record_by[i]["record_by"]
 
-        res_review_by_tl = await self.crud.get_review_by_tl(db=db, where_stmt=text_data)
+        res_review_by_tl = await self.crud.get_review_by_tl(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_review_by_tl)):
             c = int(str(res_review_by_tl[i]["date"])[8:10])
             list_review_by_tl[c - 1] = res_review_by_tl[i]["review_by_tl"]
         # # print("list_review_by_tl:", list_review_by_tl)
         res_review_by_mgr = await self.crud.get_review_by_mgr(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for i in range(0, len(res_review_by_mgr)):
             c = int(str(res_review_by_mgr[i]["date"])[8:10])
             list_review_by_mgr[c - 1] = res_review_by_mgr[i]["review_by_mgr"]
 
-        res_review_by_gm = await self.crud.get_review_by_gm(db=db, where_stmt=text_data)
+        res_review_by_gm = await self.crud.get_review_by_gm(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         for i in range(0, len(res_review_by_gm)):
             c = int(str(res_review_by_gm[i]["date"])[8:10])
             list_review_by_gm[c - 1] = res_review_by_gm[i]["review_by_gm"]
-
-        try:
-            ## get prod_qty shift=B from api
-            if (not data_part_no) or data_process == "Outline":
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?line_id="
-                    + str(select_line_id)
-                    + "&shift=B&date="
-                    + date_prod_qty
+        if (not data_part_no) or data_process == "Outline":
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=str(select_line_id),
+                    part_no=None,
+                    process_name=None,
+                    shift="B",
+                    part_line_id=None,
+                    date=date_prod_qty,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
                 )
-            else:
-                endpoint = (
-                    self.BACKEND_URL_SERVICE
-                    + "/api/prods/prod_qty?part_line_id="
-                    + str(sub_line)
-                    + "&shift=B&date="
-                    + date_prod_qty
-                )
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["prod_qty"])):
-                c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
-                list_prod_qty_b[c - 1] = response_json["prod_qty"][i]["actual_val"]
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
             )
+
+        else:
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=None,
+                    part_no=None,
+                    process_name=None,
+                    shift="B",
+                    part_line_id=str(sub_line),
+                    date=date_prod_qty,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
+            )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["prod_qty"])):
+            c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+            list_prod_qty_b[c - 1] = response_json["prod_qty"][i]["actual_val"]
+        # try:
+        #     ## get prod_qty shift=B from api
+        #     if (not data_part_no) or data_process == "Outline":
+        #         endpoint = (
+        #             self.BACKEND_URL_SERVICE
+        #             + "/api/prods/prod_qty?line_id="
+        #             + str(select_line_id)
+        #             + "&shift=B&date="
+        #             + date_prod_qty
+        #         )
+        #     else:
+        #         endpoint = (
+        #             self.BACKEND_URL_SERVICE
+        #             + "/api/prods/prod_qty?part_line_id="
+        #             + str(sub_line)
+        #             + "&shift=B&date="
+        #             + date_prod_qty
+        #         )
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["prod_qty"])):
+        #         c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
+        #         list_prod_qty_b[c - 1] = response_json["prod_qty"][i]["actual_val"]
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         if now_month != current_month:
 
@@ -2121,6 +2373,7 @@ class P_Chart_Record_Manager:
 
         df_qty = await self.p_chart_record_table_qty_all_defective_items(
             db=db,
+            db_common_pg_async=db_common_pg_async,
             where_stmt=text_data,
             data_search={"start_date": s_date, "end_date": e_date},
         )
@@ -2325,6 +2578,9 @@ class P_Chart_Record_Manager:
                 sub_line=data["sub_line"],
             ),
             db=db,
+            db_common_pg_async=db_common_pg_async,
+            db_prod_ms=db_prod_ms,
+            db_prod_my=db_prod_my,
         )
         list_p_bar_b = [general_information[0].p_last_month] * day_in_month_graph
         list_line_target = [general_information[0].target_control] * day_in_month_graph
@@ -2401,6 +2657,7 @@ class P_Chart_Record_Manager:
             if i == day_in_month_graph - 1:
                 await self.crud.record_data_general_information(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     data_save={
                         "shift": "B",
@@ -2414,6 +2671,7 @@ class P_Chart_Record_Manager:
 
                 await self.crud.save_pchart_report_graph(
                     db=db,
+                    db_common_pg_async=db_common_pg_async,
                     where_stmt=text_data,
                     graph_data={
                         "defect": defect_table_graph_b,
@@ -2436,6 +2694,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -2465,6 +2724,7 @@ class P_Chart_Record_Manager:
                 if i == day_in_month_graph - 1:
                     await self.crud.save_pchart_report_table(
                         db=db,
+                        db_common_pg_async=db_common_pg_async,
                         where_stmt=text_data,
                         graph_data={
                             "day": list_day,
@@ -2531,7 +2791,14 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to post_p_chart_record_table because {e}",
             )
 
-    async def post_p_chart_record_table(self, text_data: str, db: AsyncSession = None):
+    async def post_p_chart_record_table(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -2540,20 +2807,37 @@ class P_Chart_Record_Manager:
 
         if text_data.dict()["shift"] == "All":
             P_Chart_Record_Table_Result = await self.post_p_chart_record_table_All(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         elif text_data.dict()["shift"] == "A":
             P_Chart_Record_Table_Result = await self.post_p_chart_record_table_A(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
         elif text_data.dict()["shift"] == "B":
             P_Chart_Record_Table_Result = await self.post_p_chart_record_table_B(
-                text_data=text_data, db=db
+                text_data=text_data,
+                db=db,
+                db_common_pg_async=db_common_pg_async,
+                db_prod_ms=db_prod_ms,
+                db_prod_my=db_prod_my,
             )
 
         return P_Chart_Record_Table_Result
 
-    async def post_add_new_record_view(self, text_data: str, db: AsyncSession = None):
+    async def post_add_new_record_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -2565,25 +2849,35 @@ class P_Chart_Record_Manager:
         data = text_data.dict()
         data_process = data["process"]
         data_part_no = data["part_no"]
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         defect_mode_master = []
         res_defect_mode = await self.crud.add_new_record_view_defect_mode(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for r in res_defect_mode:
             key_index = r._key_to_index
@@ -2593,7 +2887,10 @@ class P_Chart_Record_Manager:
 
         ## get new_record_view data from db
         res, data, sum_A, sum_B = await self.crud.add_new_record_view(
-            db=db, where_stmt=text_data, defect_mode=defect_mode_master[0]
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            where_stmt=text_data,
+            defect_mode=defect_mode_master[0],
         )
 
         for r in res:
@@ -2634,32 +2931,45 @@ class P_Chart_Record_Manager:
             list_part_no = []
             if data_process and data_process == "Outline":
                 sub_part_result = await self.crud.get_sub_part(
-                    db=db, where_stmt=text_data
+                    db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
                 )
                 for r in sub_part_result:
                     key_index = r._key_to_index
 
                     list_part_no.append(r[key_index["sub_part_no"]])
             else:
-                try:
-                    ## get part_no from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        # str(select_line_id), db_common_pg_async
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                # try:
+                #     ## get part_no from api
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
 
-                    # list_part_no = []
+                #     # list_part_no = []
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
             # print(
             #     'list(dict.fromkeys([data["part_no"]] + list_part_no)):',
@@ -2694,30 +3004,44 @@ class P_Chart_Record_Manager:
             list_part_no = []
             if data_process and data_process == "Outline":
                 sub_part_result = await self.crud.get_sub_part(
-                    db=db, where_stmt=text_data
+                    db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
                 )
                 for r in sub_part_result:
                     key_index = r._key_to_index
 
                     list_part_no.append(r[key_index["sub_part_no"]])
             else:
-                try:
-                    ## get part_no from api
-                    endpoint = (
-                        self.BACKEND_URL_SERVICE
-                        + "/api/settings/parts_by_line?line_id="
-                        + str(select_line_id)
+                response = PartLineResponse(
+                    parts=await self.setting_manager.get_parts_by_line(
+                        # str(select_line_id), db_common_pg_async
+                        line_id=str(select_line_id),
+                        process=None,
+                        app_db=db,
+                        db=db_common_pg_async,
                     )
-                    response_json = requests.get(endpoint, headers=headers).json()
+                )
+                response_str = response.json()
+                response_json = json.loads(response_str)
+                for i in range(0, len(response_json["parts"])):
+                    list_part_no.append(response_json["parts"][i]["part_no"])
+                # try:
 
-                    for i in range(0, len(response_json["parts"])):
-                        list_part_no.append(response_json["parts"][i]["part_no"])
+                #     ## get part_no from api
+                #     endpoint = (
+                #         self.BACKEND_URL_SERVICE
+                #         + "/api/settings/parts_by_line?line_id="
+                #         + str(select_line_id)
+                #     )
+                #     response_json = requests.get(endpoint, headers=headers).json()
 
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"because {e}",
-                    )
+                #     for i in range(0, len(response_json["parts"])):
+                #         list_part_no.append(response_json["parts"][i]["part_no"])
+
+                # except Exception as e:
+                #     raise HTTPException(
+                #         status_code=status.HTTP_400_BAD_REQUEST,
+                #         detail=f"because {e}",
+                #     )
 
             return_list.append(
                 Add_New_Record_View_Result(
@@ -2750,7 +3074,10 @@ class P_Chart_Record_Manager:
         #     )
 
     async def post_add_new_record_view_defect_by_part(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
         if not text_data:
             raise HTTPException(
@@ -2760,27 +3087,37 @@ class P_Chart_Record_Manager:
         list_line = []
         list_line_id = []
         try:
-            try:
-                ## get line, line_id from api
+            response = LineResponse(
+                lines=await self.setting_manager.get_lines(
+                    rx_only=False, db=db_common_pg_async
+                )
+            )
+            response_str = response.json()
+            response_json = json.loads(response_str)
+            for i in range(0, len(response_json["lines"])):
+                list_line.append(response_json["lines"][i]["section_line"])
+                list_line_id.append(response_json["lines"][i]["line_id"])
+                # try:
+                #     ## get line, line_id from api
                 endpoint = (
                     self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
                 )
-                headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-                response_json = requests.get(endpoint, headers=headers).json()
+            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+            # response_json = requests.get(endpoint, headers=headers).json()
 
-                for i in range(0, len(response_json["lines"])):
-                    list_line.append(response_json["lines"][i]["section_line"])
-                    list_line_id.append(response_json["lines"][i]["line_id"])
+            #     for i in range(0, len(response_json["lines"])):
+            #         list_line.append(response_json["lines"][i]["section_line"])
+            #         list_line_id.append(response_json["lines"][i]["line_id"])
 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"because {e}",
-                )
+            # except Exception as e:
+            #     raise HTTPException(
+            #         status_code=status.HTTP_400_BAD_REQUEST,
+            #         detail=f"because {e}",
+            #     )
 
             defect_mode_master = []
             res_defect_mode = await self.crud.add_new_record_view_defect_mode_by_part(
-                db=db, where_stmt=text_data
+                db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
             )
             return_list = []
             for r in res_defect_mode:
@@ -2820,7 +3157,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_change_new_record_view(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -2832,26 +3172,36 @@ class P_Chart_Record_Manager:
         list_line_id = []
         data = text_data.dict()
         data_process = data["process"]
-        try:
-            ## get line, line_id from api
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from api
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         status_check = True
 
         res, data, sum_A, sum_B = await self.crud.change_new_record_view(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         defect_type = data["defect_type"]
         for r in res:
@@ -2885,7 +3235,7 @@ class P_Chart_Record_Manager:
 
         defect_mode_master = []
         res_defect_mode = await self.crud.add_new_record_view_defect_mode(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for r in res_defect_mode:
 
@@ -2904,29 +3254,44 @@ class P_Chart_Record_Manager:
                 list_part_no = []
                 if data_process and data_process == "Outline":
                     sub_part_result = await self.crud.get_sub_part(
-                        db=db, where_stmt=text_data
+                        db=db,
+                        db_common_pg_async=db_common_pg_async,
+                        where_stmt=text_data,
                     )
                     for r in sub_part_result:
                         key_index = r._key_to_index
 
                         list_part_no.append(r[key_index["sub_part_no"]])
                 else:
-                    try:
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/settings/parts_by_line?line_id="
-                            + str(select_line_id)
+                    response = PartLineResponse(
+                        parts=await self.setting_manager.get_parts_by_line(
+                            # str(select_line_id), db_common_pg_async
+                            line_id=str(select_line_id),
+                            process=None,
+                            app_db=db,
+                            db=db_common_pg_async,
                         )
-                        response_json = requests.get(endpoint, headers=headers).json()
+                    )
+                    response_str = response.json()
+                    response_json = json.loads(response_str)
+                    for i in range(0, len(response_json["parts"])):
+                        list_part_no.append(response_json["parts"][i]["part_no"])
+                    # try:
+                    #     endpoint = (
+                    #         self.BACKEND_URL_SERVICE
+                    #         + "/api/settings/parts_by_line?line_id="
+                    #         + str(select_line_id)
+                    #     )
+                    #     response_json = requests.get(endpoint, headers=headers).json()
 
-                        for i in range(0, len(response_json["parts"])):
-                            list_part_no.append(response_json["parts"][i]["part_no"])
+                    #     for i in range(0, len(response_json["parts"])):
+                    #         list_part_no.append(response_json["parts"][i]["part_no"])
 
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
+                    # except Exception as e:
+                    #     raise HTTPException(
+                    #         status_code=status.HTTP_400_BAD_REQUEST,
+                    #         detail=f"because {e}",
+                    #     )
 
                 return_list.append(
                     Add_New_Record_View_Result(
@@ -2953,29 +3318,44 @@ class P_Chart_Record_Manager:
                 list_part_no = []
                 if data_process and data_process == "Outline":
                     sub_part_result = await self.crud.get_sub_part(
-                        db=db, where_stmt=text_data
+                        db=db,
+                        db_common_pg_async=db_common_pg_async,
+                        where_stmt=text_data,
                     )
                     for r in sub_part_result:
                         key_index = r._key_to_index
 
                         list_part_no.append(r[key_index["sub_part_no"]])
                 else:
-                    try:
-                        endpoint = (
-                            self.BACKEND_URL_SERVICE
-                            + "/api/settings/parts_by_line?line_id="
-                            + str(select_line_id)
+                    response = PartLineResponse(
+                        parts=await self.setting_manager.get_parts_by_line(
+                            # str(select_line_id), db_common_pg_async
+                            line_id=str(select_line_id),
+                            process=None,
+                            app_db=db,
+                            db=db_common_pg_async,
                         )
-                        response_json = requests.get(endpoint, headers=headers).json()
+                    )
+                    response_str = response.json()
+                    response_json = json.loads(response_str)
+                    for i in range(0, len(response_json["parts"])):
+                        list_part_no.append(response_json["parts"][i]["part_no"])
+                    # try:
+                    #     endpoint = (
+                    #         self.BACKEND_URL_SERVICE
+                    #         + "/api/settings/parts_by_line?line_id="
+                    #         + str(select_line_id)
+                    #     )
+                    #     response_json = requests.get(endpoint, headers=headers).json()
 
-                        for i in range(0, len(response_json["parts"])):
-                            list_part_no.append(response_json["parts"][i]["part_no"])
+                    #     for i in range(0, len(response_json["parts"])):
+                    #         list_part_no.append(response_json["parts"][i]["part_no"])
 
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"because {e}",
-                        )
+                    # except Exception as e:
+                    #     raise HTTPException(
+                    #         status_code=status.HTTP_400_BAD_REQUEST,
+                    #         detail=f"because {e}",
+                    #     )
 
                 return_list.append(
                     Add_New_Record_View_Result(
@@ -3010,7 +3390,12 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to post_change_new_record_view because {e}",
             )
 
-    async def post_add_new_record_save(self, text_data: str, db: AsyncSession = None):
+    async def post_add_new_record_save(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -3019,7 +3404,7 @@ class P_Chart_Record_Manager:
         # print("text_data:", text_data)
         ## get new_record_save data from db
         res, qty_shift_a, qty_shift_b = await self.crud.add_new_record_save(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         return_list = []
 
@@ -3054,7 +3439,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_abnormal_occurrence_view(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3064,7 +3452,7 @@ class P_Chart_Record_Manager:
 
         ## get abnormal_occurrence data from db
         res, data = await self.crud.abnormal_occurrence_view(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         return_list = []
 
@@ -3191,7 +3579,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_abnormal_occurrence_edit_save(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3200,7 +3591,9 @@ class P_Chart_Record_Manager:
             )
 
         ## get abnormal_occurrence_edit data from db
-        res = await self.crud.abnormal_occurrence_edit_save(db=db, where_stmt=text_data)
+        res = await self.crud.abnormal_occurrence_edit_save(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -3340,7 +3733,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_abnormal_occurrence_add_row_ok(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3350,7 +3746,7 @@ class P_Chart_Record_Manager:
 
         ## get abnormal_occurrence data from db
         res = await self.crud.abnormal_occurrence_add_row_ok(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         return_list = []
 
@@ -3394,7 +3790,12 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to post_abnormal_occurrence_add_row_ok because {e}",
             )
 
-    async def post_history_records_view(self, text_data: str, db: AsyncSession = None):
+    async def post_history_records_view(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
 
         if not text_data:
             raise HTTPException(
@@ -3402,7 +3803,9 @@ class P_Chart_Record_Manager:
             )
 
         ## get history_records data from db
-        res, data = await self.crud.history_records_view(db=db, where_stmt=text_data)
+        res, data = await self.crud.history_records_view(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         list_history_records_result = []
         c = 1
@@ -3460,7 +3863,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_history_records_edit_view(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3470,29 +3876,38 @@ class P_Chart_Record_Manager:
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from db
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from db
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         select_qty = 0
         select_id = 0
 
         ## get history_records data from db
         res, data = await self.crud.history_records_edit_view(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for r in res:
             key_index = r._key_to_index
@@ -3505,23 +3920,36 @@ class P_Chart_Record_Manager:
 
         list_part_no = []
 
-        try:
-            ## get part_no from db
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/parts_by_line?line_id="
-                + str(select_line_id)
+        response = PartLineResponse(
+            parts=await self.setting_manager.get_parts_by_line(
+                # str(select_line_id), db_common_pg_async
+                line_id=str(select_line_id),
+                process=None,
+                app_db=db,
+                db=db_common_pg_async,
             )
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["parts"])):
+            list_part_no.append(response_json["parts"][i]["part_no"])
+        # try:
+        #     ## get part_no from db
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/parts_by_line?line_id="
+        #         + str(select_line_id)
+        #     )
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["parts"])):
-                list_part_no.append(response_json["parts"][i]["part_no"])
+        #     for i in range(0, len(response_json["parts"])):
+        #         list_part_no.append(response_json["parts"][i]["part_no"])
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         ## get defect_mode data from db
         list_defect_mode = await self.crud.history_records_get_defect_mode(
@@ -3580,7 +4008,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_history_records_edit_view_change(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3590,28 +4021,37 @@ class P_Chart_Record_Manager:
 
         list_line = []
         list_line_id = []
-
-        try:
-            ## get line, line_id from db
-            endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
-            headers = {"X-API-Key": self.BACKEND_API_SERVICE}
-            response_json = requests.get(endpoint, headers=headers).json()
-
-            for i in range(0, len(response_json["lines"])):
-                list_line.append(response_json["lines"][i]["section_line"])
-                list_line_id.append(response_json["lines"][i]["line_id"])
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
+        response = LineResponse(
+            lines=await self.setting_manager.get_lines(
+                rx_only=False, db=db_common_pg_async
             )
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["lines"])):
+            list_line.append(response_json["lines"][i]["section_line"])
+            list_line_id.append(response_json["lines"][i]["line_id"])
+        # try:
+        #     ## get line, line_id from db
+        endpoint = self.BACKEND_URL_SERVICE + "/api/settings/lines?rx_only=false"
+        headers = {"X-API-Key": self.BACKEND_API_SERVICE}
+        #     response_json = requests.get(endpoint, headers=headers).json()
+
+        #     for i in range(0, len(response_json["lines"])):
+        #         list_line.append(response_json["lines"][i]["section_line"])
+        #         list_line_id.append(response_json["lines"][i]["line_id"])
+
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
         select_qty = 0
         select_id = 0
 
         ## get history_records data from db
         res, data = await self.crud.history_records_edit_view(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
         for r in res:
             key_index = r._key_to_index
@@ -3624,23 +4064,36 @@ class P_Chart_Record_Manager:
 
         list_part_no = []
 
-        try:
-            ## get part_no from db
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/settings/parts_by_line?line_id="
-                + str(select_line_id)
+        response = PartLineResponse(
+            parts=await self.setting_manager.get_parts_by_line(
+                # str(select_line_id), db_common_pg_async
+                line_id=str(select_line_id),
+                process=None,
+                app_db=db,
+                db=db_common_pg_async,
             )
-            response_json = requests.get(endpoint, headers=headers).json()
+        )
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        for i in range(0, len(response_json["parts"])):
+            list_part_no.append(response_json["parts"][i]["part_no"])
+        # try:
+        #     ## get part_no from db
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/settings/parts_by_line?line_id="
+        #         + str(select_line_id)
+        #     )
+        #     response_json = requests.get(endpoint, headers=headers).json()
 
-            for i in range(0, len(response_json["parts"])):
-                list_part_no.append(response_json["parts"][i]["part_no"])
+        #     for i in range(0, len(response_json["parts"])):
+        #         list_part_no.append(response_json["parts"][i]["part_no"])
 
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"because {e}",
-            )
+        # except Exception as e:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail=f"because {e}",
+        #     )
 
         ## get defect_mode data from db
         list_defect_mode = await self.crud.history_records_get_defect_mode(
@@ -3699,7 +4152,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_history_records_edit_save(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3708,12 +4164,14 @@ class P_Chart_Record_Manager:
             )
 
         ## get history_records data from db
-        data = await self.crud.history_records_edit_save(db=db, where_stmt=text_data)
+        data = await self.crud.history_records_edit_save(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         ## get history_records data from db
         res = await self.crud.history_records_view_edit_save(
-            db=db, where_stmt=text_data
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
         )
 
         list_history_records_result = []
@@ -3786,7 +4244,10 @@ class P_Chart_Record_Manager:
             )
 
     async def post_history_records_delete(
-        self, text_data: str, db: AsyncSession = None
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
     ):
 
         if not text_data:
@@ -3795,7 +4256,9 @@ class P_Chart_Record_Manager:
             )
 
         ## get history_records data from db
-        res = await self.crud.history_records_delete(db=db, where_stmt=text_data)
+        res = await self.crud.history_records_delete(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         return_list = []
 
         try:
@@ -3828,7 +4291,14 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to post_history_records_delete because {e}",
             )
 
-    async def check_over_ucl_target(self, text_data: str, db: AsyncSession = None):
+    async def check_over_ucl_target(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_my: AsyncSession = None,
+    ):
         if not text_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
@@ -3847,14 +4317,32 @@ class P_Chart_Record_Manager:
             defect_qty = 0
         shift = data["shift"]
         line_id = self.crud.get_line_id(line)
-        endpoint = (
-            self.BACKEND_URL_SERVICE
-            + "/api/prods/prod_qty?part_line_id="
-            + str(sub_line)
-            + f"&shift={shift}&date="
-            + date_prod_qty
+
+        response = ProductionQtyResponse(
+            prod_qty=await self.prod_manager.get_prod_qty(
+                line_id=None,
+                part_no=None,
+                process_name=None,
+                shift=shift,
+                part_line_id=str(sub_line),
+                date=date_prod_qty,
+                db_my=db_prod_my,
+                db_ms=db_prod_ms,
+                db_common=db_common_pg_async,
+            )
         )
-        response_json = requests.get(endpoint, headers=headers).json()
+
+        response_str = response.json()
+        response_json = json.loads(response_str)
+        # endpoint = (
+        #     self.BACKEND_URL_SERVICE
+        #     + "/api/prods/prod_qty?part_line_id="
+        #     + str(sub_line)
+        #     + f"&shift={shift}&date="
+        #     + date_prod_qty
+        # )
+        # response_json = requests.get(endpoint, headers=headers).json()
+
         datas = response_json["prod_qty"]
         date_obj = datetime.strptime(date_prod_qty, "%Y-%m-%d")
         datetime_string = date_obj.strftime("%Y-%m-%d %H:%M:%S")
@@ -3867,12 +4355,14 @@ class P_Chart_Record_Manager:
         else:
             prod_actual_date = 0
         ## get history_records data from db
-        res = await self.crud.get_defect_qty_by_date(db=db, where_stmt=text_data)
+        res = await self.crud.get_defect_qty_by_date(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         defect_qty = defect_qty + res["defect_qty"]
         # defect_ratio = round(((defect_qty / list_prod_qty) * 100), 2)
         res_p_bar_last_month = (
             await self.crud.p_chart_record_table_p_bar_last_month_All(
-                db=db, where_stmt=text_data
+                db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
             )
         )
         p_bar = 0
@@ -3921,12 +4411,19 @@ class P_Chart_Record_Manager:
                 detail=f"Unable to check_over_ucl_target because {e}",
             )
 
-    async def get_amount_action_record(self, text_data: str, db: AsyncSession = None):
+    async def get_amount_action_record(
+        self,
+        text_data: str,
+        db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+    ):
         if not text_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"
             )
-        res = await self.crud.get_amount_action_record(db=db, where_stmt=text_data)
+        res = await self.crud.get_amount_action_record(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
 
         try:
             return_list = Get_Amount_Action_Record(
@@ -3953,6 +4450,9 @@ class P_Chart_Record_Manager:
         first_date: str,
         last_date: str,
         db: AsyncSession = None,
+        db_common_pg_async: AsyncSession = None,
+        db_prod_ms: AsyncSession = None,
+        db_prod_my: AsyncSession = None,
     ):
         if not text_data:
             raise HTTPException(
@@ -3965,31 +4465,69 @@ class P_Chart_Record_Manager:
         headers = {"X-API-Key": self.BACKEND_API_SERVICE}
         # date_prod_qty = convert_month_year_to_date(data["month"])
         # first_date, last_date = get_first_and_last_date_of_month(date)
-        count_data = await self.crud.count_data_record(db=db, where_stmt=text_data)
+        count_data = await self.crud.count_data_record(
+            db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+        )
         # print("count_data:", count_data)
         defect_qty = await self.crud.get_defect_qty(
-            db=db, first_date=first_date, last_date=last_date, where_stmt=text_data
+            db=db,
+            db_common_pg_async=db_common_pg_async,
+            first_date=first_date,
+            last_date=last_date,
+            where_stmt=text_data,
         )
         if not defect_qty:
             defect_qty = 0
         if not data["part_no"] or data["part_no"] == "null":
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?line_id="
-                + str(select_line_id)
-                + f"&shift={data['shift']}&date="
-                + first_date
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=str(select_line_id),
+                    part_no=None,
+                    process_name=None,
+                    shift=data["shift"],
+                    part_line_id=None,
+                    date=first_date,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
             )
         else:
-            endpoint = (
-                self.BACKEND_URL_SERVICE
-                + "/api/prods/prod_qty?part_line_id="
-                + str(data["sub_line"])
-                + f"&shift={data['shift']}&date="
-                + first_date
+            response = ProductionQtyResponse(
+                prod_qty=await self.prod_manager.get_prod_qty(
+                    line_id=None,
+                    part_no=None,
+                    process_name=None,
+                    shift=data["shift"],
+                    part_line_id=str(data["sub_line"]),
+                    date=first_date,
+                    db_my=db_prod_my,
+                    db_ms=db_prod_ms,
+                    db_common=db_common_pg_async,
+                )
             )
-        # print("endpoint:", endpoint)
-        response_json = requests.get(endpoint, headers=headers).json()
+
+        response_str = response.json()
+        response_json = json.loads(response_str)
+
+        # if not data["part_no"] or data["part_no"] == "null":
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/prods/prod_qty?line_id="
+        #         + str(select_line_id)
+        #         + f"&shift={data['shift']}&date="
+        #         + first_date
+        #     )
+        # else:
+        #     endpoint = (
+        #         self.BACKEND_URL_SERVICE
+        #         + "/api/prods/prod_qty?part_line_id="
+        #         + str(data["sub_line"])
+        #         + f"&shift={data['shift']}&date="
+        #         + first_date
+        #     )
+        # # print("endpoint:", endpoint)
+        # response_json = requests.get(endpoint, headers=headers).json()
         #!response_json["prod_qty"]
 
         prod_actual = 0
@@ -4005,7 +4543,19 @@ class P_Chart_Record_Manager:
             if entry["actual_val"] != 0:
                 amount_prod_date += 1
         if count_data == 0:
-            p_bar = float(await self.crud.get_initial_pbar(db=db, where_stmt=text_data))
+            init_pbar = await self.crud.get_initial_pbar(
+                db=db, db_common_pg_async=db_common_pg_async, where_stmt=text_data
+            )
+            if init_pbar == None:
+                p_bar = 0.0
+            else:
+                p_bar = float(
+                    await self.crud.get_initial_pbar(
+                        db=db,
+                        db_common_pg_async=db_common_pg_async,
+                        where_stmt=text_data,
+                    )
+                )
         elif prod_actual == 0:
             p_bar = 0
         else:
