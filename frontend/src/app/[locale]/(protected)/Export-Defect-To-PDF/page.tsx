@@ -136,15 +136,19 @@ export default function PChartHeader() {
   };
 
   const generatePdfFileName = (
+    selectedLineName: string,
     process: string,
     part_no: string,
+    shift: string,
     now: Date
   ): string => {
     const month: string = String(now.getMonth() + 1).padStart(2, "0"); // Ensure 2-digit month (01-12)
     const year: number = now.getFullYear();
     const unix_time: number = Math.floor(now.getTime() / 1000); // Unix timestamp in seconds
 
-    return `${process}-${part_no || "All"}-${month}-${year}-${unix_time}`;
+    return `${selectedLineName}-${process}-${part_no || "AllPart"}-${
+      "Shift" + shift || ""
+    }-${month}-${year}-${unix_time}`;
   };
 
   const handleDownloadExportDeflectFile: any = (file_type: string) => {
@@ -189,7 +193,13 @@ export default function PChartHeader() {
 
     const now: Date = new Date();
 
-    const fileName = generatePdfFileName(process!!, selectedPartNo!!, now);
+    const fileName = generatePdfFileName(
+      selectedLineName!!,
+      process!!,
+      selectedPartNo!!,
+      shift!!,
+      now
+    );
 
     setLoadingExportFile(true);
     exportPChartDefectRecordDownloadNoErr(

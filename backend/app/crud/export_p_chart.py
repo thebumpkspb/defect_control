@@ -360,7 +360,18 @@ class Export_P_Chart_CRUD:
                                 t1.defect_qty,
                                 t1.record_by,
                                 t1.updated_at
-                        order by t0.defect_type,t0.defect_mode
+                        ORDER BY CASE coalesce(t1.defect_type,t0.defect_type) 
+                                    WHEN 'Repeat' THEN 0 
+                                    WHEN 'Repeat NG' THEN 1 
+                                    WHEN 'Scrap' THEN 2 
+                                    WHEN 'Appearance' THEN 3  
+                                    WHEN 'Dimension' THEN 4  
+                                    WHEN 'Performance' THEN 5  
+                                    WHEN 'Other' THEN 6  
+                                    WHEN 'M/C Set up' THEN 7  
+                                    WHEN 'Quality Test' THEN 8 
+                                END
+                                ,t0.defect_mode
                 """
 
             rows = await db.execute(text(query))

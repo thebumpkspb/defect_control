@@ -29,6 +29,7 @@ import requests
 import json
 from app.schemas.p_chart_record import General_Information, General_Information_Result
 from app.schemas.productions import ProductionQtyAccResponse, ProductionQtyResponse
+import pandas as pd
 
 # from collections import defaultdict
 
@@ -382,8 +383,8 @@ class Export_P_Chart_Manager:
         date_str = dt.strftime("%Y-%m-01")
         day_in_month = get_days_in_month(filters["month"])
         list_prod_qty = [0] * day_in_month
-        print('filters["part_no"]:', filters["part_no"])
-        print('type(filters["part_no"]):', type(filters["part_no"]))
+        # print('filters["part_no"]:', filters["part_no"])
+        # print('type(filters["part_no"]):', type(filters["part_no"]))
         if (
             filters["process"] == "Outline"
             or not filters["part_no"]
@@ -463,15 +464,17 @@ class Export_P_Chart_Manager:
             defect_outline = await self.crud.get_defect_outline(
                 db=db, db_common_pg_async=db_common_pg_async, filters=filters
             )
-            print("defect_outline:", defect_outline)
+            # print("defect_outline:", defect_outline)
             defect_table_list = transform_defect_data_to_defect_table(
                 defect_outline, day_in_month
             )
-
+            # print("defect_table_list:", defect_table_list)
+            # The code `day_table_list` is defining a variable or a list in Python.
             day_table_list = generate_month_data(filters["month"])
             defect_qty_list = sum_defects_by_day(defect_outline, day_in_month)[
                 "defect_qty"
             ]
+            # print("defect_qty_list:", defect_qty_list)
             #!
             # TODO: get_calculation_data
             # calculate_data = await self.p_chart_record_manager.get_calculation_data()
@@ -680,13 +683,13 @@ class Export_P_Chart_Manager:
             if i == len(data_table["prod_qty"]) - 1:
                 # cell_address = f"AS33"
                 cell_address = f"AS{row}"
-            data_to_write[cell_address] = str(value)
+            data_to_write[cell_address] = int(value)
             # addition
             if i == len(data_table["prod_qty"]) - 1:
                 if filters["process"] != "Outline":
                     # cell_address = f"AV33"
                     cell_address = f"AV{row}"
-                    data_to_write[cell_address] = str(value)
+                    data_to_write[cell_address] = int(value)
 
         for i, value in enumerate(data_table["defect_qty"]):
             col_letter = self.utils.number_to_column_lower(start_col + i)
@@ -696,13 +699,13 @@ class Export_P_Chart_Manager:
             if i == len(data_table["defect_qty"]) - 1:
                 # cell_address = f"AS34"
                 cell_address = f"AS{row}"
-            data_to_write[cell_address] = str(value)
+            data_to_write[cell_address] = int(value)
             # addition
             if i == len(data_table["defect_qty"]) - 1:
                 if filters["process"] != "Outline":
                     # cell_address = f"AV34"
                     cell_address = f"AV{row}"
-                    data_to_write[cell_address] = str(value)
+                    data_to_write[cell_address] = int(value)
 
         # *******
         for i, value in enumerate(data_table["record_by"]):
@@ -785,7 +788,7 @@ class Export_P_Chart_Manager:
             if i == len(data_table["defect_ratio"]) - 1:
                 # cell_address = f"AS35"
                 cell_address = f"AS{row}"
-            data_to_write[cell_address] = str(value)
+            data_to_write[cell_address] = float(value)
         # #!
         # sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
         # sorted_defect_table = sorted_defect_table[:37]
@@ -975,6 +978,7 @@ class Export_P_Chart_Manager:
                     col_letter
                 )  # Convert column letter to index
                 ws2.cell(row=row, column=col, value=value)
+                ws2.cell(row=row, column=col).number_format = "General"
         else:
             data_to_write_2 = {}
 
@@ -1020,7 +1024,7 @@ class Export_P_Chart_Manager:
                 chunk_sorted_outline_defect_table = defect_outline_page2[
                     start_idx:end_idx
                 ]
-                print("chunk_sorted_defect_table:", chunk_sorted_outline_defect_table)
+                # print("chunk_sorted_defect_table:", chunk_sorted_outline_defect_table)
                 # sorted_defect_table = sorted_defect_table[:37]
                 ##!!
 
@@ -1038,8 +1042,8 @@ class Export_P_Chart_Manager:
                 col_offset = LEFT_COL_OFFSET
                 row = 5
                 for i, defect in enumerate(chunk_sorted_outline_defect_table):
-                    print("i:", i)
-                    print("defect:", defect)
+                    # print("i:", i)
+                    # print("defect:", defect)
                     # ── wrap wide fields
                     trouble_lines = textwrap.wrap(
                         defect["master_defect_mode"], width=45
@@ -1172,6 +1176,7 @@ class Export_P_Chart_Manager:
                         col_letter
                     )  # Convert column letter to index
                     new_ws.cell(row=row, column=col, value=value)
+                    new_ws.cell(row=row, column=col).number_format = "General"
             wb.remove(wb[f"Page{outline_page_amount+4}"])
             # wb.remove(wb[f"Page{page_amount+3}"])
         # for idx, value in enumerate ( merge_cell_list ):
@@ -1183,7 +1188,7 @@ class Export_P_Chart_Manager:
 
         #!
         sorted_defect_table = sorted(data_table["defect_table"], key=lambda x: x["id"])
-        print('data_table["defect_table"]:', data_table["defect_table"])
+        # print('data_table["defect_table"]:', data_table["defect_table"])
         # if filters['is_not_zero']:
         if filters["is_not_zero"]:
             # Step 1: Filter
@@ -1225,10 +1230,11 @@ class Export_P_Chart_Manager:
 
             # print(f"data --> {start_idx}:{end_idx}")
             chunk_sorted_defect_table = sorted_defect_table[start_idx:end_idx]
-            print("chunk_sorted_defect_table:", chunk_sorted_defect_table)
+            # print("chunk_sorted_defect_table:", chunk_sorted_defect_table)
             # sorted_defect_table = sorted_defect_table[:37]
             ##!!
-
+            # df_chunk = pd.DataFrame(chunk_sorted_defect_table)
+            # df_chunk.to_excel(f"chunk_sorted_defect_table{idx_page}.xlsx")
             counts = defaultdict(int)
             # print("sorted_defect_table:", sorted_defect_table)
             for row in chunk_sorted_defect_table:
@@ -1253,7 +1259,7 @@ class Export_P_Chart_Manager:
                         cell_address = f"AS{row}"
                     else:
                         cell_address = f"{col_letter}{row}"
-                    data_to_write[cell_address] = str(value2)
+                    data_to_write[cell_address] = int(float(value2))
 
                 if value["defect_item"] == "":
                     value["defect_item"] = str(value["defect_type"])
@@ -1307,6 +1313,9 @@ class Export_P_Chart_Manager:
                         col_letter
                     )  # Convert column letter to index
                     wb[f"Page{idx_page}"].cell(row=row, column=col, value=value)
+                    wb[f"Page{idx_page}"].cell(row=row, column=col).number_format = (
+                        "General"
+                    )
                     # ws.cell(row=row, column=col, value=value)
                 except:
                     pass
