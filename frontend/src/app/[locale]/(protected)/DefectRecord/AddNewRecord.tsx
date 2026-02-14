@@ -54,7 +54,8 @@ import { convertFullDateToYearMonth, delay } from "@/functions";
 import HistoryRecordTable from "./HistoryRecordTable";
 import { LayoutStore } from "@/store";
 import { pics } from "@/constants/setting";
-
+import type { DraggableData, DraggableEvent } from "react-draggable";
+import Draggable from "react-draggable";
 const { Text } = Typography;
 const { TextArea } = Input;
 
@@ -175,6 +176,28 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
 
     ref
   ) => {
+    const [disabled, setDisabled] = useState(true);
+    const [bounds, setBounds] = useState({
+      left: 0,
+      top: 0,
+      bottom: 0,
+      right: 0,
+    });
+    const draggleRef = useRef<HTMLDivElement>(null!);
+    const onStart = (_event: DraggableEvent, uiData: DraggableData) => {
+      const { clientWidth, clientHeight } = window.document.documentElement;
+      const targetRect = draggleRef.current?.getBoundingClientRect();
+      if (!targetRect) {
+        return;
+      }
+      setBounds({
+        left: -targetRect.left + uiData.x,
+        right: clientWidth - (targetRect.right - uiData.x),
+        top: -targetRect.top + uiData.y,
+        bottom: clientHeight - (targetRect.bottom - uiData.y),
+      });
+    };
+
     const closeHistoryRecordTable = () => {
       closeHistoryRecordTableVisible();
     };
@@ -1057,28 +1080,56 @@ const AddNewRecord = forwardRef<AddNewRecordRef, AddNewRecordProps>(
     return (
       <Modal
         title={
-          <Flex gap="small" justify="flex-start" align="center">
-            <Image src={plusSign} alt="plus-sign" priority width={40} />
-            <Flex vertical justify="flex-start" align="flex-start">
-              <Title
-                style={{ marginTop: "0px", marginBottom: "0px" }}
-                level={4}
-              >
-                Add New Record Data Form
-              </Title>
-              <Title
-                style={{ marginTop: "0px", marginBottom: "0px" }}
-                level={5}
-              >
-                แบบฟอร์มการลงบันทึกข้อมูล Defect ประจำวัน
-              </Title>
+          <div
+            style={{ width: "100%", cursor: "move" }}
+            onMouseOver={() => {
+              if (disabled) {
+                setDisabled(false);
+              }
+            }}
+            onMouseOut={() => {
+              setDisabled(true);
+            }}
+            // fix eslintjsx-a11y/mouse-events-have-key-events
+            // https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/master/docs/rules/mouse-events-have-key-events.md
+            onFocus={() => {}}
+            onBlur={() => {}}
+            // end
+          >
+            <Flex gap="small" justify="flex-start" align="center">
+              <Image src={plusSign} alt="plus-sign" priority width={40} />
+              <Flex vertical justify="flex-start" align="flex-start">
+                <Title
+                  style={{ marginTop: "0px", marginBottom: "0px" }}
+                  level={4}
+                >
+                  Add New Record Data Form
+                </Title>
+                <Title
+                  style={{ marginTop: "0px", marginBottom: "0px" }}
+                  level={5}
+                >
+                  แบบฟอร์มการลงบันทึกข้อมูล Defect ประจำวัน
+                </Title>
+              </Flex>
             </Flex>
-          </Flex>
+          </div>
         }
         open={isModalVisible}
         onCancel={handleModalCancel}
         // confirmLoading={isLoading}
         footer={null}
+        modalRender={(modal) => (
+          <Draggable
+            disabled={disabled}
+            // bounds={bounds}
+            bounds={false as any}
+            nodeRef={draggleRef}
+            onStart={(event, uiData) => onStart(event, uiData)}
+          >
+            <div ref={draggleRef}>{modal}</div>
+          </Draggable>
+        )}
         // width={1300}
         width="90%"
       >

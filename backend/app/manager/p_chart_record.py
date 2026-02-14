@@ -668,9 +668,11 @@ class P_Chart_Record_Manager:
         # print("Start:", start_time)
         if data["shift"] == "All":
             if (not data_part_no) or data_process == "Outline":
+                print("str(select_line_id):", str(select_line_id))
+                print("date_prod_qty:", date_prod_qty)
                 response = ProductionQtyResponse(
                     prod_qty=await self.prod_manager.get_prod_qty(
-                        line_id=str(select_line_id),
+                        line_id=[str(select_line_id)],
                         part_no=None,
                         process_name=None,
                         shift="All",
@@ -681,7 +683,7 @@ class P_Chart_Record_Manager:
                         db_common=db_common_pg_async,
                     )
                 )
-
+                print("11111")
             else:
                 response = ProductionQtyResponse(
                     prod_qty=await self.prod_manager.get_prod_qty(
@@ -696,8 +698,10 @@ class P_Chart_Record_Manager:
                         db_common=db_common_pg_async,
                     )
                 )
+                print("22222")
         response_str = response.json()
         response_json = json.loads(response_str)
+        print("response_json:", response_json)
         for i in range(0, len(response_json["prod_qty"])):
             c = int(str(response_json["prod_qty"][i]["production_date"])[8:10])
             list_prod_qty_all[c - 1] = response_json["prod_qty"][i]["actual_val"]
@@ -1493,7 +1497,7 @@ class P_Chart_Record_Manager:
         if (not data_part_no) or data_process == "Outline":
             response = ProductionQtyResponse(
                 prod_qty=await self.prod_manager.get_prod_qty(
-                    line_id=str(select_line_id),
+                    line_id=[str(select_line_id)],
                     part_no=None,
                     process_name=None,
                     shift="A",
@@ -2214,7 +2218,7 @@ class P_Chart_Record_Manager:
         if (not data_part_no) or data_process == "Outline":
             response = ProductionQtyResponse(
                 prod_qty=await self.prod_manager.get_prod_qty(
-                    line_id=str(select_line_id),
+                    line_id=[str(select_line_id)],
                     part_no=None,
                     process_name=None,
                     shift="B",
@@ -4481,7 +4485,7 @@ class P_Chart_Record_Manager:
         if not data["part_no"] or data["part_no"] == "null":
             response = ProductionQtyResponse(
                 prod_qty=await self.prod_manager.get_prod_qty(
-                    line_id=str(select_line_id),
+                    line_id=[str(select_line_id)],
                     part_no=None,
                     process_name=None,
                     shift=data["shift"],

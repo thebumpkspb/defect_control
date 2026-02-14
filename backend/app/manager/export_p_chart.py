@@ -406,7 +406,7 @@ class Export_P_Chart_Manager:
             ] == "Outline":
                 response = ProductionQtyResponse(
                     prod_qty=await self.prod_manager.get_prod_qty(
-                        line_id=str(line_id),
+                        line_id=[str(line_id)],
                         part_no=None,
                         process_name=None,
                         shift=filters["shift"],

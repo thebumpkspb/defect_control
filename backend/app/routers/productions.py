@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Literal
 
 
 from app.functions import api_key_auth
@@ -29,6 +29,7 @@ def productions_routers(
         shift: str = Query(description="A | B | All"),
         part_line_id: str = None,
         date: str = Query(None, description="YYYY-MM-DD"),
+        type: Literal["Daily", "Monthly", "Yearly"] = "Daily",
         db_my: AsyncSession = Depends(db_my),
         db_ms: AsyncSession = Depends(db_ms),
         db_common: AsyncSession = Depends(db_common),
@@ -42,15 +43,15 @@ def productions_routers(
 
         return ProductionQtyResponse(
             prod_qty=await prod_manager.get_prod_qty(
-                line_id,
-                part_no,
-                process_name,
-                shift,
-                part_line_id,
-                date,
-                db_my,
-                db_ms,
-                db_common,
+                line_id=line_id,
+                part_no=part_no,
+                process_name=process_name,
+                shift=shift,
+                part_line_id=part_line_id,
+                date=date,
+                db_my=db_my,
+                db_ms=db_ms,
+                db_common=db_common,
             )
         )
 

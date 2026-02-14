@@ -1388,7 +1388,7 @@ class Inline_Outline_Manager:
             select_part_name = list_part_name_all[index_select]
             response = ProductionQtyResponse(
                 prod_qty=await self.prod_manager.get_prod_qty(
-                    line_id=str(r[key_index["line_id"]]),
+                    line_id=[str(r[key_index["line_id"]])],
                     part_no=None,
                     process_name=None,
                     shift="All",
@@ -1754,7 +1754,7 @@ class Inline_Outline_Manager:
             select_part_name = list_part_name_all[index_select]
             response = ProductionQtyResponse(
                 prod_qty=await self.prod_manager.get_prod_qty(
-                    line_id=str(r[key_index["line_id"]]),
+                    line_id=[str(r[key_index["line_id"]])],
                     part_no=None,
                     process_name=None,
                     shift="All",
